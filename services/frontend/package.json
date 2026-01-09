@@ -12,7 +12,10 @@
     "analyze": "vite build && vite-bundle-visualizer",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:headed": "playwright test --headed"
+    "test:e2e:headed": "playwright test --headed",
+    "test:smoke": "playwright test e2e/smoke-tests --config=playwright.smoke.config.ts",
+    "test:smoke:ui": "playwright test e2e/smoke-tests --config=playwright.smoke.config.ts --ui",
+    "test:smoke:report": "playwright show-report smoke-test-results"
   },
   "dependencies": {
     "@react-spring/three": "^10.0.3",
