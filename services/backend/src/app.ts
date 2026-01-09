@@ -5,6 +5,7 @@ import sensorReadingsRouter from './routes/sensorReadings.js';
 import predictionsRouter from './routes/predictions.js';
 import comparativeAnalysisRouter from './routes/comparativeAnalysis.js';
 import mlRouter from './routes/ml.js';
+import modelPerformanceRouter from './routes/modelPerformance.js';
 
 export const app = express();
 
@@ -16,5 +17,6 @@ app.use('/api/v1/sensor-readings', sensorReadingsRouter);
 app.use('/api/v1/predictions', predictionsRouter);
 app.use('/api/v1/comparative-analysis', comparativeAnalysisRouter);
 app.use('/api/v1/ml', mlRouter);
+app.use('/api/v1/model-performance', modelPerformanceRouter);
 
 export default app;
