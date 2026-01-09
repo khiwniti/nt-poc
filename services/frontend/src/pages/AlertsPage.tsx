@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { alertsApi, Alert, AlertFilters, TimelineDataPoint, AlertStats } from '../api/alerts';
-import { Download, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AlertFilterControls } from '../components/AlertFilterControls';
+import { useAlertFilterStore } from '../stores/alertFilterStore';
 
 function AlertsPage() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -9,6 +12,10 @@ function AlertsPage() {
   const [stats, setStats] = useState<AlertStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Filter store
+  const filterStore = useAlertFilterStore();
 
   // Filters
   const [filters, setFilters] = useState<AlertFilters>({
@@ -25,6 +32,33 @@ function AlertsPage() {
     totalPages: 0,
   });
 
+  // Initialize filters from URL on mount
+  useEffect(() => {
+    filterStore.setFromURLParams(searchParams);
+  }, []);
+
+  // Apply filters to API
+  const applyFiltersToAPI = () => {
+    const newFilters: AlertFilters = {
+      ...filters,
+      page: 1,
+    };
+
+    // Add filter store filters
+    if (filterStore.status.length > 0) {
+      newFilters.status = filterStore.status.join(',');
+    }
+    if (filterStore.severity.length > 0) {
+      newFilters.severity = filterStore.severity.join(',');
+    }
+
+    setFilters(newFilters);
+
+    // Update URL params
+    const params = filterStore.getURLParams();
+    setSearchParams(params);
+  };
+
   // Fetch data
   useEffect(() => {
     fetchData();
@@ -35,12 +69,18 @@ function AlertsPage() {
       setLoading(true);
       setError(null);
 
+      // Calculate date range in days
+      let days = 30;
+      if (filterStore.dateRange === '24h') days = 1;
+      else if (filterStore.dateRange === '7d') days = 7;
+      else if (filterStore.dateRange === '30d') days = 30;
+
       const [alertsResponse, timelineResponse, statsResponse] = await Promise.all([
         alertsApi.getAlerts(filters),
         alertsApi.getTimelineData({ 
           batteryId: filters.batteryId, 
           zoneId: filters.zoneId,
-          days: 30 
+          days 
         }),
         alertsApi.getAlertStats({ 
           batteryId: filters.batteryId, 
@@ -48,8 +88,25 @@ function AlertsPage() {
         }),
       ]);
 
-      setAlerts(alertsResponse.data);
-      setPagination(alertsResponse.pagination);
+      // Filter by date range on frontend if custom
+      let filteredAlerts = alertsResponse.data;
+      if (filterStore.dateRange === 'custom' && filterStore.customStartDate && filterStore.customEndDate) {
+        const startTime = new Date(filterStore.customStartDate).getTime();
+        const endTime = new Date(filterStore.customEndDate).getTime() + 86400000; // Add 1 day
+        filteredAlerts = filteredAlerts.filter(a => a.createdAt >= startTime && a.createdAt < endTime);
+      }
+
+      // Filter by type on frontend
+      if (filterStore.type.length > 0) {
+        filteredAlerts = filteredAlerts.filter(a => filterStore.type.includes(a.type as any));
+      }
+
+      setAlerts(filteredAlerts);
+      setPagination({
+        ...alertsResponse.pagination,
+        total: filteredAlerts.length,
+        totalPages: Math.ceil(filteredAlerts.length / alertsResponse.pagination.limit),
+      });
       setTimelineData(timelineResponse.data);
       setStats(statsResponse.data);
     } catch (err) {
@@ -60,11 +117,18 @@ function AlertsPage() {
   };
 
   const handleFilterChange = (key: keyof AlertFilters, value: string | number | undefined) => {
-    setFilters(prev => ({
-      ...prev,
+    const newFilters = {
+      ...filters,
       [key]: value || undefined,
-      page: key !== 'page' ? 1 : prev.page, // Reset to page 1 when changing filters
-    }));
+      page: key !== 'page' ? 1 : filters.page,
+    };
+    setFilters(newFilters);
+    
+    // Update URL if not a pagination change
+    if (key !== 'page') {
+      const params = filterStore.getURLParams();
+      setSearchParams(params);
+    }
   };
 
   const handleExport = () => {
@@ -203,98 +267,7 @@ function AlertsPage() {
       </div>
 
       {/* Filters */}
-      <div style={{ 
-        padding: '1.5rem', 
-        backgroundColor: '#f9fafb', 
-        borderRadius: '8px', 
-        border: '1px solid #e5e7eb',
-        marginBottom: '2rem'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-          <Filter size={16} />
-          <h3 style={{ margin: 0 }}>Filters</h3>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: '#374151' }}>
-              Battery ID
-            </label>
-            <input
-              type="text"
-              value={filters.batteryId || ''}
-              onChange={(e) => handleFilterChange('batteryId', e.target.value)}
-              placeholder="e.g., battery-1"
-              style={{ 
-                width: '100%', 
-                padding: '0.5rem', 
-                border: '1px solid #d1d5db', 
-                borderRadius: '6px',
-                fontSize: '0.875rem'
-              }}
-            />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: '#374151' }}>
-              Zone ID
-            </label>
-            <input
-              type="text"
-              value={filters.zoneId || ''}
-              onChange={(e) => handleFilterChange('zoneId', e.target.value)}
-              placeholder="e.g., zone-1"
-              style={{ 
-                width: '100%', 
-                padding: '0.5rem', 
-                border: '1px solid #d1d5db', 
-                borderRadius: '6px',
-                fontSize: '0.875rem'
-              }}
-            />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: '#374151' }}>
-              Severity
-            </label>
-            <select
-              value={filters.severity || ''}
-              onChange={(e) => handleFilterChange('severity', e.target.value)}
-              style={{ 
-                width: '100%', 
-                padding: '0.5rem', 
-                border: '1px solid #d1d5db', 
-                borderRadius: '6px',
-                fontSize: '0.875rem'
-              }}
-            >
-              <option value="">All</option>
-              <option value="critical">Critical</option>
-              <option value="warning">Warning</option>
-              <option value="info">Info</option>
-            </select>
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: '#374151' }}>
-              Status
-            </label>
-            <select
-              value={filters.status || ''}
-              onChange={(e) => handleFilterChange('status', e.target.value)}
-              style={{ 
-                width: '100%', 
-                padding: '0.5rem', 
-                border: '1px solid #d1d5db', 
-                borderRadius: '6px',
-                fontSize: '0.875rem'
-              }}
-            >
-              <option value="">All</option>
-              <option value="active">Active</option>
-              <option value="acknowledged">Acknowledged</option>
-              <option value="resolved">Resolved</option>
-            </select>
-          </div>
-        </div>
-      </div>
+      <AlertFilterControls onApplyFilters={applyFiltersToAPI} />
 
       {/* Alert List */}
       <div style={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e5e7eb', overflow: 'hidden' }}>

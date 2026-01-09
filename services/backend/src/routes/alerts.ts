@@ -45,6 +45,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
       zoneId, 
       severity, 
       status,
+      type,
       page = 1, 
       limit = 20,
       sortBy = 'createdAt',
@@ -62,10 +63,16 @@ router.get('/', async (req: AuthRequest, res: Response) => {
       alerts = alerts.filter(a => a.zoneId === zoneId);
     }
     if (severity) {
-      alerts = alerts.filter(a => a.severity === severity);
+      const severities = (severity as string).split(',');
+      alerts = alerts.filter(a => severities.includes(a.severity));
     }
     if (status) {
-      alerts = alerts.filter(a => a.status === status);
+      const statuses = (status as string).split(',');
+      alerts = alerts.filter(a => statuses.includes(a.status));
+    }
+    if (type) {
+      const types = (type as string).split(',');
+      alerts = alerts.filter(a => types.includes(a.type));
     }
 
     // Sort

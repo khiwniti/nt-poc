@@ -55,6 +55,7 @@ export interface AlertFilters {
   zoneId?: string;
   severity?: string;
   status?: string;
+  type?: string;
   page?: number;
   limit?: number;
   sortBy?: string;
