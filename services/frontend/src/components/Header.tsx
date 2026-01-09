@@ -23,6 +23,7 @@ export function Header() {
         <a href="/3d" style={{ textDecoration: 'none' }}>3D View</a>
         <a href="/alerts" style={{ textDecoration: 'none' }}>Alerts</a>
         <a href="/reports" style={{ textDecoration: 'none' }}>Reports</a>
+        <a href="/comparative-analysis" style={{ textDecoration: 'none' }}>ML Analysis</a>
         <button onClick={handleLogout}>Logout</button>
       </nav>
     </header>

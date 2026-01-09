@@ -3,6 +3,7 @@ import cors from 'cors';
 import facilitiesRouter from './routes/facilities.js';
 import sensorReadingsRouter from './routes/sensorReadings.js';
 import predictionsRouter from './routes/predictions.js';
+import comparativeAnalysisRouter from './routes/comparativeAnalysis.js';
 
 export const app = express();
 
@@ -12,5 +13,6 @@ app.use(express.json());
 app.use('/api/v1/facilities', facilitiesRouter);
 app.use('/api/v1/sensor-readings', sensorReadingsRouter);
 app.use('/api/v1/predictions', predictionsRouter);
+app.use('/api/v1/comparative-analysis', comparativeAnalysisRouter);
 
 export default app;
