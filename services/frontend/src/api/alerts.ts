@@ -27,6 +27,7 @@ export interface AlertStats {
     acknowledged: number;
     resolved: number;
   };
+  byType: Record<string, number>;
   averageResolutionTime: number;
 }
 

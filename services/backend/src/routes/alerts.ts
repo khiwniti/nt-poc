@@ -106,30 +106,18 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   }
 });
 
-// GET /api/v1/alerts/:id - Get single alert details
-router.get('/:id', async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const alerts = generateMockAlerts(100);
-    const alert = alerts.find(a => a.id === id);
-
-    if (!alert) {
-      return res.status(404).json({ error: 'Alert not found' });
-    }
-
-    res.json({ data: alert });
-  } catch (error) {
-    console.error('Error fetching alert:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
 // GET /api/v1/alerts/stats/summary - Get alert statistics
 router.get('/stats/summary', async (req: AuthRequest, res: Response) => {
   try {
     const { batteryId, zoneId, timeRange = '7d' } = req.query;
     
     const alerts = generateMockAlerts(100, batteryId as string, zoneId as string);
+    
+    // Calculate breakdown by type
+    const typeBreakdown: Record<string, number> = {};
+    alerts.forEach(alert => {
+      typeBreakdown[alert.type] = (typeBreakdown[alert.type] || 0) + 1;
+    });
     
     const stats = {
       total: alerts.length,
@@ -143,6 +131,7 @@ router.get('/stats/summary', async (req: AuthRequest, res: Response) => {
         acknowledged: alerts.filter(a => a.status === 'acknowledged').length,
         resolved: alerts.filter(a => a.status === 'resolved').length,
       },
+      byType: typeBreakdown,
       averageResolutionTime: alerts
         .filter(a => a.duration)
         .reduce((sum, a) => sum + (a.duration || 0), 0) / 
@@ -160,6 +149,58 @@ router.get('/stats/summary', async (req: AuthRequest, res: Response) => {
 router.get('/timeline/data', async (req: AuthRequest, res: Response) => {
   try {
     const { batteryId, zoneId, days = 30 } = req.query;
+    
+    const alerts = generateMockAlerts(100, batteryId as string, zoneId as string);
+    const daysNum = parseInt(days as string);
+    const now = Date.now();
+    const timeRangeStart = now - (daysNum * 24 * 60 * 60 * 1000);
+    
+    // Filter by time range
+    const filteredAlerts = alerts.filter(a => a.createdAt >= timeRangeStart);
+    
+    // Group by day
+    const timelineData = [];
+    for (let i = 0; i < daysNum; i++) {
+      const dayStart = now - ((daysNum - i) * 24 * 60 * 60 * 1000);
+      const dayEnd = dayStart + 24 * 60 * 60 * 1000;
+      
+      const dayAlerts = filteredAlerts.filter(a => a.createdAt >= dayStart && a.createdAt < dayEnd);
+      
+      timelineData.push({
+        date: new Date(dayStart).toISOString().split('T')[0],
+        timestamp: dayStart,
+        total: dayAlerts.length,
+        critical: dayAlerts.filter(a => a.severity === 'critical').length,
+        warning: dayAlerts.filter(a => a.severity === 'warning').length,
+        info: dayAlerts.filter(a => a.severity === 'info').length,
+        resolved: dayAlerts.filter(a => a.status === 'resolved').length,
+      });
+    }
+
+    res.json({ data: timelineData });
+  } catch (error) {
+    console.error('Error fetching timeline data:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/v1/alerts/:id - Get single alert details
+router.get('/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const alerts = generateMockAlerts(100);
+    const alert = alerts.find(a => a.id === id);
+
+    if (!alert) {
+      return res.status(404).json({ error: 'Alert not found' });
+    }
+
+    res.json({ data: alert });
+  } catch (error) {
+    console.error('Error fetching alert:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
     
     const alerts = generateMockAlerts(100, batteryId as string, zoneId as string);
     const daysNum = parseInt(days as string);

@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { alertsApi, Alert, AlertFilters, TimelineDataPoint, AlertStats } from '../api/alerts';
-import { Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Download, ChevronLeft, ChevronRight, BarChart3 } from 'lucide-react';
 import { AlertFilterControls } from '../components/AlertFilterControls';
 import { useAlertFilterStore } from '../stores/alertFilterStore';
+import AlertStatsDashboard from '../components/AlertStatsDashboard';
 
 function AlertsPage() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -13,6 +14,7 @@ function AlertsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [showStatsDashboard, setShowStatsDashboard] = useState(true);
 
   // Filter store
   const filterStore = useAlertFilterStore();
@@ -175,24 +177,43 @@ function AlertsPage() {
   return (
     <div style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto' }}>
       <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ margin: 0 }}>Alert History</h2>
-        <button
-          onClick={handleExport}
-          style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: '#3b82f6',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-          }}
-        >
-          <Download size={16} />
-          Export to CSV
-        </button>
+        <h2 style={{ margin: 0 }}>Alert Management</h2>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <button
+            onClick={() => setShowStatsDashboard(!showStatsDashboard)}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: showStatsDashboard ? '#6366f1' : '#f3f4f6',
+              color: showStatsDashboard ? 'white' : '#374151',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+            }}
+          >
+            <BarChart3 size={16} />
+            {showStatsDashboard ? 'Hide Statistics' : 'Show Statistics'}
+          </button>
+          <button
+            onClick={handleExport}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+            }}
+          >
+            <Download size={16} />
+            Export to CSV
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -207,67 +228,18 @@ function AlertsPage() {
         </div>
       )}
 
-      {/* Statistics Summary */}
-      {stats && (
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '1rem',
-          marginBottom: '2rem'
-        }}>
-          <div style={{ padding: '1.5rem', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Total Alerts</div>
-            <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{stats.total}</div>
-          </div>
-          <div style={{ padding: '1.5rem', backgroundColor: '#fef2f2', borderRadius: '8px', border: '1px solid #fecaca' }}>
-            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Critical</div>
-            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#ef4444' }}>{stats.bySeverity.critical}</div>
-          </div>
-          <div style={{ padding: '1.5rem', backgroundColor: '#fffbeb', borderRadius: '8px', border: '1px solid #fed7aa' }}>
-            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Warning</div>
-            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#f59e0b' }}>{stats.bySeverity.warning}</div>
-          </div>
-          <div style={{ padding: '1.5rem', backgroundColor: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
-            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Avg Resolution</div>
-            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#10b981' }}>
-              {formatDuration(stats.averageResolutionTime || 0)}
-            </div>
-          </div>
+      {/* Statistics Dashboard */}
+      {showStatsDashboard && (
+        <div style={{ marginBottom: '2rem' }}>
+          <AlertStatsDashboard filters={filters} />
         </div>
       )}
 
-      {/* Timeline Visualization */}
-      <div style={{ 
-        padding: '1.5rem', 
-        backgroundColor: 'white', 
-        borderRadius: '8px', 
-        border: '1px solid #e5e7eb',
-        marginBottom: '2rem'
-      }}>
-        <h3 style={{ marginTop: 0, marginBottom: '1rem' }}>Alert Timeline (Last 30 Days)</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={timelineData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis 
-              dataKey="date" 
-              tick={{ fontSize: 12 }}
-              tickFormatter={(value) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-            />
-            <YAxis />
-            <Tooltip 
-              labelFormatter={(value) => new Date(value).toLocaleDateString()}
-            />
-            <Legend />
-            <Line type="monotone" dataKey="critical" stroke="#ef4444" name="Critical" strokeWidth={2} />
-            <Line type="monotone" dataKey="warning" stroke="#f59e0b" name="Warning" strokeWidth={2} />
-            <Line type="monotone" dataKey="info" stroke="#3b82f6" name="Info" strokeWidth={2} />
-            <Line type="monotone" dataKey="resolved" stroke="#10b981" name="Resolved" strokeWidth={2} strokeDasharray="5 5" />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-
       {/* Filters */}
       <AlertFilterControls onApplyFilters={applyFiltersToAPI} />
+
+      {/* Alert History Section */}
+      <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem', fontWeight: '600', color: '#111827' }}>Alert History</h3>
 
       {/* Alert List */}
       <div style={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
