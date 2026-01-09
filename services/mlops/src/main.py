@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from src.api.routes import router
 from src.api.explainability import router as explainability_router
+from src.api.anomaly import router as anomaly_router
 from src.config import settings
 import logging
 
@@ -49,6 +50,7 @@ app.add_middleware(
 # Include API routes
 app.include_router(router)
 app.include_router(explainability_router)
+app.include_router(anomaly_router)
 
 if __name__ == "__main__":
     import uvicorn
