@@ -1,0 +1,23 @@
+# Environment files
+.env
+*.env.local
+
+# SSL certificates and private keys
+ssl/certbot/conf/*
+ssl/certbot/www/*
+ssl/custom/*.key
+ssl/custom/*.crt
+ssl/custom/*.pem
+ssl/backup/*
+
+# Except README
+!ssl/README.md
+
+# Nginx logs
+nginx/logs/*
+
+# Backup files
+*.bak
+
+# Docker volumes
+volumes/*
