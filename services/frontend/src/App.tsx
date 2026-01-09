@@ -16,6 +16,7 @@ const AlertsPage = lazy(() => import('./pages/AlertsPage'));
 const ReportsPage = lazy(() => import('./pages/ReportsPage'));
 const ComparativeAnalysisView = lazy(() => import('./pages/ComparativeAnalysisView'));
 const ModelPerformance = lazy(() => import('./pages/ModelPerformance'));
+const AIInsights = lazy(() => import('./pages/AIInsights'));
 const Unauthorized = lazy(() => import('./pages/Unauthorized'));
 
 function App() {
@@ -41,6 +42,7 @@ function App() {
                         <Route path="/reports" element={<ReportsPage />} />
                         <Route path="/comparative-analysis" element={<ComparativeAnalysisView />} />
                         <Route path="/model-performance" element={<ModelPerformance />} />
+                        <Route path="/ai-insights" element={<AIInsights />} />
                         <Route path="/unauthorized" element={<Unauthorized />} />
                       </Routes>
                     </Suspense>
