@@ -1,0 +1,36 @@
+# ML Service Dependencies
+
+# Core ML Libraries
+numpy>=1.24.0
+pandas>=2.0.0
+scikit-learn>=1.3.0
+scipy>=1.11.0
+
+# Model Persistence
+joblib>=1.3.0
+
+# Logging and Monitoring
+python-json-logger>=2.0.7
+
+# Optional: Deep Learning (uncomment if needed)
+# tensorflow>=2.13.0
+# torch>=2.0.0
+# keras>=2.13.0
+
+# Optional: Advanced ML (uncomment if needed)
+# xgboost>=1.7.0
+# lightgbm>=4.0.0
+# catboost>=1.2.0
+
+# Optional: Time Series (uncomment if needed)
+# prophet>=1.1.0
+# statsmodels>=0.14.0
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# Development
+black>=23.7.0
+flake8>=6.0.0
+mypy>=1.4.0
