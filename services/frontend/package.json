@@ -15,7 +15,10 @@
     "test:e2e:headed": "playwright test --headed",
     "test:smoke": "playwright test e2e/smoke-tests --config=playwright.smoke.config.ts",
     "test:smoke:ui": "playwright test e2e/smoke-tests --config=playwright.smoke.config.ts --ui",
-    "test:smoke:report": "playwright show-report smoke-test-results"
+    "test:smoke:report": "playwright show-report smoke-test-results",
+    "test:visual": "percy exec -- playwright test e2e/visual",
+    "test:visual:local": "playwright test e2e/visual",
+    "percy:snapshot": "percy exec -- playwright test e2e/visual --project=chromium"
   },
   "dependencies": {
     "@react-spring/three": "^10.0.3",
@@ -35,6 +38,8 @@
     "zustand": "^4.4.7"
   },
   "devDependencies": {
+    "@percy/cli": "^1.31.7",
+    "@percy/playwright": "^1.0.10",
     "@playwright/test": "^1.40.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^14.1.2",

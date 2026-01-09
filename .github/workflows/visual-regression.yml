@@ -1,0 +1,72 @@
+name: Visual Regression Tests
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'services/frontend/**'
+      - '.github/workflows/visual-regression.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'services/frontend/**'
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  percy-visual-tests:
+    name: Percy Visual Regression
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: services/frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: services/frontend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: services/frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Build frontend
+        working-directory: services/frontend
+        run: npm run build
+
+      - name: Run Percy visual tests
+        working-directory: services/frontend
+        env:
+          PERCY_TOKEN: ${{ secrets.PERCY_TOKEN }}
+        run: npm run test:visual
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: percy-test-results
+          path: services/frontend/playwright-report/
+          retention-days: 30
+
+      - name: Comment PR with Percy link
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const buildUrl = `https://percy.io/${process.env.PERCY_ORG}/${process.env.PERCY_PROJECT}/builds`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🔍 **Percy Visual Regression Tests**\n\nVisual snapshots have been captured. [View the build on Percy](${buildUrl})`
+            });
