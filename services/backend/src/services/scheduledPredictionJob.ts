@@ -10,7 +10,7 @@
  * - Job execution logging and metrics
  */
 
-import cron from 'node-cron';
+import * as cron from 'node-cron';
 import { pool } from '../config/database.js';
 import { getModel, initializeModel } from '../ml/predictiveMaintenanceModel.js';
 import type { MaintenanceFeatures } from '../types/predictiveMaintenance.js';

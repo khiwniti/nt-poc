@@ -5,9 +5,11 @@
 
 import app from './app.js';
 import { startScheduledJob } from './services/scheduledPredictionJob.js';
+import { startEscalationJob } from './services/alertEscalationJob.js';
 
 const PORT = process.env.PORT || 3000;
 const PREDICTION_JOB_INTERVAL = parseInt(process.env.PREDICTION_JOB_INTERVAL_MINUTES || '60', 10);
+const ESCALATION_JOB_INTERVAL = parseInt(process.env.ESCALATION_JOB_INTERVAL_MINUTES || '5', 10);
 
 async function startServer() {
   try {
@@ -20,6 +22,11 @@ async function startServer() {
     console.log(`Starting scheduled prediction job (interval: ${PREDICTION_JOB_INTERVAL} minutes)`);
     await startScheduledJob(PREDICTION_JOB_INTERVAL);
     console.log('Scheduled prediction job is active');
+
+    // Start alert escalation job
+    console.log(`Starting alert escalation job (interval: ${ESCALATION_JOB_INTERVAL} minutes)`);
+    startEscalationJob(ESCALATION_JOB_INTERVAL);
+    console.log('Alert escalation job is active');
 
   } catch (error) {
     console.error('Failed to start server:', error);

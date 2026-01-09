@@ -2,6 +2,8 @@ import express, { Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 import emailNotificationService from '../services/emailNotificationService.js';
 import { EmailNotificationConfig } from '../types/emailNotification.js';
+import alertEscalationService from '../services/alertEscalationService.js';
+import { getEscalationJob } from '../services/alertEscalationJob.js';
 
 const router = express.Router();
 
@@ -338,6 +340,141 @@ router.get('/:id/email-status', async (req: AuthRequest, res: Response) => {
     res.json({ data: deliveryStatus });
   } catch (error) {
     console.error('Error fetching email status:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/v1/alerts/escalation/rules - Configure escalation rules for a facility
+router.post('/escalation/rules', async (req: AuthRequest, res: Response) => {
+  try {
+    const {
+      facilityId,
+      infoToMediumMinutes,
+      mediumToHighMinutes,
+      highToCriticalMinutes,
+      enabled = true,
+    } = req.body;
+
+    if (!facilityId) {
+      return res.status(400).json({ error: 'facilityId is required' });
+    }
+
+    if (
+      typeof infoToMediumMinutes !== 'number' ||
+      typeof mediumToHighMinutes !== 'number' ||
+      typeof highToCriticalMinutes !== 'number'
+    ) {
+      return res.status(400).json({
+        error: 'infoToMediumMinutes, mediumToHighMinutes, and highToCriticalMinutes must be numbers',
+      });
+    }
+
+    const rule = await alertEscalationService.upsertEscalationRule(
+      facilityId,
+      infoToMediumMinutes,
+      mediumToHighMinutes,
+      highToCriticalMinutes,
+      enabled
+    );
+
+    res.json({
+      success: true,
+      message: 'Escalation rules configured successfully',
+      data: rule,
+    });
+  } catch (error) {
+    console.error('Error configuring escalation rules:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/v1/alerts/escalation/rules/:facilityId - Get escalation rules for a facility
+router.get('/escalation/rules/:facilityId', async (req: AuthRequest, res: Response) => {
+  try {
+    const { facilityId } = req.params;
+    const rule = await alertEscalationService.getEscalationRule(facilityId);
+
+    if (!rule) {
+      return res.status(404).json({
+        error: 'Escalation rules not found for facility',
+        facilityId,
+      });
+    }
+
+    res.json({ data: rule });
+  } catch (error) {
+    console.error('Error fetching escalation rules:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/v1/alerts/:id/escalation-history - Get escalation history for an alert
+router.get('/:id/escalation-history', async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const history = await alertEscalationService.getEscalationHistory(id);
+
+    res.json({ data: history });
+  } catch (error) {
+    console.error('Error fetching escalation history:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/v1/alerts/escalation/job-status - Get escalation job status
+router.get('/escalation/job-status', async (req: AuthRequest, res: Response) => {
+  try {
+    const job = getEscalationJob();
+    const status = job.getStatus();
+
+    res.json({
+      data: {
+        isRunning: status.isRunning,
+        lastRun: status.lastRun,
+        metrics: status.metrics
+          ? {
+              startTime: status.metrics.startTime,
+              endTime: status.metrics.endTime,
+              durationMs: status.metrics.endTime
+                ? status.metrics.endTime.getTime() - status.metrics.startTime.getTime()
+                : null,
+              alertsChecked: status.metrics.alertsChecked,
+              alertsEscalated: status.metrics.alertsEscalated,
+              notificationsSent: status.metrics.notificationsSent,
+              errors: status.metrics.errors,
+              lastError: status.metrics.lastError,
+            }
+          : null,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching escalation job status:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/v1/alerts/escalation/trigger - Manually trigger escalation job
+router.post('/escalation/trigger', async (req: AuthRequest, res: Response) => {
+  try {
+    const job = getEscalationJob();
+
+    job.triggerManually().catch((error) => {
+      console.error('Error in manually triggered escalation job:', error);
+    });
+
+    res.json({
+      success: true,
+      message: 'Escalation job triggered successfully',
+      data: {
+        triggeredAt: new Date(),
+      },
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('already running')) {
+      return res.status(409).json({ error: 'Job is already running' });
+    }
+
+    console.error('Error triggering escalation job:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
