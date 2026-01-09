@@ -1,0 +1,20 @@
+[build]
+builder = "nixpacks"
+buildCommand = "cd services/backend && npm ci && npm run build"
+
+[deploy]
+startCommand = "cd services/backend && npm start"
+healthcheckPath = "/api/v1/health"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+[[cron]]
+name = "daily-database-backup"
+schedule = "0 2 * * *"
+command = "bash /app/services/backend/scripts/backup.sh"
+
+[[cron]]
+name = "backup-monitoring"
+schedule = "0 */6 * * *"
+command = "bash /app/services/backend/scripts/monitor-backups.sh"
