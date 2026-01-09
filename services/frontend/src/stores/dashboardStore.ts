@@ -48,10 +48,14 @@ export const useDashboardStore = create<DashboardState>((set) => ({
   },
 
   updateKPIs: (newKPIs: Partial<KPIs>) => {
-    set((state) => ({
-      kpis: state.kpis ? { ...state.kpis, ...newKPIs } : (newKPIs as KPIs),
-      lastUpdated: new Date().toISOString(),
-    }));
+    set((state) => {
+      const current = state.kpis || {} as KPIs;
+      const updated = Object.assign({}, current, newKPIs) as KPIs;
+      return {
+        kpis: updated,
+        lastUpdated: new Date().toISOString(),
+      };
+    });
   },
 
   addAlert: (alert: Alert) => {
