@@ -168,35 +168,103 @@ router.get('/:id', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-const alerts = generateMockAlerts(100, batteryId, zoneId);
-const daysNum = parseInt(days);
-const now = Date.now();
-const timeRangeStart = now - (daysNum * 24 * 60 * 60 * 1000);
-// Filter by time range
-const filteredAlerts = alerts.filter(a => a.createdAt >= timeRangeStart);
-// Group by day
-const timelineData = [];
-for (let i = 0; i < daysNum; i++) {
-    const dayStart = now - ((daysNum - i) * 24 * 60 * 60 * 1000);
-    const dayEnd = dayStart + 24 * 60 * 60 * 1000;
-    const dayAlerts = filteredAlerts.filter(a => a.createdAt >= dayStart && a.createdAt < dayEnd);
-    timelineData.push({
-        date: new Date(dayStart).toISOString().split('T')[0],
-        timestamp: dayStart,
-        total: dayAlerts.length,
-        critical: dayAlerts.filter(a => a.severity === 'critical').length,
-        warning: dayAlerts.filter(a => a.severity === 'warning').length,
-        info: dayAlerts.filter(a => a.severity === 'info').length,
-        resolved: dayAlerts.filter(a => a.status === 'resolved').length,
-    });
-}
-res.json({ data: timelineData });
-try { }
-catch (error) {
-    console.error('Error fetching timeline data:', error);
-    res.status(500).json({ error: 'Internal server error' });
-}
-;
+// GET /api/v1/alerts/:id/history - Get sensor history and timeline for an alert
+router.get('/:id/history', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const alerts = generateMockAlerts(100);
+        const alert = alerts.find(a => a.id === id);
+        if (!alert) {
+            return res.status(404).json({ error: 'Alert not found' });
+        }
+        // Generate mock sensor readings for the last 24 hours
+        const now = Date.now();
+        const readings = Array.from({ length: 24 }, (_, i) => {
+            const timestamp = now - ((23 - i) * 60 * 60 * 1000);
+            return {
+                timestamp,
+                temperature: 20 + Math.random() * 15 + (i > 18 ? 10 : 0),
+                voltage: 3.6 + Math.random() * 0.4,
+                soc: 90 - (i * 2) + Math.random() * 5,
+            };
+        });
+        // Generate timeline events
+        const timeline = [
+            {
+                timestamp: alert.createdAt,
+                event: 'Alert Created',
+                user: 'System',
+            },
+        ];
+        if (alert.acknowledgedAt) {
+            timeline.push({
+                timestamp: alert.acknowledgedAt,
+                event: 'Alert Acknowledged',
+                user: 'operator@example.com',
+            });
+        }
+        if (alert.resolvedAt) {
+            timeline.push({
+                timestamp: alert.resolvedAt,
+                event: 'Alert Resolved',
+                user: 'operator@example.com',
+                notes: 'Issue resolved after system maintenance',
+            });
+        }
+        res.json({ readings, timeline });
+    }
+    catch (error) {
+        console.error('Error fetching alert history:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+// POST /api/v1/alerts/:id/acknowledge - Acknowledge an alert
+router.post('/:id/acknowledge', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const alerts = generateMockAlerts(100);
+        const alert = alerts.find(a => a.id === id);
+        if (!alert) {
+            return res.status(404).json({ error: 'Alert not found' });
+        }
+        if (alert.status === 'resolved') {
+            return res.status(400).json({ error: 'Cannot acknowledge a resolved alert' });
+        }
+        alert.status = 'acknowledged';
+        alert.acknowledgedAt = Date.now();
+        res.json({ data: alert });
+    }
+    catch (error) {
+        console.error('Error acknowledging alert:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+// POST /api/v1/alerts/:id/resolve - Resolve an alert
+router.post('/:id/resolve', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { notes } = req.body;
+        const alerts = generateMockAlerts(100);
+        const alert = alerts.find(a => a.id === id);
+        if (!alert) {
+            return res.status(404).json({ error: 'Alert not found' });
+        }
+        if (alert.status === 'resolved') {
+            return res.status(400).json({ error: 'Alert is already resolved' });
+        }
+        if (!notes || !notes.trim()) {
+            return res.status(400).json({ error: 'Resolution notes are required' });
+        }
+        alert.status = 'resolved';
+        alert.resolvedAt = Date.now();
+        alert.duration = alert.resolvedAt - alert.createdAt;
+        res.json({ data: alert });
+    }
+    catch (error) {
+        console.error('Error resolving alert:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 // POST /api/v1/alerts/email/configure - Configure email notifications for a facility
 router.post('/email/configure', async (req, res) => {
     try {

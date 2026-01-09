@@ -2,6 +2,7 @@ node_modules/
 dist/
 coverage/
 *.log
+logs/
 
 # Environment files (keep .env.example and .env.test)
 .env
