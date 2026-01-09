@@ -1,0 +1,43 @@
+# Dependencies
+node_modules
+
+# Testing
+coverage
+.nyc_output
+*.log
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# CI/CD
+.github
+
+# Build (will be generated)
+dist
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Documentation
+*.md
+!README.md
+
+# Playwright
+playwright-report
+test-results
+e2e/screenshots
+e2e/videos

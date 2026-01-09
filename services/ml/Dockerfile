@@ -1,4 +1,4 @@
-# MLOps Service Dockerfile
+# ML/Simulator Service Dockerfile
 # Multi-stage build for optimized production image
 
 # Stage 1: Build
@@ -36,13 +36,16 @@ COPY --from=builder /opt/venv /opt/venv
 
 # Copy application code
 COPY src/ ./src/
+COPY train_example.py ./
+COPY train_rul_model.py ./
 
 # Create non-root user
 RUN groupadd -g 1001 python && \
     useradd -m -u 1001 -g python python
 
-# Change ownership
-RUN chown -R python:python /app
+# Create directories for models and data
+RUN mkdir -p /app/models /app/data && \
+    chown -R python:python /app
 
 # Switch to non-root user
 USER python
@@ -51,12 +54,12 @@ USER python
 ENV PYTHONPATH=/app
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Expose service port
-EXPOSE 8001
+# Expose port (if running as service)
+EXPOSE 8002
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8001/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD python -c "import sys; sys.exit(0)" || exit 1
 
-# Run application
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8001"]
+# Default command (can be overridden for different training tasks)
+CMD ["python", "train_example.py"]

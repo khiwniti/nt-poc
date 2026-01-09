@@ -1,0 +1,42 @@
+# Dependencies
+node_modules
+
+# Testing
+coverage
+.nyc_output
+*.log
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# CI/CD
+.github
+
+# Build (will be generated)
+dist
+
+# Environment
+.env
+.env.local
+.env.test
+.env.*.local
+
+# Documentation
+*.md
+!README.md
+
+# Database
+*.sqlite
+*.db
