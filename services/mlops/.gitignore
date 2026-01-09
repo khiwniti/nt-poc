@@ -14,9 +14,11 @@ ENV/
 *.swp
 *.swo
 
-# Environment files
+# Environment files (keep .env.example)
 .env
 .env.local
+.env.production
+.env.*.local
 
 # Model files
 models/

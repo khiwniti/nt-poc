@@ -1,0 +1,22 @@
+node_modules/
+dist/
+coverage/
+*.log
+
+# Environment files (keep .env.example and .env.test)
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Testing
+.env.test.local
+
+# Build artifacts
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
