@@ -5,10 +5,40 @@ Battery Management System Backend API
 ## Setup
 
 ```bash
-npm install
+npm install  # Automatically runs database migrations
 cp .env.example .env
 # Configure your database credentials
 ```
+
+## Database Migrations
+
+This project uses **Knex.js** for database migrations. See [MIGRATIONS.md](./MIGRATIONS.md) for full documentation.
+
+### Quick Commands
+
+```bash
+# Run migrations (automatic on npm install)
+npm run migrate
+
+# Check migration status
+npm run migrate:status
+
+# Rollback last batch
+npm run migrate:rollback
+
+# Setup database with sample data
+npm run db:setup
+
+# Populate seed data
+npm run seed:run
+```
+
+### Database Tables
+
+The migration system creates 11 tables:
+- Core: facilities, battery_systems, sensor_readings, alerts
+- ML: rul_predictions
+- MLOps: model_predictions, model_performance_metrics, model_drift_metrics, data_quality_metrics, model_health_alerts, model_health_scores
 
 ## Running Tests
 
