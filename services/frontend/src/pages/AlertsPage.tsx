@@ -6,6 +6,7 @@ import { Download, ChevronLeft, ChevronRight, BarChart3 } from 'lucide-react';
 import { AlertFilterControls } from '../components/AlertFilterControls';
 import { useAlertFilterStore } from '../stores/alertFilterStore';
 import AlertStatsDashboard from '../components/AlertStatsDashboard';
+import { AlertDetailModal } from '../components/AlertDetailModal';
 
 function AlertsPage() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -15,6 +16,7 @@ function AlertsPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [showStatsDashboard, setShowStatsDashboard] = useState(true);
+  const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null);
 
   // Filter store
   const filterStore = useAlertFilterStore();
@@ -261,9 +263,17 @@ function AlertsPage() {
               {alerts.map((alert, index) => (
                 <tr 
                   key={alert.id}
+                  onClick={() => setSelectedAlertId(alert.id)}
                   style={{ 
                     borderBottom: index < alerts.length - 1 ? '1px solid #e5e7eb' : 'none',
-                    backgroundColor: index % 2 === 0 ? 'white' : '#f9fafb'
+                    backgroundColor: index % 2 === 0 ? 'white' : '#f9fafb',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f3f4f6';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'white' : '#f9fafb';
                   }}
                 >
                   <td style={{ padding: '1rem', fontSize: '0.875rem', color: '#374151' }}>{alert.id}</td>
@@ -357,6 +367,15 @@ function AlertsPage() {
           </div>
         </div>
       </div>
+
+      {/* Alert Detail Modal */}
+      {selectedAlertId && (
+        <AlertDetailModal
+          alertId={selectedAlertId}
+          onClose={() => setSelectedAlertId(null)}
+          onUpdate={() => fetchData()}
+        />
+      )}
     </div>
   );
 }

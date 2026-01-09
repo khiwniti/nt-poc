@@ -117,6 +117,41 @@ export const alertsApi = {
     return response.json();
   },
 
+  async getSensorHistory(alertId: string): Promise<{ readings: any[]; timeline: any[] }> {
+    const response = await fetch(`${API_BASE_URL}/alerts/${alertId}/history`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch sensor history: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async acknowledgeAlert(alertId: string): Promise<{ data: Alert }> {
+    const response = await fetch(`${API_BASE_URL}/alerts/${alertId}/acknowledge`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to acknowledge alert: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async resolveAlert(alertId: string, notes: string): Promise<{ data: Alert }> {
+    const response = await fetch(`${API_BASE_URL}/alerts/${alertId}/resolve`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ notes }),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to resolve alert: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
   exportToCSV(alerts: Alert[]): void {
     const headers = [
       'ID',
