@@ -1,5 +1,7 @@
 import express, { Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
+import emailNotificationService from '../services/emailNotificationService.js';
+import { EmailNotificationConfig } from '../types/emailNotification.js';
 
 const router = express.Router();
 
@@ -20,7 +22,7 @@ const generateMockAlerts = (count: number, batteryId?: string, zoneId?: string) 
       batterySystemId: batteryId || `battery-${Math.floor(Math.random() * 10) + 1}`,
       zoneId: zoneId || `zone-${Math.floor(Math.random() * 5) + 1}`,
       type: types[Math.floor(Math.random() * types.length)],
-      severity: severities[Math.floor(Math.random() * severities.length)],
+      severity: severities[i % 3], // Use modulo for predictable pattern: critical, warning, info, critical...
       status: statuses[i % 3],
       message: `Alert ${i + 1}: ${types[Math.floor(Math.random() * types.length)]} detected`,
       createdAt,
@@ -180,6 +182,155 @@ router.get('/timeline/data', async (req: AuthRequest, res: Response) => {
     res.json({ data: timelineData });
   } catch (error) {
     console.error('Error fetching timeline data:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/v1/alerts/email/configure - Configure email notifications for a facility
+router.post('/email/configure', async (req: AuthRequest, res: Response) => {
+  try {
+    const { facilityId, recipients, enabled } = req.body;
+
+    if (!facilityId) {
+      return res.status(400).json({ error: 'facilityId is required' });
+    }
+
+    if (!Array.isArray(recipients)) {
+      return res.status(400).json({ error: 'recipients must be an array' });
+    }
+
+    // Validate email addresses
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    for (const recipient of recipients) {
+      if (!recipient.email || !emailRegex.test(recipient.email)) {
+        return res.status(400).json({ 
+          error: `Invalid email address: ${recipient.email}` 
+        });
+      }
+    }
+
+    const config: EmailNotificationConfig = {
+      facilityId,
+      recipients,
+      enabled: enabled !== false, // Default to true
+    };
+
+    emailNotificationService.configureFacility(config);
+
+    res.json({
+      success: true,
+      message: 'Email notification configuration updated',
+      config,
+    });
+  } catch (error) {
+    console.error('Error configuring email notifications:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/v1/alerts/email/configure/:facilityId - Get email configuration for a facility
+router.get('/email/configure/:facilityId', async (req: AuthRequest, res: Response) => {
+  try {
+    const { facilityId } = req.params;
+    const config = emailNotificationService.getFacilityConfig(facilityId);
+
+    if (!config) {
+      return res.status(404).json({ 
+        error: 'Email configuration not found for facility',
+        facilityId,
+      });
+    }
+
+    res.json({ data: config });
+  } catch (error) {
+    console.error('Error fetching email configuration:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/v1/alerts/email/configure - Get all email configurations
+router.get('/email/configure', async (req: AuthRequest, res: Response) => {
+  try {
+    const configs = emailNotificationService.getAllFacilityConfigs();
+    res.json({ data: configs });
+  } catch (error) {
+    console.error('Error fetching email configurations:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/v1/alerts/:id/notify - Send email notification for an alert
+router.post('/:id/notify', async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { facilityId } = req.body;
+
+    if (!facilityId) {
+      return res.status(400).json({ error: 'facilityId is required' });
+    }
+
+    // Get alert details
+    const alerts = generateMockAlerts(100);
+    const alert = alerts.find(a => a.id === id);
+
+    if (!alert) {
+      return res.status(404).json({ error: 'Alert not found' });
+    }
+
+    // Only send emails for critical alerts
+    if (alert.severity !== 'critical') {
+      return res.status(400).json({ 
+        error: 'Email notifications are only sent for critical alerts',
+        severity: alert.severity,
+      });
+    }
+
+    // Prepare alert data for email
+    const dashboardBaseUrl = process.env.DASHBOARD_BASE_URL || 'http://localhost:3001';
+    const alertData = {
+      alertId: alert.id,
+      batterySystemId: alert.batterySystemId,
+      zoneId: alert.zoneId,
+      type: alert.type,
+      severity: alert.severity as 'critical',
+      message: alert.message,
+      createdAt: alert.createdAt,
+      metadata: alert.metadata,
+      dashboardLink: `${dashboardBaseUrl}/alerts/${alert.id}`,
+    };
+
+    // Send email notification
+    const deliveryStatus = await emailNotificationService.sendAlertNotification(
+      facilityId,
+      alertData
+    );
+
+    res.json({
+      success: deliveryStatus.status === 'sent',
+      deliveryStatus,
+    });
+  } catch (error) {
+    console.error('Error sending email notification:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/v1/alerts/:id/email-status - Get email delivery status for an alert
+router.get('/:id/email-status', async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const deliveryStatus = emailNotificationService.getDeliveryStatus(id);
+
+    if (!deliveryStatus) {
+      return res.status(404).json({ 
+        error: 'No email delivery status found for this alert',
+        alertId: id,
+      });
+    }
+
+    res.json({ data: deliveryStatus });
+  } catch (error) {
+    console.error('Error fetching email status:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
