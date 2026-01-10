@@ -10,6 +10,8 @@ import logging
 import sys
 from pathlib import Path
 
+import sentry_sdk
+
 # Add ML service to path
 sys.path.append(str(Path(__file__).parent.parent.parent.parent / 'ml' / 'src'))
 
@@ -147,6 +149,7 @@ async def generate_waterfall_plot(request: ExplainRequest):
         )
         
     except Exception as e:
+        sentry_sdk.capture_exception()
         logger.error(f"Error generating waterfall plot: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -191,6 +194,7 @@ async def generate_force_plot(request: ExplainRequest):
         )
         
     except Exception as e:
+        sentry_sdk.capture_exception()
         logger.error(f"Error generating force plot: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -261,6 +265,7 @@ async def generate_text_explanation(request: ExplainRequest):
         )
         
     except Exception as e:
+        sentry_sdk.capture_exception()
         logger.error(f"Error generating text explanation: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -309,6 +314,7 @@ async def export_explanation_report(
         )
         
     except Exception as e:
+        sentry_sdk.capture_exception()
         logger.error(f"Error exporting explanation report: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 

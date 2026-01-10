@@ -6,6 +6,8 @@ import platform
 import sys
 import logging
 
+import sentry_sdk
+
 from .models import (
     RULPredictionRequest,
     RULPredictionResponse,
@@ -97,12 +99,14 @@ async def predict_rul(request: RULPredictionRequest):
             detail=str(e)
         )
     except RuntimeError as e:
+        sentry_sdk.capture_exception()
         logger.error(f"Model error: {e}")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Model not available"
         )
     except Exception as e:
+        sentry_sdk.capture_exception()
         logger.error(f"Unexpected error: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -124,6 +128,7 @@ async def get_model_info():
         return ModelInfoResponse(**info)
         
     except Exception as e:
+        sentry_sdk.capture_exception()
         logger.error(f"Error getting model info: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

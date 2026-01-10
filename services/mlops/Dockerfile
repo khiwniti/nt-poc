@@ -36,6 +36,7 @@ COPY --from=builder /opt/venv /opt/venv
 
 # Copy application code
 COPY src/ ./src/
+COPY app/ ./app/
 
 # Create non-root user
 RUN groupadd -g 1001 python && \

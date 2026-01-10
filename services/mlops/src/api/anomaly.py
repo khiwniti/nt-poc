@@ -9,6 +9,8 @@ from typing import Dict, Optional
 import sys
 from pathlib import Path
 
+import sentry_sdk
+
 # Add ML service to path
 ml_service_path = Path(__file__).parent.parent.parent.parent / "ml" / "src"
 sys.path.insert(0, str(ml_service_path))
@@ -142,6 +144,7 @@ async def detect_anomaly(request: AnomalyDetectionRequest):
         )
     
     except Exception as e:
+        sentry_sdk.capture_exception()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Anomaly detection failed: {str(e)}"
@@ -220,6 +223,7 @@ async def train_anomaly_detector():
         }
     
     except Exception as e:
+        sentry_sdk.capture_exception()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Training failed: {str(e)}"
