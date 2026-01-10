@@ -21,3 +21,6 @@ build/
 .idea/
 *.swp
 *.swo
+
+# Security reports
+security-reports/
