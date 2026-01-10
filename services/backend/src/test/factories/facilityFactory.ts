@@ -8,6 +8,11 @@ export interface FacilityData {
   timezone?: string;
   total_zones?: number;
   status?: 'active' | 'inactive' | 'maintenance';
+  latitude?: number;
+  longitude?: number;
+  address?: string;
+  city?: string;
+  country?: string;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -18,6 +23,11 @@ export const facilityDefaults = {
   timezone: () => faker.location.timeZone(),
   total_zones: () => faker.number.int({ min: 1, max: 20 }),
   status: () => faker.helpers.arrayElement(['active', 'inactive', 'maintenance'] as const),
+  latitude: () => faker.location.latitude(),
+  longitude: () => faker.location.longitude(),
+  address: () => faker.location.streetAddress(true),
+  city: () => faker.location.city(),
+  country: () => faker.location.country(),
 };
 
 export async function createFacility(overrides: FacilityData = {}): Promise<any> {
@@ -28,13 +38,20 @@ export async function createFacility(overrides: FacilityData = {}): Promise<any>
     timezone: overrides.timezone || facilityDefaults.timezone(),
     total_zones: overrides.total_zones ?? facilityDefaults.total_zones(),
     status: overrides.status || facilityDefaults.status(),
+    latitude: overrides.latitude ?? facilityDefaults.latitude(),
+    longitude: overrides.longitude ?? facilityDefaults.longitude(),
+    address: overrides.address ?? facilityDefaults.address(),
+    city: overrides.city ?? facilityDefaults.city(),
+    country: overrides.country ?? facilityDefaults.country(),
     created_at: overrides.created_at || new Date(),
     updated_at: overrides.updated_at || new Date(),
   };
 
   const result = await pool.query(
-    `INSERT INTO facilities (id, name, location, timezone, total_zones, status, created_at, updated_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `INSERT INTO facilities (id, name, location, timezone, total_zones, status, 
+                            latitude, longitude, address, city, country,
+                            created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
      RETURNING *`,
     [
       facility.id,
@@ -43,6 +60,11 @@ export async function createFacility(overrides: FacilityData = {}): Promise<any>
       facility.timezone,
       facility.total_zones,
       facility.status,
+      facility.latitude,
+      facility.longitude,
+      facility.address,
+      facility.city,
+      facility.country,
       facility.created_at,
       facility.updated_at,
     ]
@@ -59,6 +81,11 @@ export function buildFacility(overrides: FacilityData = {}): FacilityData {
     timezone: overrides.timezone || facilityDefaults.timezone(),
     total_zones: overrides.total_zones ?? facilityDefaults.total_zones(),
     status: overrides.status || facilityDefaults.status(),
+    latitude: overrides.latitude ?? facilityDefaults.latitude(),
+    longitude: overrides.longitude ?? facilityDefaults.longitude(),
+    address: overrides.address ?? facilityDefaults.address(),
+    city: overrides.city ?? facilityDefaults.city(),
+    country: overrides.country ?? facilityDefaults.country(),
     created_at: overrides.created_at || new Date(),
     updated_at: overrides.updated_at || new Date(),
   };
