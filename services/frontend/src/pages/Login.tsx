@@ -11,6 +11,7 @@ export function Login() {
     // Mock authentication
     if (username && password) {
       localStorage.setItem('token', 'mock-token');
+      localStorage.setItem('role', 'admin');
       navigate('/');
     }
   };
