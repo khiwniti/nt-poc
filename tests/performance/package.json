@@ -1,0 +1,20 @@
+{
+  "name": "performance-tests",
+  "version": "1.0.0",
+  "description": "k6 performance tests for battery management system",
+  "type": "module",
+  "scripts": {
+    "test:load:light": "k6 run scenarios/load-test.js --env SCENARIO=light",
+    "test:load:medium": "k6 run scenarios/load-test.js --env SCENARIO=medium",
+    "test:load:heavy": "k6 run scenarios/load-test.js --env SCENARIO=heavy",
+    "test:stress": "k6 run scenarios/stress-test.js",
+    "test:spike": "k6 run scenarios/spike-test.js",
+    "test:realtime": "k6 run scenarios/realtime-test.js",
+    "test:endurance": "k6 run scenarios/endurance-test.js",
+    "test:all": "npm run test:load:light && npm run test:load:medium && npm run test:stress",
+    "test:ci": "k6 run scenarios/load-test.js --env SCENARIO=light"
+  },
+  "keywords": ["k6", "performance", "load-testing"],
+  "author": "",
+  "license": "MIT"
+}

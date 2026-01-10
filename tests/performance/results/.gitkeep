@@ -1,0 +1,5 @@
+# k6 Performance Test Results
+
+This directory contains test results from k6 performance tests.
+
+Results are generated automatically with timestamps when tests are run.

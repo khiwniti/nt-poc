@@ -1,0 +1,22 @@
+# Test results
+results/*.json
+results/*.txt
+!results/.gitkeep
+
+# k6 output
+k6-*.json
+summary-*.json
+
+# Node modules (if any)
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

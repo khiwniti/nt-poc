@@ -1,0 +1,48 @@
+version: '3.8'
+
+# Docker Compose setup for running k6 performance tests
+# Usage: docker-compose -f docker-compose.perf.yml up
+
+services:
+  k6:
+    image: grafana/k6:latest
+    volumes:
+      - ./scenarios:/scripts/scenarios
+      - ./config.js:/scripts/config.js
+      - ./utils:/scripts/utils
+      - ./results:/results
+    environment:
+      - BASE_URL=${BASE_URL:-http://host.docker.internal:3000}
+      - SCENARIO=${SCENARIO:-light}
+    command: run /scripts/scenarios/load-test.js
+    network_mode: "host"
+
+  # Optional: Grafana + InfluxDB for live metrics
+  influxdb:
+    image: influxdb:2.7-alpine
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=adminpass
+      - DOCKER_INFLUXDB_INIT_ORG=k6
+      - DOCKER_INFLUXDB_INIT_BUCKET=k6
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=k6-token-123
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - influxdb
+
+volumes:
+  influxdb-data:
+  grafana-data:
