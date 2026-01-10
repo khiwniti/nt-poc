@@ -20,6 +20,7 @@ const ModelPerformance = lazy(() => import('./pages/ModelPerformance'));
 const AIInsights = lazy(() => import('./pages/AIInsights'));
 const WhatIfScenarioAnalysis = lazy(() => import('./pages/WhatIfScenarioAnalysis'));
 const Unauthorized = lazy(() => import('./pages/Unauthorized'));
+const FacilityMapPage = lazy(() => import('./pages/FacilityMapPage'));
 
 function App() {
   return (
@@ -47,6 +48,7 @@ function App() {
                         <Route path="/model-performance" element={<ModelPerformance />} />
                         <Route path="/ai-insights" element={<AIInsights />} />
                         <Route path="/what-if-analysis" element={<WhatIfScenarioAnalysis />} />
+                        <Route path="/facility-map" element={<FacilityMapPage />} />
                         <Route path="/unauthorized" element={<Unauthorized />} />
                       </Routes>
                     </Suspense>
