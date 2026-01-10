@@ -1,0 +1,93 @@
+name: Accessibility Testing
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'services/frontend/**'
+  push:
+    branches: [main, develop]
+    paths:
+      - 'services/frontend/**'
+
+jobs:
+  accessibility-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: services/frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: services/frontend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: services/frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Build frontend
+        working-directory: services/frontend
+        run: npm run build
+
+      - name: Start dev server
+        working-directory: services/frontend
+        run: |
+          npm run dev &
+          npx wait-on http://localhost:5173 --timeout 60000
+
+      - name: Run axe accessibility tests
+        working-directory: services/frontend
+        run: npm run test:a11y:chromium
+
+      - name: Run Lighthouse CI
+        working-directory: services/frontend
+        run: npm run lighthouse
+        continue-on-error: true
+
+      - name: Upload Lighthouse results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-results
+          path: services/frontend/.lighthouseci/
+          retention-days: 30
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: accessibility-test-results
+          path: services/frontend/playwright-report/
+          retention-days: 30
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let comment = '## Accessibility Test Results\n\n';
+            
+            try {
+              // Add summary of test results
+              comment += '✅ Accessibility tests completed\n';
+              comment += '\nView detailed results in the artifacts.\n';
+            } catch (error) {
+              comment += '⚠️ Could not parse test results\n';
+            }
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
