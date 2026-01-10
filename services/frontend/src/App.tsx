@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react';
+import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Header } from './components/Header';
@@ -20,6 +20,7 @@ const ModelPerformance = lazy(() => import('./pages/ModelPerformance'));
 const AIInsights = lazy(() => import('./pages/AIInsights'));
 const WhatIfScenarioAnalysis = lazy(() => import('./pages/WhatIfScenarioAnalysis'));
 const Unauthorized = lazy(() => import('./pages/Unauthorized'));
+const MapView = lazy(() => import('./pages/MapView'));
 
 function App() {
   return (
@@ -47,6 +48,7 @@ function App() {
                         <Route path="/model-performance" element={<ModelPerformance />} />
                         <Route path="/ai-insights" element={<AIInsights />} />
                         <Route path="/what-if-analysis" element={<WhatIfScenarioAnalysis />} />
+                        <Route path="/map" element={<MapView />} />
                         <Route path="/unauthorized" element={<Unauthorized />} />
                       </Routes>
                     </Suspense>
