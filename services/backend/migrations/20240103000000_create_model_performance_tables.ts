@@ -164,8 +164,14 @@ export async function up(knex: Knex): Promise<void> {
     table.timestamp('created_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());
 
     table.index(['battery_system_id', 'alert_time']);
-    table.index(['resolved', 'severity'], undefined, { where: knex.raw('resolved = FALSE') });
+    table.index(['resolved', 'severity']);
   });
+
+  await knex.raw(`
+    CREATE INDEX model_health_alerts_unresolved_idx
+    ON model_health_alerts (severity, alert_time DESC)
+    WHERE resolved = FALSE
+  `);
 
   // Model health scores table
   await knex.schema.createTable('model_health_scores', (table) => {

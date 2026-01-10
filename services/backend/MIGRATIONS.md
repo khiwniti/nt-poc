@@ -90,8 +90,7 @@ table.enum('status', ['active', 'inactive'])
 .nullable()
 .defaultTo(value)
 .unsigned()
-.checkPositive()
-.checkBetween([min, max])
+// CHECK constraints (Postgres): use knex.raw('ALTER TABLE ... ADD CONSTRAINT ... CHECK (...)')
 
 // Indexes
 table.index('column_name')
@@ -277,6 +276,19 @@ npm run migrate:rollback
 # Test migration up again
 npm run migrate
 ```
+
+#### Automated Migration Tests
+
+Database migration tests live in `services/backend/migration-tests/databaseMigrations.test.ts` and require a running PostgreSQL instance (configured via `.env.test`) with the `pgcrypto` extension available.
+
+```bash
+# Run just migration tests
+npm run test:migrations
+```
+
+Optional tuning:
+- `MIGRATION_TEST_SENSOR_ROWS` (default `50000`)
+- `MIGRATION_TEST_MAX_QUERY_MS` (default `2000`)
 
 ## Existing Migrations
 
