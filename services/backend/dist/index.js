@@ -2,7 +2,7 @@
  * Server Entry Point
  * Starts the Express server and scheduled jobs
  */
-import { initializeSentry } from './config/sentry.js';
+import Sentry, { initializeSentry } from './config/sentry.js';
 import logger from './config/logger.js';
 import app from './app.js';
 import { startScheduledJob } from './services/scheduledPredictionJob.js';
@@ -14,31 +14,42 @@ const PREDICTION_JOB_INTERVAL = parseInt(process.env.PREDICTION_JOB_INTERVAL_MIN
 const ESCALATION_JOB_INTERVAL = parseInt(process.env.ESCALATION_JOB_INTERVAL_MINUTES || '5', 10);
 async function startServer() {
     try {
-        // Start HTTP server
-        app.listen(PORT, () => {
-            logger.info(`Server is running on port ${PORT}`);
+        const server = app.listen(PORT, () => {
+            logger.info('server_started', { port: PORT });
         });
-        // Start scheduled prediction job
-        logger.info(`Starting scheduled prediction job (interval: ${PREDICTION_JOB_INTERVAL} minutes)`);
+        logger.info('scheduled_prediction_job_starting', { intervalMinutes: PREDICTION_JOB_INTERVAL });
         await startScheduledJob(PREDICTION_JOB_INTERVAL);
-        logger.info('Scheduled prediction job is active');
-        // Start alert escalation job
-        logger.info(`Starting alert escalation job (interval: ${ESCALATION_JOB_INTERVAL} minutes)`);
+        logger.info('scheduled_prediction_job_active');
+        logger.info('alert_escalation_job_starting', { intervalMinutes: ESCALATION_JOB_INTERVAL });
         startEscalationJob(ESCALATION_JOB_INTERVAL);
-        logger.info('Alert escalation job is active');
+        logger.info('alert_escalation_job_active');
+        const shutdown = (signal) => {
+            logger.info('shutdown_signal_received', { signal });
+            server.close(() => {
+                logger.info('server_closed');
+                process.exit(0);
+            });
+            setTimeout(() => {
+                logger.error('shutdown_forced', { signal });
+                process.exit(1);
+            }, 10_000).unref();
+        };
+        process.on('SIGTERM', () => shutdown('SIGTERM'));
+        process.on('SIGINT', () => shutdown('SIGINT'));
     }
     catch (error) {
-        logger.error('Failed to start server:', error);
+        logger.error('server_start_failed', { error });
+        Sentry.captureException(error);
         process.exit(1);
     }
 }
-// Handle graceful shutdown
-process.on('SIGTERM', () => {
-    logger.info('SIGTERM received, shutting down gracefully');
-    process.exit(0);
+process.on('unhandledRejection', (reason) => {
+    logger.error('unhandled_rejection', { reason });
+    Sentry.captureException(reason);
 });
-process.on('SIGINT', () => {
-    logger.info('SIGINT received, shutting down gracefully');
-    process.exit(0);
+process.on('uncaughtException', (error) => {
+    logger.error('uncaught_exception', { error });
+    Sentry.captureException(error);
+    process.exit(1);
 });
 startServer();

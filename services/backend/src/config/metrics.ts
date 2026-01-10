@@ -129,5 +129,41 @@ export const reportCacheHitRate = new client.Gauge({
   registers: [register],
 });
 
+// Map caching metrics
+export const mapCacheHitsTotal = new client.Counter({
+  name: 'map_cache_hits_total',
+  help: 'Total map cache hits',
+  labelNames: ['cache_type'],
+  registers: [register],
+});
+
+export const mapCacheMissesTotal = new client.Counter({
+  name: 'map_cache_misses_total',
+  help: 'Total map cache misses',
+  labelNames: ['cache_type'],
+  registers: [register],
+});
+
+export const mapCacheSetsTotal = new client.Counter({
+  name: 'map_cache_sets_total',
+  help: 'Total map cache sets',
+  labelNames: ['cache_type'],
+  registers: [register],
+});
+
+export const mapCacheErrorsTotal = new client.Counter({
+  name: 'map_cache_errors_total',
+  help: 'Total map cache errors',
+  labelNames: ['cache_type'],
+  registers: [register],
+});
+
+export const mapCacheHitRate = new client.Gauge({
+  name: 'map_cache_hit_rate',
+  help: 'Map cache hit rate by type (hits/(hits+misses))',
+  labelNames: ['cache_type'],
+  registers: [register],
+});
+
 // Export the registry
 export { register };
