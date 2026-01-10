@@ -1,16 +1,29 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid } from '@react-three/drei';
+import { Eye, Glasses } from 'lucide-react';
 import { GLTFModel } from '../components/GLTFModel';
 import { AssetLoadingIndicator } from '../components/AssetLoadingIndicator';
+import { VRScene } from '../components/VRScene';
+import { VRNavigationController } from '../components/VRControllers';
+import { VRFallbackUI, VRStatusBadge } from '../components/VRFallbackUI';
 import { useAssetLoader } from '../hooks/useAssetLoader';
+import { useVRCapabilities } from '../hooks/useVRCapabilities';
+import { getRecommendedVRFrameRate } from '../utils/vrDetection';
 
 function ThreeDView() {
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
+  const [vrMode, setVRMode] = useState(false);
+  const [showVRFallback, setShowVRFallback] = useState(false);
+  const [performanceWarning, setPerformanceWarning] = useState<string | null>(null);
+
   const { isLoading, progress, error, reload } = useAssetLoader({
     url: selectedModel,
     enabled: !!selectedModel,
   });
+
+  const { capabilities, isVRSupported } = useVRCapabilities();
+  const targetFPS = getRecommendedVRFrameRate();
 
   const demoModels = [
     { name: 'Zone Model', url: '/assets/models/zone.glb' },
@@ -18,16 +31,69 @@ function ThreeDView() {
     { name: 'Facility Element', url: '/assets/models/facility.glb' },
   ];
 
+  const handleVRToggle = () => {
+    if (!isVRSupported) {
+      setShowVRFallback(true);
+      return;
+    }
+    setVRMode(!vrMode);
+  };
+
+  const handlePerformanceWarning = (fps: number) => {
+    setPerformanceWarning(
+      `Performance warning: FPS dropped to ${fps}. Target is ${targetFPS} FPS for VR.`
+    );
+    setTimeout(() => setPerformanceWarning(null), 5000);
+  };
+
+  useEffect(() => {
+    // Auto-select first model on mount
+    if (!selectedModel && demoModels.length > 0) {
+      setSelectedModel(demoModels[0].url);
+    }
+  }, []);
+
   return (
     <div style={{ padding: '2rem', height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <h2>3D Facility View</h2>
-      
-      <div style={{ marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <h2>3D Facility View</h2>
+
+        <button
+          onClick={handleVRToggle}
+          style={{
+            padding: '0.75rem 1.5rem',
+            fontSize: '1rem',
+            fontWeight: 'bold',
+            backgroundColor: vrMode ? '#FF5722' : '#2196F3',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+          }}
+        >
+          {vrMode ? (
+            <>
+              <Eye size={20} />
+              Switch to Desktop View
+            </>
+          ) : (
+            <>
+              <Glasses size={20} />
+              Enable VR Mode
+            </>
+          )}
+        </button>
+      </div>
+
+      <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
         <label style={{ marginRight: '0.5rem' }}>Load Model:</label>
         <select
           value={selectedModel || ''}
           onChange={(e) => setSelectedModel(e.target.value || null)}
-          style={{ padding: '0.5rem', marginRight: '0.5rem' }}
+          style={{ padding: '0.5rem', flex: 1, maxWidth: '300px' }}
         >
           <option value="">-- Select a model --</option>
           {demoModels.map((model) => (
@@ -36,7 +102,7 @@ function ThreeDView() {
             </option>
           ))}
         </select>
-        
+
         {selectedModel && (
           <button onClick={reload} style={{ padding: '0.5rem 1rem' }}>
             Reload
@@ -44,30 +110,75 @@ function ThreeDView() {
         )}
       </div>
 
-      <div style={{ 
+      {performanceWarning && (
+        <div
+          style={{
+            padding: '1rem',
+            backgroundColor: '#FFF3CD',
+            color: '#856404',
+            borderRadius: '6px',
+            marginBottom: '1rem',
+            fontSize: '0.875rem',
+          }}
+        >
+          {performanceWarning}
+        </div>
+      )}
+
+      <div style={{
         flex: 1,
-        border: '1px solid #ddd', 
+        border: '1px solid #ddd',
         borderRadius: '8px',
         background: '#f5f5f5',
         position: 'relative',
+        overflow: 'hidden',
       }}>
-        <Canvas camera={{ position: [5, 5, 5], fov: 50 }}>
-          <ambientLight intensity={0.5} />
-          <directionalLight position={[10, 10, 5]} intensity={1} />
-          <directionalLight position={[-10, -10, -5]} intensity={0.3} />
-          
-          <Grid infiniteGrid cellSize={1} cellThickness={0.5} sectionSize={5} />
-          <OrbitControls makeDefault />
+        {vrMode && isVRSupported ? (
+          <VRScene
+            enableControllers
+            enableHandTracking={false}
+            targetFrameRate={targetFPS}
+            onPerformanceWarning={handlePerformanceWarning}
+          >
+            <VRNavigationController speed={2.0} rotationSpeed={1.5} teleportEnabled />
 
-          {selectedModel && !error && (
-            <GLTFModel
-              url={selectedModel}
-              position={[0, 0, 0]}
-              scale={1}
-              autoRotate={false}
-            />
-          )}
-        </Canvas>
+            {selectedModel && !error && (
+              <GLTFModel
+                url={selectedModel}
+                position={[0, 0, 0]}
+                scale={1}
+                autoRotate={false}
+              />
+            )}
+          </VRScene>
+        ) : (
+          <Canvas camera={{ position: [5, 5, 5], fov: 50 }}>
+            <ambientLight intensity={0.5} />
+            <directionalLight position={[10, 10, 5]} intensity={1} />
+            <directionalLight position={[-10, -10, -5]} intensity={0.3} />
+
+            <Grid infiniteGrid cellSize={1} cellThickness={0.5} sectionSize={5} />
+            <OrbitControls makeDefault />
+
+            {selectedModel && !error && (
+              <GLTFModel
+                url={selectedModel}
+                position={[0, 0, 0]}
+                scale={1}
+                autoRotate={false}
+              />
+            )}
+          </Canvas>
+        )}
+
+        <VRStatusBadge capabilities={capabilities} />
+
+        {showVRFallback && (
+          <VRFallbackUI
+            capabilities={capabilities}
+            onDismiss={() => setShowVRFallback(false)}
+          />
+        )}
 
         <AssetLoadingIndicator
           isLoading={isLoading}
