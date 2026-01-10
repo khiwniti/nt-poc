@@ -16,6 +16,7 @@ import alertsRouter from './routes/alerts.js';
 import jobsRouter from './routes/jobs.js';
 import explainabilityRouter from './routes/explainability.js';
 import whatIfScenarioRouter from './routes/whatIfScenario.js';
+import streamRouter from './routes/stream.js';
 
 export const app = express();
 
@@ -55,6 +56,7 @@ app.use('/api/v1/comparative-analysis', comparativeAnalysisRouter);
 app.use('/api/v1/ml', mlRouter);
 app.use('/api/v1/model-performance', modelPerformanceRouter);
 app.use('/api/v1/alerts', alertsRouter);
+app.use('/api/v1/stream', streamRouter);
 app.use('/api/v1/jobs', jobsRouter);
 app.use('/api/v1/explainability', explainabilityRouter);
 app.use('/api/v1/what-if', whatIfScenarioRouter);

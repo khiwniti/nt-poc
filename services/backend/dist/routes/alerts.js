@@ -3,6 +3,7 @@ import { authenticate } from '../middleware/auth.js';
 import emailNotificationService from '../services/emailNotificationService.js';
 import alertEscalationService from '../services/alertEscalationService.js';
 import { getEscalationJob } from '../services/alertEscalationJob.js';
+import alertRealtimeService from '../services/alertRealtimeService.js';
 const router = express.Router();
 router.use(authenticate);
 // Mock data generator for alerts
@@ -32,12 +33,41 @@ const generateMockAlerts = (count, batteryId, zoneId) => {
         };
     });
 };
+// POST /api/v1/alerts - Create an alert (broadcasts via SSE)
+router.post('/', async (req, res) => {
+    try {
+        const { facilityId, zoneId, batterySystemId, type, severity, message, metadata } = req.body || {};
+        if (!type || typeof type !== 'string') {
+            return res.status(400).json({ error: 'type is required' });
+        }
+        if (!message || typeof message !== 'string') {
+            return res.status(400).json({ error: 'message is required' });
+        }
+        if (!severity || !['critical', 'warning', 'info'].includes(severity)) {
+            return res.status(400).json({ error: 'severity must be one of: critical, warning, info' });
+        }
+        const alert = alertRealtimeService.createAlert({
+            facilityId,
+            zoneId,
+            batterySystemId,
+            type,
+            severity: severity,
+            message,
+            metadata,
+        });
+        res.status(201).json({ data: alert });
+    }
+    catch (error) {
+        console.error('Error creating alert:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 // GET /api/v1/alerts - List all alerts with filtering
 router.get('/', async (req, res) => {
     try {
         const { batteryId, zoneId, severity, status, type, page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
-        // Generate mock data
-        let alerts = generateMockAlerts(100);
+        // Include recently created alerts (newest first)
+        let alerts = [...alertRealtimeService.getRecentAlerts(), ...generateMockAlerts(100)];
         // Apply filters
         if (batteryId) {
             alerts = alerts.filter(a => a.batterySystemId === batteryId);
