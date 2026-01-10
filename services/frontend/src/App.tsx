@@ -11,6 +11,7 @@ import { Dashboard } from './pages/Dashboard';
 
 // Lazy load non-critical routes
 const ThreeDView = lazy(() => import('./pages/ThreeDView'));
+const ComparativeView3D = lazy(() => import('./pages/ComparativeView3D'));
 const ZoneDetail = lazy(() => import('./pages/ZoneDetail'));
 const AlertsPage = lazy(() => import('./pages/AlertsPage'));
 const ReportsPage = lazy(() => import('./pages/ReportsPage'));
@@ -39,6 +40,7 @@ function App() {
                         <Route path="/" element={<Dashboard />} />
                         <Route path="/zones/:id" element={<ZoneDetail />} />
                         <Route path="/3d" element={<ThreeDView />} />
+                        <Route path="/3d/comparative" element={<ComparativeView3D />} />
                         <Route path="/alerts" element={<AlertsPage />} />
                         <Route path="/reports" element={<ReportsPage />} />
                         <Route path="/comparative-analysis" element={<ComparativeAnalysisView />} />
