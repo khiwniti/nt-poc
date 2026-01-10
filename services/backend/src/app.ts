@@ -5,6 +5,7 @@ import { register } from './config/metrics.js';
 import monitoringRouter from './routes/monitoring.js';
 import { loggingMiddleware } from './middleware/logging.js';
 import { metricsMiddleware } from './middleware/metrics.js';
+import { chaosMiddleware } from './middleware/chaos.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import facilitiesRouter from './routes/facilities.js';
 import sensorReadingsRouter from './routes/sensorReadings.js';
@@ -17,6 +18,7 @@ import jobsRouter from './routes/jobs.js';
 import explainabilityRouter from './routes/explainability.js';
 import whatIfScenarioRouter from './routes/whatIfScenario.js';
 import streamRouter from './routes/stream.js';
+import chaosRouter from './routes/chaos.js';
 
 export const app = express();
 
@@ -26,6 +28,9 @@ app.use(express.json());
 // Monitoring middleware
 app.use(loggingMiddleware);
 app.use(metricsMiddleware);
+
+// Chaos engineering middleware (only active when enabled)
+app.use(chaosMiddleware);
 
 const requireBearerToken = (req: Request, res: Response): boolean => {
   const token = process.env.METRICS_AUTH_TOKEN;
@@ -60,6 +65,7 @@ app.use('/api/v1/stream', streamRouter);
 app.use('/api/v1/jobs', jobsRouter);
 app.use('/api/v1/explainability', explainabilityRouter);
 app.use('/api/v1/what-if', whatIfScenarioRouter);
+app.use('/api/v1/chaos', chaosRouter);
 
 // Centralized error handler (logs + Sentry + metrics)
 app.use(errorHandler);
