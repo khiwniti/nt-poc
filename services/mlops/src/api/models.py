@@ -91,8 +91,53 @@ class ModelInfoResponse(BaseModel):
     
     model_version: str
     model_type: str
-    sequence_length: int
-    n_features: int
+    sequence_length: Optional[int] = None
+    n_features: Optional[int] = None
     feature_names: List[str]
-    metrics: dict
+    metrics: dict = Field(default_factory=dict)
     loaded: bool
+
+
+class RULBatchPredictionRequest(BaseModel):
+    """Request model for batch RUL predictions (up to 100 sequences)."""
+
+    sequences: List[List[List[float]]] = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        description="Batch of sequences (batch_size x sequence_length x n_features)",
+    )
+
+    battery_system_ids: Optional[List[str]] = Field(
+        None,
+        min_length=1,
+        max_length=100,
+        description="Optional battery system IDs aligned with sequences",
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "sequences": [
+                    [[85.0, 92.5, 25.0, 3.85, 450]] * 10,
+                    [[80.0, 91.0, 26.0, 3.80, 459]] * 10,
+                ],
+                "battery_system_ids": ["battery-uuid-1", "battery-uuid-2"],
+            }
+        }
+
+
+class RULBatchPredictionResponse(BaseModel):
+    """Response model for batch RUL predictions."""
+
+    predicted_rul: List[float] = Field(..., description="Predicted RUL for each sequence")
+    confidence: List[float] = Field(
+        ...,
+        description="Confidence score for each prediction (0-1)",
+    )
+    model_version: str = Field(..., description="Model version used for prediction")
+    features_used: List[str] = Field(..., description="Feature names in order")
+    battery_system_ids: Optional[List[str]] = Field(
+        None,
+        description="Battery system IDs if provided",
+    )

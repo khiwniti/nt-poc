@@ -23,6 +23,7 @@ router = APIRouter(prefix="/explain", tags=["explainability"])
 
 # Model cache
 _model_cache: Dict[str, Any] = {}
+_model_mtime_cache: Dict[str, int] = {}
 _explainer_cache: Dict[str, SHAPExplainer] = {}
 
 
@@ -45,11 +46,15 @@ class ExplainResponse(BaseModel):
 
 def get_or_load_model(model_version: str = "v1.0.0") -> Any:
     """Load model from cache or disk."""
-    if model_version in _model_cache:
-        return _model_cache[model_version]
-    
-    # Load model from disk (adjust path as needed)
-    model_path = Path(f"data/models/model_{model_version}.joblib")
+    # Load from disk if available; hot-reload when the file changes.
+    model_path_joblib = Path(f"data/models/model_{model_version}.joblib")
+    model_path_pkl = Path(f"data/models/model_{model_version}.pkl")
+    model_path = model_path_joblib if model_path_joblib.exists() else model_path_pkl
+
+    if model_version in _model_cache and model_path.exists():
+        current_mtime = model_path.stat().st_mtime_ns
+        if _model_mtime_cache.get(model_version) == current_mtime:
+            return _model_cache[model_version]
     
     if not model_path.exists():
         # Use default model for demo
@@ -64,6 +69,7 @@ def get_or_load_model(model_version: str = "v1.0.0") -> Any:
         logger.warning(f"Model not found at {model_path}, using dummy model")
     else:
         model = joblib.load(model_path)
+        _model_mtime_cache[model_version] = model_path.stat().st_mtime_ns
         logger.info(f"Loaded model from {model_path}")
     
     _model_cache[model_version] = model
