@@ -10,20 +10,35 @@ export function Header() {
   };
 
   return (
-    <header style={{ 
-      padding: '1rem', 
-      borderBottom: '1px solid #ddd',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center'
-    }}>
+    <header
+      style={{
+        padding: '1rem',
+        borderBottom: '1px solid #ddd',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+      }}
+    >
       <h1>Facility Manager</h1>
       <nav style={{ display: 'flex', gap: '1rem' }}>
-        <a href="/" style={{ textDecoration: 'none' }}>Dashboard</a>
-        <a href="/3d" style={{ textDecoration: 'none' }}>3D View</a>
-        <a href="/alerts" style={{ textDecoration: 'none' }}>Alerts</a>
-        <a href="/reports" style={{ textDecoration: 'none' }}>Reports</a>
-        <a href="/comparative-analysis" style={{ textDecoration: 'none' }}>ML Analysis</a>
+        <a href="/" style={{ textDecoration: 'none' }}>
+          Dashboard
+        </a>
+        <a href="/map" style={{ textDecoration: 'none' }}>
+          Map
+        </a>
+        <a href="/3d" style={{ textDecoration: 'none' }}>
+          3D View
+        </a>
+        <a href="/alerts" style={{ textDecoration: 'none' }}>
+          Alerts
+        </a>
+        <a href="/reports" style={{ textDecoration: 'none' }}>
+          Reports
+        </a>
+        <a href="/comparative-analysis" style={{ textDecoration: 'none' }}>
+          ML Analysis
+        </a>
         <button onClick={handleLogout}>Logout</button>
       </nav>
     </header>
