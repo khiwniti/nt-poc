@@ -1,0 +1,67 @@
+module.exports = {
+  ci: {
+    collect: {
+      url: [
+        'http://localhost:5173/',
+        'http://localhost:5173/alerts',
+        'http://localhost:5173/rul-prediction',
+        'http://localhost:5173/comparative-analysis',
+        'http://localhost:5173/what-if-scenarios',
+        'http://localhost:5173/ai-insights',
+      ],
+      startServerCommand: 'npm run dev',
+      startServerReadyPattern: 'Local:',
+      startServerReadyTimeout: 30000,
+      numberOfRuns: 3,
+      settings: {
+        preset: 'desktop',
+        throttling: {
+          rttMs: 40,
+          throughputKbps: 10240,
+          cpuSlowdownMultiplier: 1,
+        },
+        onlyCategories: ['accessibility', 'best-practices', 'performance', 'seo'],
+      },
+    },
+    assert: {
+      assertions: {
+        'categories:accessibility': ['error', { minScore: 0.9 }],
+        'categories:best-practices': ['warn', { minScore: 0.85 }],
+        'categories:performance': ['warn', { minScore: 0.7 }],
+        'categories:seo': ['warn', { minScore: 0.85 }],
+        
+        // Accessibility specific assertions
+        'color-contrast': 'error',
+        'image-alt': 'error',
+        'label': 'error',
+        'button-name': 'error',
+        'link-name': 'error',
+        'document-title': 'error',
+        'html-has-lang': 'error',
+        'meta-viewport': 'error',
+        'aria-valid-attr': 'error',
+        'aria-valid-attr-value': 'error',
+        'aria-required-attr': 'error',
+        'list': 'warn',
+        'listitem': 'warn',
+        'heading-order': 'warn',
+        'bypass': 'warn',
+        'tabindex': 'warn',
+        'aria-hidden-focus': 'error',
+        'duplicate-id-aria': 'error',
+        'form-field-multiple-labels': 'warn',
+        'frame-title': 'warn',
+        'input-image-alt': 'error',
+        'meta-refresh': 'warn',
+        'object-alt': 'warn',
+        'td-headers-attr': 'warn',
+        'th-has-data-cells': 'warn',
+        'valid-lang': 'error',
+        'video-caption': 'warn',
+      },
+    },
+    upload: {
+      target: 'temporary-public-storage',
+    },
+  },
+};

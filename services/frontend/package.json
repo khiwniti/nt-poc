@@ -19,6 +19,13 @@
     "test:visual": "percy exec -- playwright test e2e/visual",
     "test:visual:local": "playwright test e2e/visual",
     "percy:snapshot": "percy exec -- playwright test e2e/visual --project=chromium",
+    "test:a11y": "playwright test e2e/accessibility",
+    "test:a11y:axe": "playwright test e2e/accessibility/axe.spec.ts",
+    "test:a11y:keyboard": "playwright test e2e/accessibility/keyboard-navigation.spec.ts",
+    "test:a11y:screenreader": "playwright test e2e/accessibility/screen-reader.spec.ts",
+    "lighthouse": "lhci autorun",
+    "lighthouse:collect": "lhci collect",
+    "lighthouse:assert": "lhci assert",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,json,css}\"",
@@ -47,8 +54,10 @@
     "zustand": "^4.4.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.0",
     "@eslint/eslintrc": "^3.3.3",
     "@eslint/js": "^9.39.2",
+    "@lhci/cli": "^0.15.1",
     "@percy/cli": "^1.31.7",
     "@percy/playwright": "^1.0.10",
     "@playwright/test": "^1.40.0",
@@ -60,6 +69,8 @@
     "@vitejs/plugin-react": "^4.2.1",
     "@vitest/coverage-v8": "^1.6.1",
     "@vitest/ui": "^1.6.1",
+    "axe-core": "^4.11.1",
+    "axe-playwright": "^2.2.2",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react": "^7.37.5",
@@ -77,6 +88,7 @@
     "vite": "^5.0.10",
     "vite-plugin-pwa": "^1.2.0",
     "vitest": "^1.2.0",
+    "vitest-axe": "^0.1.0",
     "workbox-window": "^7.4.0"
   },
   "lint-staged": {
