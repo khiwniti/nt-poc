@@ -6,6 +6,7 @@ import monitoringRouter from './routes/monitoring.js';
 import { loggingMiddleware } from './middleware/logging.js';
 import { metricsMiddleware } from './middleware/metrics.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { authenticateAPIKey } from './middleware/apiKey.js';
 import facilitiesRouter from './routes/facilities.js';
 import sensorReadingsRouter from './routes/sensorReadings.js';
 import predictionsRouter from './routes/predictions.js';
@@ -17,6 +18,7 @@ import jobsRouter from './routes/jobs.js';
 import explainabilityRouter from './routes/explainability.js';
 import whatIfScenarioRouter from './routes/whatIfScenario.js';
 import streamRouter from './routes/stream.js';
+import internalRouter from './routes/internal.js';
 
 export const app = express();
 
@@ -48,6 +50,9 @@ app.get('/metrics', async (req, res) => {
 
 // Health/metrics/dashboard endpoints
 app.use('/api/v1', monitoringRouter);
+
+// Internal service-to-service endpoints
+app.use('/internal', authenticateAPIKey, internalRouter);
 
 app.use('/api/v1/facilities', facilitiesRouter);
 app.use('/api/v1/sensor-readings', sensorReadingsRouter);
