@@ -93,5 +93,41 @@ export const jobExecutionTotal = new client.Counter({
   registers: [register],
 });
 
+// Report caching metrics
+export const reportCacheHitsTotal = new client.Counter({
+  name: 'report_cache_hits_total',
+  help: 'Total report cache hits',
+  labelNames: ['report_type', 'format'],
+  registers: [register],
+});
+
+export const reportCacheMissesTotal = new client.Counter({
+  name: 'report_cache_misses_total',
+  help: 'Total report cache misses',
+  labelNames: ['report_type', 'format'],
+  registers: [register],
+});
+
+export const reportCacheSetsTotal = new client.Counter({
+  name: 'report_cache_sets_total',
+  help: 'Total report cache sets',
+  labelNames: ['report_type', 'format'],
+  registers: [register],
+});
+
+export const reportCacheErrorsTotal = new client.Counter({
+  name: 'report_cache_errors_total',
+  help: 'Total report cache errors',
+  labelNames: ['report_type', 'format'],
+  registers: [register],
+});
+
+export const reportCacheHitRate = new client.Gauge({
+  name: 'report_cache_hit_rate',
+  help: 'In-process report cache hit rate (hits/(hits+misses))',
+  labelNames: ['report_type', 'format'],
+  registers: [register],
+});
+
 // Export the registry
 export { register };
