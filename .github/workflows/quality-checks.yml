@@ -1,0 +1,89 @@
+name: Code Quality Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+  push:
+    branches:
+      - main
+      - develop
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  quality-frontend:
+    name: Frontend Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: services/frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: services/frontend
+        run: npm ci
+
+      - name: TypeScript type check
+        working-directory: services/frontend
+        run: npm run typecheck
+
+      - name: ESLint
+        working-directory: services/frontend
+        run: npm run lint
+
+      - name: Prettier check
+        working-directory: services/frontend
+        run: npm run format:check
+
+      - name: Run tests
+        working-directory: services/frontend
+        run: npm test
+        env:
+          NODE_ENV: test
+
+  quality-backend:
+    name: Backend Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: services/backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: services/backend
+        run: npm ci
+
+      - name: TypeScript type check
+        working-directory: services/backend
+        run: npm run typecheck
+
+      - name: ESLint
+        working-directory: services/backend
+        run: npm run lint
+
+      - name: Prettier check
+        working-directory: services/backend
+        run: npm run format:check
+
+      - name: Run tests
+        working-directory: services/backend
+        run: npm test
+        env:
+          NODE_ENV: test

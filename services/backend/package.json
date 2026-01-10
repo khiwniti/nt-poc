@@ -19,7 +19,14 @@
     "migrate:make": "tsx --tsconfig tsconfig.json node_modules/knex/bin/cli.js migrate:make --knexfile knexfile.ts",
     "seed:run": "tsx --tsconfig tsconfig.json node_modules/knex/bin/cli.js seed:run --knexfile knexfile.ts",
     "db:setup": "npm run migrate && npm run seed:run",
-    "postinstall": "npm run migrate"
+    "postinstall": "npm run migrate",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"src/**/*.{ts,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,json}\"",
+    "typecheck": "tsc --noEmit",
+    "quality": "npm run typecheck && npm run lint && npm run format:check",
+    "prepare": "cd ../.. && husky install services/backend/.husky"
   },
   "dependencies": {
     "@sentry/node": "^10.32.1",
@@ -38,6 +45,7 @@
     "winston": "^3.19.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
     "@faker-js/faker": "^10.2.0",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
@@ -46,9 +54,24 @@
     "@types/node-cron": "^3.0.11",
     "@types/pg": "^8.16.0",
     "@types/supertest": "^6.0.2",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.7.4",
     "supertest": "^6.3.3",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
+    "typescript-eslint": "^8.52.0",
     "vitest": "^1.2.0"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.json": [
+      "prettier --write"
+    ]
   }
 }

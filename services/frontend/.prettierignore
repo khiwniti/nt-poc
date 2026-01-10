@@ -1,0 +1,8 @@
+dist
+node_modules
+coverage
+.vite
+playwright-report
+test-results
+smoke-test-results
+*.log
