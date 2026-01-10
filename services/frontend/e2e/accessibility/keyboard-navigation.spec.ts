@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Keyboard Navigation Tests', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:5173/login');
+    await page.goto('/login');
     await page.fill('input[type="email"]', 'test@example.com');
     await page.fill('input[type="password"]', 'password123');
     await page.click('button[type="submit"]');
@@ -49,7 +49,7 @@ test.describe('Keyboard Navigation Tests', () => {
   });
 
   test('Can navigate through alert list with keyboard', async ({ page }) => {
-    await page.goto('http://localhost:5173/alerts');
+    await page.goto('/alerts');
     await page.waitForLoadState('networkidle');
 
     await page.keyboard.press('Tab');
@@ -83,7 +83,7 @@ test.describe('Keyboard Navigation Tests', () => {
   });
 
   test('Can close modal with Escape key', async ({ page }) => {
-    await page.goto('http://localhost:5173/alerts');
+    await page.goto('/alerts');
     await page.waitForLoadState('networkidle');
 
     const firstAlert = page.locator('.alert-item').first();
@@ -119,7 +119,7 @@ test.describe('Keyboard Navigation Tests', () => {
   });
 
   test('Focus trap works in modal dialogs', async ({ page }) => {
-    await page.goto('http://localhost:5173/alerts');
+    await page.goto('/alerts');
     await page.waitForLoadState('networkidle');
 
     const firstAlert = page.locator('.alert-item').first();
@@ -199,7 +199,7 @@ test.describe('Keyboard Navigation Tests', () => {
   });
 
   test('Skip to main content link is accessible', async ({ page }) => {
-    await page.goto('http://localhost:5173');
+    await page.goto('/');
 
     await page.keyboard.press('Tab');
     const firstFocused = await page.evaluate(() => document.activeElement?.textContent);

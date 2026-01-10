@@ -3,7 +3,7 @@ import AxeBuilder from '@axe-core/playwright';
 
 test.describe('Accessibility Tests with axe-core', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:5173/login');
+    await page.goto('/login');
     await page.fill('input[type="email"]', 'test@example.com');
     await page.fill('input[type="password"]', 'password123');
     await page.click('button[type="submit"]');
@@ -104,7 +104,7 @@ test.describe('Accessibility Tests with axe-core', () => {
   });
 
   test('Form inputs have proper labels', async ({ page }) => {
-    await page.goto('http://localhost:5173/login');
+    await page.goto('/login');
 
     const accessibilityScanResults = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa'])

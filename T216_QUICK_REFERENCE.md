@@ -22,7 +22,7 @@ npm run lighthouse                  # Full accessibility audit
 - `e2e/accessibility/axe.spec.ts` - Axe-core automated checks
 - `e2e/accessibility/keyboard-navigation.spec.ts` - Keyboard tests
 - `e2e/accessibility/screen-reader.spec.ts` - Screen reader tests
-- `lighthouserc.js` - Lighthouse CI config
+- `lighthouserc.cjs` - Lighthouse CI config
 
 ## Key Features
 

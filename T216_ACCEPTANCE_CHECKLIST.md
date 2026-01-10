@@ -14,7 +14,7 @@
 
 #### 2. Lighthouse CI Integration ✅
 - [x] Install @lhci/cli package
-- [x] Create lighthouserc.js configuration
+- [x] Create lighthouserc.cjs configuration
 - [x] Configure accessibility assertions (≥90% score)
 - [x] Set up audits for all major routes
 - [x] Configure specific accessibility checks (color-contrast, labels, etc.)
@@ -70,10 +70,9 @@
 
 ### Files Created
 - [x] `e2e/accessibility/axe.spec.ts` (14 tests)
-- [x] `e2e/accessibility/keyboard-navigation.spec.ts` (11 tests)
-- [x] `e2e/accessibility/screen-reader.spec.ts` (16 tests)
-- [x] `e2e/accessibility/lighthouse.spec.ts`
-- [x] `lighthouserc.js`
+- [x] `e2e/accessibility/keyboard-navigation.spec.ts` (10 tests)
+- [x] `e2e/accessibility/screen-reader.spec.ts` (17 tests)
+- [x] `lighthouserc.cjs`
 - [x] `src/__tests__/a11y-utils.ts`
 - [x] `src/components/__tests__/AlertList.a11y.test.tsx`
 - [x] `src/components/__tests__/AlertDetailModal.a11y.test.tsx`

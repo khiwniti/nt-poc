@@ -33,14 +33,13 @@ Created a clean branch from the base with only T216 changes:
 
 ## Files Included in Clean Commit
 
-### Test Files (4 files, 653 lines)
+### Test Files (3 files)
 - `services/frontend/e2e/accessibility/axe.spec.ts`
 - `services/frontend/e2e/accessibility/keyboard-navigation.spec.ts`
 - `services/frontend/e2e/accessibility/screen-reader.spec.ts`
-- `services/frontend/e2e/accessibility/lighthouse.spec.ts`
 
 ### Configuration
-- `services/frontend/lighthouserc.js`
+- `services/frontend/lighthouserc.cjs`
 - `services/frontend/package.json` (updated)
 - `.github/workflows/accessibility.yml`
 

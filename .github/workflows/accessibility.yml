@@ -40,24 +40,10 @@ jobs:
       - name: Build frontend
         working-directory: services/frontend
         run: npm run build
-      
-      - name: Start dev server
+       
+      - name: Run E2E accessibility tests (axe + keyboard + screen reader)
         working-directory: services/frontend
-        run: |
-          npm run dev &
-          npx wait-on http://localhost:5173 --timeout 60000
-      
-      - name: Run axe-core accessibility tests
-        working-directory: services/frontend
-        run: npm run test:a11y:axe
-      
-      - name: Run keyboard navigation tests
-        working-directory: services/frontend
-        run: npm run test:a11y:keyboard
-      
-      - name: Run screen reader compatibility tests
-        working-directory: services/frontend
-        run: npm run test:a11y:screenreader
+        run: npm run test:a11y
       
       - name: Run Lighthouse CI
         working-directory: services/frontend

@@ -38,7 +38,7 @@ Automated WCAG 2.1 AA compliance testing:
 - ✅ ARIA attribute validation
 - ✅ Landmark regions
 
-### 2. Keyboard Navigation (11 tests)
+### 2. Keyboard Navigation (10 tests)
 **File**: `e2e/accessibility/keyboard-navigation.spec.ts`
 
 Full keyboard accessibility:
@@ -49,7 +49,7 @@ Full keyboard accessibility:
 - ✅ Focus management
 - ✅ Shift+Tab reverse navigation
 
-### 3. Screen Reader Support (16 tests)
+### 3. Screen Reader Support (17 tests)
 **File**: `e2e/accessibility/screen-reader.spec.ts`
 
 Screen reader compatibility:
@@ -61,7 +61,7 @@ Screen reader compatibility:
 - ✅ Error associations
 
 ### 4. Lighthouse CI
-**File**: `lighthouserc.js`
+**File**: `lighthouserc.cjs`
 
 Performance and accessibility auditing:
 - ✅ 90%+ accessibility score requirement

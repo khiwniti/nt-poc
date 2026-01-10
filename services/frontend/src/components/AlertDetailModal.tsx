@@ -1,7 +1,15 @@
 import { useState, useEffect } from 'react';
 import { X, AlertCircle, Clock, CheckCircle } from 'lucide-react';
 import { Alert, alertsApi } from '../api/alerts';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 
 interface AlertDetailModalProps {
   alertId: string;
@@ -96,19 +104,27 @@ export function AlertDetailModal({ alertId, onClose, onUpdate }: AlertDetailModa
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'critical': return '#ef4444';
-      case 'warning': return '#f59e0b';
-      case 'info': return '#3b82f6';
-      default: return '#6b7280';
+      case 'critical':
+        return '#ef4444';
+      case 'warning':
+        return '#f59e0b';
+      case 'info':
+        return '#3b82f6';
+      default:
+        return '#6b7280';
     }
   };
 
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
-      case 'active': return '#ef4444';
-      case 'acknowledged': return '#f59e0b';
-      case 'resolved': return '#10b981';
-      default: return '#6b7280';
+      case 'active':
+        return '#ef4444';
+      case 'acknowledged':
+        return '#f59e0b';
+      case 'resolved':
+        return '#10b981';
+      default:
+        return '#6b7280';
     }
   };
 
@@ -190,10 +206,15 @@ export function AlertDetailModal({ alertId, onClose, onUpdate }: AlertDetailModa
         >
           <div>
             <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>Alert Details</h2>
-            <p style={{ margin: '0.25rem 0 0', color: '#6b7280', fontSize: '0.875rem' }}>{alert.id}</p>
+            <p style={{ margin: '0.25rem 0 0', color: '#6b7280', fontSize: '0.875rem' }}>
+              {alert.id}
+            </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Close alert details"
+            title="Close"
             style={{
               padding: '0.5rem',
               backgroundColor: 'transparent',
@@ -202,7 +223,7 @@ export function AlertDetailModal({ alertId, onClose, onUpdate }: AlertDetailModa
               color: '#6b7280',
             }}
           >
-            <X size={24} />
+            <X size={24} aria-hidden="true" focusable="false" />
           </button>
         </div>
 
@@ -224,7 +245,14 @@ export function AlertDetailModal({ alertId, onClose, onUpdate }: AlertDetailModa
 
           {/* Alert Information */}
           <div style={{ marginBottom: '2rem' }}>
-            <h3 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '1.125rem', fontWeight: '600' }}>
+            <h3
+              style={{
+                marginTop: 0,
+                marginBottom: '1rem',
+                fontSize: '1.125rem',
+                fontWeight: '600',
+              }}
+            >
               Alert Information
             </h3>
             <div
@@ -238,7 +266,14 @@ export function AlertDetailModal({ alertId, onClose, onUpdate }: AlertDetailModa
               }}
             >
               <div>
-                <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#6b7280', fontWeight: '600' }}>
+                <p
+                  style={{
+                    margin: '0 0 0.25rem',
+                    fontSize: '0.75rem',
+                    color: '#6b7280',
+                    fontWeight: '600',
+                  }}
+                >
                   SEVERITY
                 </p>
                 <span
@@ -256,7 +291,14 @@ export function AlertDetailModal({ alertId, onClose, onUpdate }: AlertDetailModa
                 </span>
               </div>
               <div>
-                <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#6b7280', fontWeight: '600' }}>
+                <p
+                  style={{
+                    margin: '0 0 0.25rem',
+                    fontSize: '0.75rem',
+                    color: '#6b7280',
+                    fontWeight: '600',
+                  }}
+                >
                   STATUS
                 </p>
                 <span
@@ -274,36 +316,84 @@ export function AlertDetailModal({ alertId, onClose, onUpdate }: AlertDetailModa
                 </span>
               </div>
               <div>
-                <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#6b7280', fontWeight: '600' }}>
+                <p
+                  style={{
+                    margin: '0 0 0.25rem',
+                    fontSize: '0.75rem',
+                    color: '#6b7280',
+                    fontWeight: '600',
+                  }}
+                >
                   TYPE
                 </p>
                 <p style={{ margin: 0, fontSize: '0.875rem', color: '#374151' }}>{alert.type}</p>
               </div>
               <div>
-                <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#6b7280', fontWeight: '600' }}>
+                <p
+                  style={{
+                    margin: '0 0 0.25rem',
+                    fontSize: '0.75rem',
+                    color: '#6b7280',
+                    fontWeight: '600',
+                  }}
+                >
                   CREATED AT
                 </p>
-                <p style={{ margin: 0, fontSize: '0.875rem', color: '#374151' }}>{formatTimestamp(alert.createdAt)}</p>
+                <p style={{ margin: 0, fontSize: '0.875rem', color: '#374151' }}>
+                  {formatTimestamp(alert.createdAt)}
+                </p>
               </div>
               {alert.acknowledgedAt && (
                 <div>
-                  <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#6b7280', fontWeight: '600' }}>
+                  <p
+                    style={{
+                      margin: '0 0 0.25rem',
+                      fontSize: '0.75rem',
+                      color: '#6b7280',
+                      fontWeight: '600',
+                    }}
+                  >
                     ACKNOWLEDGED AT
                   </p>
-                  <p style={{ margin: 0, fontSize: '0.875rem', color: '#374151' }}>{formatTimestamp(alert.acknowledgedAt)}</p>
+                  <p style={{ margin: 0, fontSize: '0.875rem', color: '#374151' }}>
+                    {formatTimestamp(alert.acknowledgedAt)}
+                  </p>
                 </div>
               )}
               {alert.resolvedAt && (
                 <div>
-                  <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#6b7280', fontWeight: '600' }}>
+                  <p
+                    style={{
+                      margin: '0 0 0.25rem',
+                      fontSize: '0.75rem',
+                      color: '#6b7280',
+                      fontWeight: '600',
+                    }}
+                  >
                     RESOLVED AT
                   </p>
-                  <p style={{ margin: 0, fontSize: '0.875rem', color: '#374151' }}>{formatTimestamp(alert.resolvedAt)}</p>
+                  <p style={{ margin: 0, fontSize: '0.875rem', color: '#374151' }}>
+                    {formatTimestamp(alert.resolvedAt)}
+                  </p>
                 </div>
               )}
             </div>
-            <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '6px' }}>
-              <p style={{ margin: '0 0 0.5rem', fontSize: '0.75rem', color: '#6b7280', fontWeight: '600' }}>
+            <div
+              style={{
+                marginTop: '1rem',
+                padding: '1rem',
+                backgroundColor: '#f9fafb',
+                borderRadius: '6px',
+              }}
+            >
+              <p
+                style={{
+                  margin: '0 0 0.5rem',
+                  fontSize: '0.75rem',
+                  color: '#6b7280',
+                  fontWeight: '600',
+                }}
+              >
                 MESSAGE
               </p>
               <p style={{ margin: 0, fontSize: '0.875rem', color: '#374151' }}>{alert.message}</p>
@@ -312,7 +402,14 @@ export function AlertDetailModal({ alertId, onClose, onUpdate }: AlertDetailModa
 
           {/* Affected Battery/Zone Information */}
           <div style={{ marginBottom: '2rem' }}>
-            <h3 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '1.125rem', fontWeight: '600' }}>
+            <h3
+              style={{
+                marginTop: 0,
+                marginBottom: '1rem',
+                fontSize: '1.125rem',
+                fontWeight: '600',
+              }}
+            >
               Affected Assets
             </h3>
             <div
@@ -326,13 +423,29 @@ export function AlertDetailModal({ alertId, onClose, onUpdate }: AlertDetailModa
               }}
             >
               <div>
-                <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#6b7280', fontWeight: '600' }}>
+                <p
+                  style={{
+                    margin: '0 0 0.25rem',
+                    fontSize: '0.75rem',
+                    color: '#6b7280',
+                    fontWeight: '600',
+                  }}
+                >
                   BATTERY SYSTEM
                 </p>
-                <p style={{ margin: 0, fontSize: '0.875rem', color: '#374151' }}>{alert.batterySystemId}</p>
+                <p style={{ margin: 0, fontSize: '0.875rem', color: '#374151' }}>
+                  {alert.batterySystemId}
+                </p>
               </div>
               <div>
-                <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#6b7280', fontWeight: '600' }}>
+                <p
+                  style={{
+                    margin: '0 0 0.25rem',
+                    fontSize: '0.75rem',
+                    color: '#6b7280',
+                    fontWeight: '600',
+                  }}
+                >
                   ZONE
                 </p>
                 <p style={{ margin: 0, fontSize: '0.875rem', color: '#374151' }}>{alert.zoneId}</p>
@@ -340,19 +453,37 @@ export function AlertDetailModal({ alertId, onClose, onUpdate }: AlertDetailModa
               {alert.metadata && (
                 <>
                   <div>
-                    <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#6b7280', fontWeight: '600' }}>
+                    <p
+                      style={{
+                        margin: '0 0 0.25rem',
+                        fontSize: '0.75rem',
+                        color: '#6b7280',
+                        fontWeight: '600',
+                      }}
+                    >
                       THRESHOLD
                     </p>
                     <p style={{ margin: 0, fontSize: '0.875rem', color: '#374151' }}>
-                      {typeof alert.metadata.threshold === 'number' ? alert.metadata.threshold.toFixed(2) : 'N/A'}
+                      {typeof alert.metadata.threshold === 'number'
+                        ? alert.metadata.threshold.toFixed(2)
+                        : 'N/A'}
                     </p>
                   </div>
                   <div>
-                    <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#6b7280', fontWeight: '600' }}>
+                    <p
+                      style={{
+                        margin: '0 0 0.25rem',
+                        fontSize: '0.75rem',
+                        color: '#6b7280',
+                        fontWeight: '600',
+                      }}
+                    >
                       ACTUAL VALUE
                     </p>
                     <p style={{ margin: 0, fontSize: '0.875rem', color: '#374151' }}>
-                      {typeof alert.metadata.actualValue === 'number' ? alert.metadata.actualValue.toFixed(2) : 'N/A'}
+                      {typeof alert.metadata.actualValue === 'number'
+                        ? alert.metadata.actualValue.toFixed(2)
+                        : 'N/A'}
                     </p>
                   </div>
                 </>
@@ -363,7 +494,14 @@ export function AlertDetailModal({ alertId, onClose, onUpdate }: AlertDetailModa
           {/* Historical Sensor Readings */}
           {sensorReadings.length > 0 && (
             <div style={{ marginBottom: '2rem' }}>
-              <h3 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '1.125rem', fontWeight: '600' }}>
+              <h3
+                style={{
+                  marginTop: 0,
+                  marginBottom: '1rem',
+                  fontSize: '1.125rem',
+                  fontWeight: '600',
+                }}
+              >
                 Historical Context (Last 24 Hours)
               </h3>
               <div style={{ backgroundColor: '#f9fafb', padding: '1rem', borderRadius: '6px' }}>
@@ -392,7 +530,14 @@ export function AlertDetailModal({ alertId, onClose, onUpdate }: AlertDetailModa
           {/* Alert Timeline */}
           {timeline.length > 0 && (
             <div style={{ marginBottom: '2rem' }}>
-              <h3 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '1.125rem', fontWeight: '600' }}>
+              <h3
+                style={{
+                  marginTop: 0,
+                  marginBottom: '1rem',
+                  fontSize: '1.125rem',
+                  fontWeight: '600',
+                }}
+              >
                 Alert Timeline
               </h3>
               <div style={{ backgroundColor: '#f9fafb', padding: '1rem', borderRadius: '6px' }}>
@@ -411,7 +556,14 @@ export function AlertDetailModal({ alertId, onClose, onUpdate }: AlertDetailModa
                       <Clock size={16} color="#6b7280" />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <p style={{ margin: '0 0 0.25rem', fontSize: '0.875rem', fontWeight: '600', color: '#374151' }}>
+                      <p
+                        style={{
+                          margin: '0 0 0.25rem',
+                          fontSize: '0.875rem',
+                          fontWeight: '600',
+                          color: '#374151',
+                        }}
+                      >
                         {event.event}
                       </p>
                       <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#6b7280' }}>
@@ -433,7 +585,14 @@ export function AlertDetailModal({ alertId, onClose, onUpdate }: AlertDetailModa
           {/* Resolution Actions */}
           {alert.status !== 'resolved' && (
             <div style={{ marginBottom: '1rem' }}>
-              <h3 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '1.125rem', fontWeight: '600' }}>
+              <h3
+                style={{
+                  marginTop: 0,
+                  marginBottom: '1rem',
+                  fontSize: '1.125rem',
+                  fontWeight: '600',
+                }}
+              >
                 Resolution Actions
               </h3>
 
@@ -529,7 +688,9 @@ export function AlertDetailModal({ alertId, onClose, onUpdate }: AlertDetailModa
               }}
             >
               <CheckCircle size={20} />
-              <span style={{ fontSize: '0.875rem', fontWeight: '600' }}>This alert has been resolved</span>
+              <span style={{ fontSize: '0.875rem', fontWeight: '600' }}>
+                This alert has been resolved
+              </span>
             </div>
           )}
         </div>

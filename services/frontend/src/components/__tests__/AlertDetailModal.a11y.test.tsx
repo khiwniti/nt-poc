@@ -1,22 +1,35 @@
-import { describe, it, expect } from 'vitest';
-import { render } from '@testing-library/react';
-import { axe } from '../a11y-utils';
-import AlertDetailModal from '../../components/AlertDetailModal';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import { axe } from '../../__tests__/a11y-utils';
+import { AlertDetailModal } from '../AlertDetailModal';
+import { alertsApi } from '../../api/alerts';
+
+vi.mock('../../api/alerts');
 
 describe('AlertDetailModal Accessibility', () => {
   it('should not have any accessibility violations', async () => {
     const mockAlert = {
-      id: 1,
-      batteryId: 'BAT001',
+      id: 'alert-1',
+      batterySystemId: 'battery-1',
+      zoneId: 'zone-1',
+      type: 'Temperature High',
       severity: 'critical',
+      status: 'active',
       message: 'Critical alert message',
-      timestamp: new Date().toISOString(),
-      details: 'Detailed information about the alert',
+      createdAt: Date.now() - 3600000,
+      metadata: {
+        threshold: 45,
+        actualValue: 52,
+      },
     };
 
-    const { container } = render(
-      <AlertDetailModal alert={mockAlert} isOpen={true} onClose={() => {}} />
-    );
+    const mockSensorHistory = { readings: [], timeline: [] };
+
+    vi.mocked(alertsApi.getAlert).mockResolvedValue({ data: mockAlert as any });
+    vi.mocked(alertsApi.getSensorHistory).mockResolvedValue(mockSensorHistory);
+
+    const { container } = render(<AlertDetailModal alertId="alert-1" onClose={() => {}} />);
+    await waitFor(() => expect(screen.getByText('Alert Details')).toBeInTheDocument());
 
     const results = await axe(container);
     expect(results).toHaveNoViolations();

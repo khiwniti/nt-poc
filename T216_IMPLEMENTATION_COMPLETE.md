@@ -66,9 +66,7 @@ Screen reader compatibility tests:
 - Required field indicators
 
 ### 4. Lighthouse CI Integration ✅
-**Files**: 
-- `lighthouserc.js` - Configuration
-- `e2e/accessibility/lighthouse.spec.ts` - Test
+**File**: `lighthouserc.cjs`
 
 **Audited URLs**:
 - Home/Dashboard
@@ -227,29 +225,25 @@ jobs:
 1. `e2e/accessibility/axe.spec.ts` - Axe-core E2E tests
 2. `e2e/accessibility/keyboard-navigation.spec.ts` - Keyboard tests
 3. `e2e/accessibility/screen-reader.spec.ts` - Screen reader tests
-4. `e2e/accessibility/lighthouse.spec.ts` - Lighthouse integration
-5. `lighthouserc.js` - Lighthouse CI configuration
-6. `src/__tests__/a11y-utils.ts` - Testing utilities
-7. `src/components/__tests__/*.a11y.test.tsx` - Component tests
+4. `lighthouserc.cjs` - Lighthouse CI configuration
+5. `src/__tests__/a11y-utils.ts` - Testing utilities
+6. `src/components/__tests__/*.a11y.test.tsx` - Component tests
 
 ## Verification Steps
 
 ```bash
 cd services/frontend
 
-# 1. Install dependencies (already done)
-npm install
+# 1. Install dependencies
+npm ci
 
 # 2. Run unit-level a11y tests
-npm run test -- __tests__/a11y
+npm run test -- a11y
 
-# 3. Start dev server (in separate terminal)
-npm run dev
-
-# 4. Run E2E accessibility tests
+# 3. Run E2E accessibility tests (starts dev server automatically)
 npm run test:a11y
 
-# 5. Run Lighthouse CI
+# 4. Run Lighthouse CI
 npm run lighthouse
 ```
 

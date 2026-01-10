@@ -12,15 +12,14 @@ Ensure WCAG 2.1 AA compliance with comprehensive testing infrastructure
 DELIVERABLES
 ═══════════════════════════════════════════════════════════════════════
 
-1. TEST FILES CREATED (12 files, 821 lines)
-   ├─ e2e/accessibility/axe.spec.ts (179 lines, 14 tests)
-   ├─ e2e/accessibility/keyboard-navigation.spec.ts (204 lines, 11 tests)
-   ├─ e2e/accessibility/screen-reader.spec.ts (245 lines, 16 tests)
-   ├─ e2e/accessibility/lighthouse.spec.ts (25 lines, 1 test)
-   ├─ lighthouserc.js (67 lines)
-   ├─ src/__tests__/a11y-utils.ts (48 lines)
-   ├─ src/components/__tests__/AlertList.a11y.test.tsx (25 lines)
-   ├─ src/components/__tests__/AlertDetailModal.a11y.test.tsx (28 lines)
+1. TEST FILES CREATED (11 files)
+   ├─ e2e/accessibility/axe.spec.ts (173 lines, 14 tests)
+   ├─ e2e/accessibility/keyboard-navigation.spec.ts (219 lines, 10 tests)
+   ├─ e2e/accessibility/screen-reader.spec.ts (276 lines, 17 tests)
+   ├─ lighthouserc.cjs (67 lines)
+   ├─ src/__tests__/a11y-utils.ts (50 lines)
+   ├─ src/components/__tests__/AlertList.a11y.test.tsx (26 lines)
+   ├─ src/components/__tests__/AlertDetailModal.a11y.test.tsx (37 lines)
    ├─ .github/workflows/accessibility.yml (CI/CD automation)
    ├─ T216_IMPLEMENTATION_COMPLETE.md (comprehensive guide)
    ├─ T216_QUICK_REFERENCE.md (quick start)
@@ -47,12 +46,12 @@ DELIVERABLES
 TEST COVERAGE
 ═══════════════════════════════════════════════════════════════════════
 
-TOTAL TESTS: 43+
+TOTAL TESTS: 43
 ├─ Axe-core E2E: 14 tests
-├─ Keyboard Navigation: 11 tests
-├─ Screen Reader: 16 tests
-├─ Lighthouse: 1 test
-└─ Component Unit Tests: 2+ tests
+├─ Keyboard Navigation: 10 tests
+├─ Screen Reader: 17 tests
+├─ Lighthouse CI: 6 URLs
+└─ Component Unit Tests: 2 tests
 
 PAGES TESTED: 8
 ├─ Dashboard
@@ -101,7 +100,7 @@ ACCEPTANCE CRITERIA STATUS
    - Component-level testing with vitest-axe
 
 ✅ Lighthouse CI integration
-   - Configured lighthouserc.js
+   - Configured lighthouserc.cjs
    - 6 URLs audited
    - 30+ specific assertions
    - 90%+ accessibility score requirement

@@ -1,12 +1,34 @@
 import { test, expect } from '@playwright/test';
 
+type A11yNode = {
+  role?: string;
+  name?: string;
+  children?: A11yNode[];
+};
+
+const treeIncludesRole = (node: A11yNode | null, role: string): boolean => {
+  if (!node) return false;
+  if (node.role === role) return true;
+  return (node.children || []).some((child) => treeIncludesRole(child, role));
+};
+
 test.describe('Screen Reader Compatibility Tests', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:5173/login');
+    await page.goto('/login');
     await page.fill('input[type="email"]', 'test@example.com');
     await page.fill('input[type="password"]', 'password123');
     await page.click('button[type="submit"]');
     await page.waitForURL('**/?facilityId=*');
+  });
+
+  test('Accessibility tree exposes main landmarks and headings', async ({ page }) => {
+    const snapshot = (await page.accessibility.snapshot({
+      interestingOnly: true,
+    })) as A11yNode | null;
+    expect(snapshot).toBeTruthy();
+    expect(treeIncludesRole(snapshot, 'main')).toBeTruthy();
+    expect(treeIncludesRole(snapshot, 'navigation')).toBeTruthy();
+    expect(treeIncludesRole(snapshot, 'heading')).toBeTruthy();
   });
 
   test('Page has proper document title', async ({ page }) => {
@@ -68,7 +90,7 @@ test.describe('Screen Reader Compatibility Tests', () => {
   });
 
   test('Form inputs have associated labels', async ({ page }) => {
-    await page.goto('http://localhost:5173/login');
+    await page.goto('/login');
 
     const inputs = await page.locator('input').all();
 
@@ -103,7 +125,7 @@ test.describe('Screen Reader Compatibility Tests', () => {
   });
 
   test('Alert severity is conveyed through ARIA attributes', async ({ page }) => {
-    await page.goto('http://localhost:5173/alerts');
+    await page.goto('/alerts');
     await page.waitForLoadState('networkidle');
 
     const alertItems = await page.locator('.alert-item, [data-severity]').all();
@@ -128,7 +150,7 @@ test.describe('Screen Reader Compatibility Tests', () => {
   });
 
   test('Dialogs have proper ARIA attributes', async ({ page }) => {
-    await page.goto('http://localhost:5173/alerts');
+    await page.goto('/alerts');
     await page.waitForLoadState('networkidle');
 
     const firstAlert = page.locator('.alert-item').first();
@@ -148,7 +170,7 @@ test.describe('Screen Reader Compatibility Tests', () => {
   });
 
   test('Loading states are announced to screen readers', async ({ page }) => {
-    await page.goto('http://localhost:5173/rul-prediction');
+    await page.goto('/rul-prediction');
 
     const loadingIndicators = await page
       .locator('[role="status"], [aria-busy="true"], [aria-live]')
@@ -164,7 +186,7 @@ test.describe('Screen Reader Compatibility Tests', () => {
   });
 
   test('Error messages are associated with form fields', async ({ page }) => {
-    await page.goto('http://localhost:5173/login');
+    await page.goto('/login');
 
     await page.click('button[type="submit"]');
     await page.waitForTimeout(500);
@@ -183,7 +205,7 @@ test.describe('Screen Reader Compatibility Tests', () => {
   });
 
   test('Charts and data visualizations have text alternatives', async ({ page }) => {
-    await page.goto('http://localhost:5173/rul-prediction');
+    await page.goto('/rul-prediction');
     await page.waitForLoadState('networkidle');
 
     const charts = await page.locator('svg, canvas, .recharts-wrapper').all();
@@ -205,7 +227,7 @@ test.describe('Screen Reader Compatibility Tests', () => {
   });
 
   test('Dynamic content updates are announced', async ({ page }) => {
-    await page.goto('http://localhost:5173/alerts');
+    await page.goto('/alerts');
 
     const liveRegions = await page
       .locator('[aria-live="polite"], [aria-live="assertive"], [role="status"]')
@@ -225,7 +247,7 @@ test.describe('Screen Reader Compatibility Tests', () => {
   });
 
   test('Tables have proper headers and captions', async ({ page }) => {
-    await page.goto('http://localhost:5173/rul-prediction');
+    await page.goto('/rul-prediction');
     await page.waitForLoadState('networkidle');
 
     const tables = await page.locator('table').all();
@@ -242,7 +264,7 @@ test.describe('Screen Reader Compatibility Tests', () => {
   });
 
   test('Required form fields are marked as required', async ({ page }) => {
-    await page.goto('http://localhost:5173/login');
+    await page.goto('/login');
 
     const requiredInputs = await page.locator('input[required], input[aria-required="true"]').all();
 

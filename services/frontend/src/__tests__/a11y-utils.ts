@@ -1,12 +1,14 @@
-import { configureAxe, toHaveNoViolations } from 'vitest-axe';
+import { configureAxe } from 'vitest-axe';
+import { toHaveNoViolations } from 'vitest-axe/matchers';
 import { expect } from 'vitest';
 
-expect.extend(toHaveNoViolations);
+expect.extend({ toHaveNoViolations });
 
 export const axe = configureAxe({
   rules: {
-    // Enable WCAG 2.1 AA rules
-    'color-contrast': { enabled: true },
+    // JSDOM doesn't implement canvas APIs required for reliable color-contrast checks.
+    // Enforce color-contrast via browser-based (Playwright) axe tests instead.
+    'color-contrast': { enabled: false },
     region: { enabled: true },
   },
 });

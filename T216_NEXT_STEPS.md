@@ -89,7 +89,7 @@ git push origin vk/6ddb-t216-add-accessi
 ## 📚 Key Files
 
 - `services/frontend/e2e/accessibility/` - Test suites
-- `services/frontend/lighthouserc.js` - Lighthouse config
+- `services/frontend/lighthouserc.cjs` - Lighthouse config
 - `.github/workflows/accessibility.yml` - CI/CD workflow
 - `T216_*.md` - Documentation
 
