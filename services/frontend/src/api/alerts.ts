@@ -1,19 +1,8 @@
+import type { Alert, AlertSeverity, AlertType, AlertStatus } from '../types';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
-export interface Alert {
-  id: string;
-  batterySystemId: string;
-  zoneId: string;
-  type: string;
-  severity: 'critical' | 'warning' | 'info';
-  status: 'active' | 'acknowledged' | 'resolved';
-  message: string;
-  createdAt: number;
-  acknowledgedAt?: number | null;
-  resolvedAt?: number | null;
-  duration?: number | null;
-  metadata?: Record<string, unknown>;
-}
+export type { Alert, AlertSeverity, AlertType, AlertStatus };
 
 export interface AlertStats {
   total: number;
@@ -87,7 +76,9 @@ export const alertsApi = {
     return response.json();
   },
 
-  async getAlertStats(filters: { batteryId?: string; zoneId?: string; timeRange?: string } = {}): Promise<{ data: AlertStats }> {
+  async getAlertStats(
+    filters: { batteryId?: string; zoneId?: string; timeRange?: string } = {}
+  ): Promise<{ data: AlertStats }> {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined) {
@@ -102,7 +93,9 @@ export const alertsApi = {
     return response.json();
   },
 
-  async getTimelineData(filters: { batteryId?: string; zoneId?: string; days?: number } = {}): Promise<{ data: TimelineDataPoint[] }> {
+  async getTimelineData(
+    filters: { batteryId?: string; zoneId?: string; days?: number } = {}
+  ): Promise<{ data: TimelineDataPoint[] }> {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined) {
@@ -167,7 +160,7 @@ export const alertsApi = {
       'Duration (hours)',
     ];
 
-    const rows = alerts.map(alert => [
+    const rows = alerts.map((alert) => [
       alert.id,
       alert.batterySystemId,
       alert.zoneId,
@@ -183,7 +176,7 @@ export const alertsApi = {
 
     const csvContent = [
       headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

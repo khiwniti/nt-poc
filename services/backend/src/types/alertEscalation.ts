@@ -1,20 +1,38 @@
-export type AlertSeverity = 'info' | 'medium' | 'high' | 'critical';
-export type AlertStatus = 'active' | 'acknowledged' | 'resolved';
+export enum AlertSeverity {
+  CRITICAL = 'critical',
+  HIGH = 'high',
+  MEDIUM = 'medium',
+  LOW = 'low'
+}
+
+export enum AlertType {
+  TEMPERATURE = 'temperature',
+  VOLTAGE = 'voltage',
+  SOC = 'soc',
+  RUL = 'rul',
+  CONNECTIVITY = 'connectivity'
+}
+
+export enum AlertStatus {
+  ACTIVE = 'active',
+  ACKNOWLEDGED = 'acknowledged',
+  RESOLVED = 'resolved'
+}
 
 export interface Alert {
   id: string;
+  facilityId: string;
+  zoneId: string;
   batterySystemId: string;
-  zoneId?: string;
-  facilityId?: string;
-  type: string;
   severity: AlertSeverity;
-  status: AlertStatus;
+  type: AlertType;
   message: string;
+  status: AlertStatus;
   createdAt: Date;
   acknowledgedAt?: Date;
   resolvedAt?: Date;
-  metadata?: Record<string, any>;
   acknowledgedBy?: string;
+  metadata?: Record<string, any>;
   resolutionNotes?: string;
 }
 
@@ -33,7 +51,7 @@ export interface EscalationEvent {
 export interface EscalationRule {
   id: string;
   facilityId: string;
-  infoToMediumMinutes: number;
+  lowToMediumMinutes: number;
   mediumToHighMinutes: number;
   highToCriticalMinutes: number;
   enabled: boolean;

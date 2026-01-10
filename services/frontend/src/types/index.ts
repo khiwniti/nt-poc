@@ -8,11 +8,38 @@ export interface SensorReading {
   [key: string]: unknown;
 }
 
+export enum AlertSeverity {
+  CRITICAL = 'critical',
+  HIGH = 'high',
+  MEDIUM = 'medium',
+  LOW = 'low',
+}
+
+export enum AlertType {
+  TEMPERATURE = 'temperature',
+  VOLTAGE = 'voltage',
+  SOC = 'soc',
+  RUL = 'rul',
+  CONNECTIVITY = 'connectivity',
+}
+
+export enum AlertStatus {
+  ACTIVE = 'active',
+  ACKNOWLEDGED = 'acknowledged',
+  RESOLVED = 'resolved',
+}
+
 export interface Alert {
   id: string;
-  batterySystemId?: string;
-  status?: string;
-  severity?: string;
-  createdAt?: number;
-  [key: string]: unknown;
+  facilityId: string;
+  zoneId: string;
+  batterySystemId: string;
+  severity: AlertSeverity;
+  type: AlertType;
+  message: string;
+  status: AlertStatus;
+  createdAt: number;
+  acknowledgedAt?: number;
+  resolvedAt?: number;
+  acknowledgedBy?: string;
 }

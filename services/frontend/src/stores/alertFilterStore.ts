@@ -1,8 +1,7 @@
 import { create } from 'zustand';
+import { AlertSeverity, AlertStatus, AlertType } from '../types';
 
-export type AlertSeverity = 'critical' | 'warning' | 'info';
-export type AlertStatus = 'active' | 'acknowledged' | 'resolved';
-export type AlertType = 'Temperature High' | 'Voltage Anomaly' | 'SoC Critical' | 'Communication Lost' | 'Capacity Degraded';
+export type { AlertSeverity, AlertStatus, AlertType };
 export type DateRange = '24h' | '7d' | '30d' | 'custom';
 
 export interface AlertFilterState {
@@ -12,14 +11,14 @@ export interface AlertFilterState {
   dateRange: DateRange;
   customStartDate: string | null;
   customEndDate: string | null;
-  
+
   setStatus: (status: AlertStatus[]) => void;
   setSeverity: (severity: AlertSeverity[]) => void;
   setType: (type: AlertType[]) => void;
   setDateRange: (range: DateRange) => void;
   setCustomDateRange: (start: string, end: string) => void;
   clearFilters: () => void;
-  
+
   getURLParams: () => URLSearchParams;
   setFromURLParams: (params: URLSearchParams) => void;
 }
@@ -37,26 +36,26 @@ export const useAlertFilterStore = create<AlertFilterState>((set, get) => ({
   ...initialState,
 
   setStatus: (status) => set({ status }),
-  
+
   setSeverity: (severity) => set({ severity }),
-  
+
   setType: (type) => set({ type }),
-  
+
   setDateRange: (range) => set({ dateRange: range }),
-  
-  setCustomDateRange: (start, end) => 
-    set({ 
+
+  setCustomDateRange: (start, end) =>
+    set({
       dateRange: 'custom',
       customStartDate: start,
-      customEndDate: end 
+      customEndDate: end,
     }),
-  
+
   clearFilters: () => set(initialState),
-  
+
   getURLParams: () => {
     const state = get();
     const params = new URLSearchParams();
-    
+
     if (state.status.length > 0) {
       params.set('status', state.status.join(','));
     }
@@ -73,18 +72,18 @@ export const useAlertFilterStore = create<AlertFilterState>((set, get) => ({
       params.set('startDate', state.customStartDate);
       params.set('endDate', state.customEndDate);
     }
-    
+
     return params;
   },
-  
+
   setFromURLParams: (params) => {
-    const status = params.get('status')?.split(',').filter(Boolean) as AlertStatus[] || [];
-    const severity = params.get('severity')?.split(',').filter(Boolean) as AlertSeverity[] || [];
-    const type = params.get('type')?.split(',').filter(Boolean) as AlertType[] || [];
+    const status = (params.get('status')?.split(',').filter(Boolean) as AlertStatus[]) || [];
+    const severity = (params.get('severity')?.split(',').filter(Boolean) as AlertSeverity[]) || [];
+    const type = (params.get('type')?.split(',').filter(Boolean) as AlertType[]) || [];
     const dateRange = (params.get('dateRange') as DateRange) || '30d';
     const customStartDate = params.get('startDate') || null;
     const customEndDate = params.get('endDate') || null;
-    
+
     set({
       status,
       severity,
