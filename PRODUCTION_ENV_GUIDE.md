@@ -154,6 +154,7 @@ OPENWEATHER_API_KEY=xxxxxxxxxxxxxxxxxxxxx
 SENTRY_DSN=https://xxxxx@sentry.io/xxxxx
 SENTRY_ENVIRONMENT=production
 SENTRY_TRACES_SAMPLE_RATE=0.1
+SENTRY_RELEASE=<git-sha-or-build-id>
 ```
 
 **Setup Steps:**
@@ -167,6 +168,15 @@ SENTRY_TRACES_SAMPLE_RATE=0.1
 - Filter sensitive data
 - Set up alert rules
 - Integrate with Slack/PagerDuty
+
+#### 7.1 Monitoring Endpoints (Optional Protection)
+```bash
+# If set, /metrics requires Authorization: Bearer <token>
+METRICS_AUTH_TOKEN=<random-32+>
+
+# If set, /api/v1/monitoring/* requires Authorization: Bearer <token>
+MONITORING_AUTH_TOKEN=<random-32+>
+```
 
 #### 8. Service URLs
 ```bash
@@ -368,7 +378,7 @@ psql "postgresql://$DB_USER:$DB_PASSWORD@$DB_HOST:$DB_PORT/$DB_NAME?sslmode=requ
 redis-cli --tls -h $REDIS_HOST -p 6379 -a $REDIS_PASSWORD PING
 
 # Test backend health
-curl https://api.battery-management.com/health
+curl https://api.battery-management.com/api/v1/health
 
 # Test MLOps service
 curl https://mlops.battery-management.com/health

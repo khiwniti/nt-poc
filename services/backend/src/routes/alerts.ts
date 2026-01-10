@@ -226,7 +226,7 @@ router.get('/:id/history', async (req: AuthRequest, res: Response) => {
     });
 
     // Generate timeline events
-    const timeline = [
+    const timeline: Array<{ timestamp: number; event: string; user: string; notes?: string }> = [
       {
         timestamp: alert.createdAt,
         event: 'Alert Created',

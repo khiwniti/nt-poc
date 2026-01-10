@@ -287,6 +287,12 @@ LOG_LEVEL=info
 # Error Tracking (Optional)
 # SENTRY_DSN=<your-sentry-dsn>
 # SENTRY_ENVIRONMENT=production
+# SENTRY_TRACES_SAMPLE_RATE=0.1
+# SENTRY_RELEASE=${{RAILWAY_GIT_COMMIT_SHA}}
+
+# Monitoring endpoints (Optional)
+# METRICS_AUTH_TOKEN=<random-32+>
+# MONITORING_AUTH_TOKEN=<random-32+>
 ```
 
 **Generate JWT Secret:**

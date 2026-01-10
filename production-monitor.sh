@@ -62,7 +62,7 @@ check_service_health() {
     log "=========================================="
     
     # Backend health
-    if curl -s -f http://localhost:3000/health > /dev/null 2>&1; then
+    if curl -s -f http://localhost:3000/api/v1/health > /dev/null 2>&1; then
         log_success "Backend: HEALTHY"
     else
         log_error "Backend: UNHEALTHY"
@@ -99,7 +99,7 @@ check_response_times() {
     
     # Backend API response time
     START=$(date +%s%N)
-    curl -s http://localhost:3000/health > /dev/null
+    curl -s http://localhost:3000/api/v1/health > /dev/null
     END=$(date +%s%N)
     BACKEND_TIME=$(( (END - START) / 1000000 ))
     

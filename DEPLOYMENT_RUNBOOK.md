@@ -1179,7 +1179,7 @@ fi
 
 | Endpoint | Expected | Acceptable | Critical |
 |----------|----------|------------|----------|
-| GET /health | <50ms | <200ms | >500ms |
+| GET /api/v1/health | <50ms | <200ms | >500ms |
 | GET /facilities | <100ms | <500ms | >1000ms |
 | POST /ml/predict-maintenance | <200ms | <1000ms | >2000ms |
 | POST /rul/predict | <300ms | <1500ms | >3000ms |

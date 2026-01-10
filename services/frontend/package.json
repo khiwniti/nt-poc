@@ -21,6 +21,7 @@
     "percy:snapshot": "percy exec -- playwright test e2e/visual --project=chromium"
   },
   "dependencies": {
+    "@sentry/react": "^8.51.0",
     "@react-spring/three": "^10.0.3",
     "@react-spring/web": "^10.0.3",
     "@react-three/drei": "^9.122.0",

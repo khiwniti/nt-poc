@@ -13,6 +13,7 @@
 
 import { pool } from '../config/database.js';
 import emailNotificationService from './emailNotificationService.js';
+import { logger } from '../observability/logger.js';
 import type {
   Alert,
   AlertSeverity,
@@ -246,9 +247,12 @@ export class AlertEscalationService {
 
       await client.query('COMMIT');
 
-      console.log(
-        `Alert ${alertId} escalated from ${fromSeverity} to ${toSeverity}: ${reason}`
-      );
+      logger.info('alert_escalated', {
+        alertId,
+        fromSeverity,
+        toSeverity,
+        reason,
+      });
 
       return eventResult.rows[0];
     } catch (error) {
@@ -326,7 +330,7 @@ export class AlertEscalationService {
 
       return false;
     } catch (error) {
-      console.error('Failed to send escalation notification:', error);
+      logger.error('alert_escalation_notification_failed', { alertId: alert.id, error });
       return false;
     }
   }
@@ -346,7 +350,7 @@ export class AlertEscalationService {
 
     try {
       const candidates = await this.findEscalationCandidates();
-      console.log(`Found ${candidates.length} alerts eligible for escalation`);
+      logger.info('alert_escalation_candidates_found', { count: candidates.length });
 
       for (const candidate of candidates) {
         try {
@@ -371,7 +375,7 @@ export class AlertEscalationService {
           const errorMsg = `Failed to escalate alert ${candidate.alert.id}: ${
             error instanceof Error ? error.message : String(error)
           }`;
-          console.error(errorMsg);
+          logger.error('alert_escalation_candidate_failed', { error: errorMsg });
           errors.push(errorMsg);
         }
       }
@@ -386,7 +390,7 @@ export class AlertEscalationService {
       const errorMsg = `Failed to process escalations: ${
         error instanceof Error ? error.message : String(error)
       }`;
-      console.error(errorMsg);
+      logger.error('alert_escalation_processing_failed', { error: errorMsg });
       errors.push(errorMsg);
       return { checked: 0, escalated: 0, notified: 0, errors };
     }
