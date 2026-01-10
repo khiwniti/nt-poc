@@ -17,6 +17,7 @@ import jobsRouter from './routes/jobs.js';
 import explainabilityRouter from './routes/explainability.js';
 import whatIfScenarioRouter from './routes/whatIfScenario.js';
 import streamRouter from './routes/stream.js';
+import batteryHealthRouter from './routes/batteryHealth.js';
 
 export const app = express();
 
@@ -60,6 +61,7 @@ app.use('/api/v1/stream', streamRouter);
 app.use('/api/v1/jobs', jobsRouter);
 app.use('/api/v1/explainability', explainabilityRouter);
 app.use('/api/v1/what-if', whatIfScenarioRouter);
+app.use('/api/v1/battery-health', batteryHealthRouter);
 
 // Centralized error handler (logs + Sentry + metrics)
 app.use(errorHandler);
