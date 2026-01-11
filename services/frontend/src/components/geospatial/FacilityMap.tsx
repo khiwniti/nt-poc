@@ -7,6 +7,7 @@ import {
   exportFacilitiesAsGeoJSON,
   exportFacilitiesAsKML,
 } from '../../geospatial/mapExport';
+import { MapLayerControls, type LayerPreferences } from './MapLayerControls';
 
 export interface FacilityMapProps {
   facilities: FacilityMarkerData[];
@@ -17,6 +18,10 @@ export interface FacilityMapProps {
   highContrastMode?: boolean;
   filters?: Record<string, unknown>;
   showExportControls?: boolean;
+  showLayerControls?: boolean;
+  layers?: LayerPreferences;
+  onLayerToggle?: (layer: keyof LayerPreferences) => void;
+  onSaveLayerPreferences?: () => void;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -57,6 +62,10 @@ export function FacilityMap({
   highContrastMode = false,
   filters,
   showExportControls = true,
+  showLayerControls = false,
+  layers,
+  onLayerToggle,
+  onSaveLayerPreferences,
 }: FacilityMapProps) {
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const [zoom, setZoom] = useState<number>(1);
@@ -229,6 +238,13 @@ export function FacilityMap({
     zIndex: 10,
   };
 
+  const layerControlsStyle: CSSProperties = {
+    position: 'absolute',
+    top: 16,
+    right: showExportControls ? 160 : 16, // Offset if export controls are present
+    zIndex: 10,
+  };
+
   return (
     <div style={containerStyle}>
       {showExportControls && (
@@ -237,6 +253,15 @@ export function FacilityMap({
             onExport={handleExport}
             disabled={facilities.length === 0}
             highContrastMode={highContrastMode}
+          />
+        </div>
+      )}
+      {showLayerControls && layers && onLayerToggle && (
+        <div style={layerControlsStyle}>
+          <MapLayerControls
+            layers={layers}
+            onLayerToggle={onLayerToggle}
+            onSavePreferences={onSaveLayerPreferences}
           />
         </div>
       )}
@@ -251,37 +276,37 @@ export function FacilityMap({
         onKeyDown={handleKeyDown}
         style={style}
       >
-      {/* Screen reader instructions */}
-      <div id="map-instructions" className="sr-only">
-        Interactive map with {facilities.length} facilities. Use arrow keys to navigate between
-        markers, plus and minus keys to zoom in and out, Enter or Space to select a facility, Home
-        to go to first facility, End to go to last facility.
-      </div>
+        {/* Screen reader instructions */}
+        <div id="map-instructions" className="sr-only">
+          Interactive map with {facilities.length} facilities. Use arrow keys to navigate between
+          markers, plus and minus keys to zoom in and out, Enter or Space to select a facility, Home
+          to go to first facility, End to go to last facility.
+        </div>
 
-      {/* Live region for screen reader announcements */}
-      <div
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-        className="sr-only"
-        data-testid="map-announcements"
-      >
-        {announcement}
-      </div>
+        {/* Live region for screen reader announcements */}
+        <div
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="sr-only"
+          data-testid="map-announcements"
+        >
+          {announcement}
+        </div>
 
-      {facilities.map((facility, index) => (
-        <FacilityMarker
-          key={facility.id}
-          facility={facility}
-          position={positions.get(facility.id)!}
-          selected={facility.id === selectedFacilityId}
-          focused={index === focusedIndex}
-          onSelect={onSelectFacility}
-          highContrastMode={highContrastMode}
-          ref={(el) => handleMarkerRef(facility.id, el)}
-          tabIndex={-1}
-        />
-      ))}
+        {facilities.map((facility, index) => (
+          <FacilityMarker
+            key={facility.id}
+            facility={facility}
+            position={positions.get(facility.id)!}
+            selected={facility.id === selectedFacilityId}
+            focused={index === focusedIndex}
+            onSelect={onSelectFacility}
+            highContrastMode={highContrastMode}
+            ref={(el) => handleMarkerRef(facility.id, el)}
+            tabIndex={-1}
+          />
+        ))}
       </div>
     </div>
   );
