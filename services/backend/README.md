@@ -71,6 +71,8 @@ npm test -- --watch
 
 All endpoints require JWT authentication via `Authorization: Bearer <token>` header.
 
+Internal service-to-service endpoints under `/internal/*` require an API key via `x-api-key` header (see `services/backend/.env.example` for `MLOPS_API_KEY`, `SIMULATOR_API_KEY`, `FRONTEND_API_KEY`).
+
 ## Test Coverage
 
 The test suite covers:
