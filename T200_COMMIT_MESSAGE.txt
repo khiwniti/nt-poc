@@ -1,0 +1,45 @@
+feat(T200): Add weather overlay with forecasts and correlation analysis
+
+Implements US6 - Weather overlay showing current conditions at facility locations
+with temperature-based alerts and historical correlation analysis.
+
+Features:
+- OpenWeatherMap API integration for current weather and 7-day forecasts
+- Visual weather overlay with temperature-coded markers on facility map
+- Extreme temperature alerts (≥40°C heat, ≤-20°C cold)
+- Weather details panel with forecast and historical correlation
+- Correlation analysis: Temperature vs SoC, SoH, and alert frequency
+- Smart caching strategy (10min current, 1hr forecast, 24hr historical)
+- High contrast mode and full accessibility support
+
+Backend:
+- weatherService.ts: Core weather service with alert generation
+- weather.ts routes: 6 new API endpoints
+- Unit tests with comprehensive coverage
+
+Frontend:
+- WeatherOverlay.tsx: Main map overlay component
+- WeatherMarker.tsx: Individual facility weather markers
+- WeatherDetailsPanel.tsx: Detailed weather panel with 7-day forecast
+- useWeather hooks: Data fetching with auto-refresh
+- Component tests and TypeScript types
+
+API Endpoints:
+- GET /api/v1/weather/current - Current weather by coordinates
+- GET /api/v1/weather/forecast - 7-day forecast by coordinates
+- GET /api/v1/weather/facility/:id - Current weather for facility
+- GET /api/v1/weather/facilities - All facilities weather
+- GET /api/v1/weather/forecast/facility/:id - 7-day forecast for facility
+- GET /api/v1/weather/correlation/facility/:id - Correlation analysis
+
+Environment:
+- Requires WEATHER_API_KEY from OpenWeatherMap
+- Facilities must have latitude/longitude coordinates
+
+Refs: US6, spec.md (Geospatial), plan.md (7.2.8)
+
+Files:
+- Modified: services/backend/src/app.ts
+- New: 12 files (3 backend, 6 frontend, 3 docs)
+- Tests: weatherService.test.ts, WeatherMarker.test.tsx
+- Docs: T200_*.md (implementation, quick ref, acceptance, manifest, summary)
