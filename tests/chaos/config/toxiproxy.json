@@ -1,0 +1,20 @@
+[
+  {
+    "name": "postgres",
+    "listen": "0.0.0.0:5433",
+    "upstream": "postgres:5432",
+    "enabled": true
+  },
+  {
+    "name": "redis",
+    "listen": "0.0.0.0:6380",
+    "upstream": "redis:6379",
+    "enabled": true
+  },
+  {
+    "name": "backend",
+    "listen": "0.0.0.0:3001",
+    "upstream": "backend:3000",
+    "enabled": true
+  }
+]

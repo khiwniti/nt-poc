@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Test results
+chaos-test-report.json
+CHAOS_TEST_REPORT.md
+results/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.test
+
+# OS
+.DS_Store
+Thumbs.db

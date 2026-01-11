@@ -1,0 +1,112 @@
+version: '3.8'
+
+services:
+  # Toxiproxy for network chaos injection
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:latest
+    container_name: bms-toxiproxy
+    ports:
+      - "8474:8474"  # API
+      - "5433:5433"  # Postgres proxy
+      - "6380:6380"  # Redis proxy
+      - "3001:3001"  # Backend proxy
+    networks:
+      - chaos-network
+    command: -host=0.0.0.0 -config=/config/toxiproxy.json
+    volumes:
+      - ./config/toxiproxy.json:/config/toxiproxy.json:ro
+
+  # PostgreSQL for testing
+  postgres:
+    image: postgres:15-alpine
+    container_name: bms-postgres-chaos
+    environment:
+      - POSTGRES_DB=battery_management_test
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-chaos-data:/var/lib/postgresql/data
+    networks:
+      - chaos-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis for testing
+  redis:
+    image: redis:7-alpine
+    container_name: bms-redis-chaos
+    ports:
+      - "6379:6379"
+    networks:
+      - chaos-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Backend service
+  backend:
+    build:
+      context: ../../services/backend
+      dockerfile: Dockerfile
+    container_name: bms-backend-chaos
+    environment:
+      - NODE_ENV=test
+      - PORT=3000
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=battery_management_test
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=chaos-test-secret-key
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - chaos-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # Chaos Monkey service
+  chaos-monkey:
+    build:
+      context: ./chaos-monkey
+      dockerfile: Dockerfile
+    container_name: bms-chaos-monkey
+    environment:
+      - CHAOS_ENABLED=true
+      - TARGET_SERVICES=backend,postgres,redis
+      - FAILURE_INTERVAL_MIN=60
+      - FAILURE_INTERVAL_MAX=300
+      - FAILURE_DURATION_MIN=10
+      - FAILURE_DURATION_MAX=60
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - chaos-network
+    depends_on:
+      - backend
+      - postgres
+      - redis
+
+networks:
+  chaos-network:
+    driver: bridge
+
+volumes:
+  postgres-chaos-data:
