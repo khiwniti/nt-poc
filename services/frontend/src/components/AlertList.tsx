@@ -6,9 +6,10 @@ type SortKey = 'time' | 'severity';
 type SortOrder = 'asc' | 'desc';
 
 const severityRank: Record<Alert['severity'], number> = {
-  critical: 3,
-  warning: 2,
-  info: 1,
+  critical: 4,
+  high: 3,
+  medium: 2,
+  low: 1,
 };
 
 function getSeverityColor(severity: string) {

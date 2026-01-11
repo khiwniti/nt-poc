@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { AlertSeverity, AlertStatus, AlertType } from '../types';
 
-export type { AlertSeverity, AlertStatus, AlertType };
+export { AlertSeverity, AlertStatus, AlertType };
 export type DateRange = '24h' | '7d' | '30d' | 'custom';
 
 export interface AlertFilterState {

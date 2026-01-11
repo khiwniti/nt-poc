@@ -11,6 +11,7 @@
  */
 import * as cron from 'node-cron';
 import alertEscalationService from './alertEscalationService.js';
+import { logger } from '../observability/logger.js';
 export class AlertEscalationJob {
     task = null;
     isRunning = false;
@@ -26,14 +27,14 @@ export class AlertEscalationJob {
      */
     start() {
         if (this.task) {
-            console.log('Alert escalation job is already running');
+            logger.info('alert_escalation_job_already_running');
             return;
         }
-        console.log(`Starting alert escalation job with interval: ${this.cronExpression}`);
+        logger.info('alert_escalation_job_starting', { cronExpression: this.cronExpression });
         this.task = cron.schedule(this.cronExpression, async () => {
             await this.runJob();
         });
-        console.log('Alert escalation job started successfully');
+        logger.info('alert_escalation_job_started');
     }
     /**
      * Stop the scheduled job
@@ -42,7 +43,7 @@ export class AlertEscalationJob {
         if (this.task) {
             this.task.stop();
             this.task = null;
-            console.log('Alert escalation job stopped');
+            logger.info('alert_escalation_job_stopped');
         }
     }
     /**
@@ -50,7 +51,7 @@ export class AlertEscalationJob {
      */
     async runJob() {
         if (this.isRunning) {
-            console.log('Alert escalation job is already running, skipping this iteration');
+            logger.info('alert_escalation_job_skipped_previous_still_running');
             return;
         }
         this.isRunning = true;
@@ -62,7 +63,7 @@ export class AlertEscalationJob {
             errors: 0,
         };
         try {
-            console.log('Starting alert escalation job...');
+            logger.info('alert_escalation_job_run_started', { startTime: metrics.startTime.toISOString() });
             const result = await alertEscalationService.processEscalations();
             metrics.alertsChecked = result.checked;
             metrics.alertsEscalated = result.escalated;
@@ -71,13 +72,18 @@ export class AlertEscalationJob {
             if (result.errors.length > 0) {
                 metrics.lastError = result.errors[0];
             }
-            console.log(`Alert escalation job completed: checked=${result.checked}, escalated=${result.escalated}, notified=${result.notified}, errors=${result.errors.length}`);
+            logger.info('alert_escalation_job_run_completed', {
+                checked: result.checked,
+                escalated: result.escalated,
+                notified: result.notified,
+                errors: result.errors.length,
+            });
         }
         catch (error) {
             metrics.errors = 1;
             metrics.lastError =
                 error instanceof Error ? error.message : 'Unknown error';
-            console.error('Alert escalation job failed:', error);
+            logger.error('alert_escalation_job_failed', { error });
         }
         finally {
             metrics.endTime = new Date();
@@ -110,7 +116,7 @@ export class AlertEscalationJob {
 let jobInstance = null;
 export function startEscalationJob(intervalMinutes = 5) {
     if (jobInstance) {
-        console.log('Alert escalation job already exists');
+        logger.info('alert_escalation_job_instance_already_exists');
         return;
     }
     jobInstance = new AlertEscalationJob(intervalMinutes);

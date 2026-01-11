@@ -12,6 +12,7 @@
 import * as cron from 'node-cron';
 import { pool } from '../config/database.js';
 import { getModel, initializeModel } from '../ml/predictiveMaintenanceModel.js';
+import { logger } from '../observability/logger.js';
 export class ScheduledPredictionJob {
     task = null;
     isRunning = false;
@@ -33,16 +34,16 @@ export class ScheduledPredictionJob {
      */
     async start() {
         if (this.task) {
-            console.log('Scheduled prediction job is already running');
+            logger.info('scheduled_prediction_job_already_running');
             return;
         }
         // Initialize ML model
         await this.initializeMLModel();
-        console.log(`Starting scheduled prediction job with interval: ${this.cronExpression}`);
+        logger.info('scheduled_prediction_job_starting', { cronExpression: this.cronExpression });
         this.task = cron.schedule(this.cronExpression, async () => {
             await this.runJob();
         });
-        console.log('Scheduled prediction job started successfully');
+        logger.info('scheduled_prediction_job_started');
     }
     /**
      * Stop the scheduled job
@@ -51,7 +52,7 @@ export class ScheduledPredictionJob {
         if (this.task) {
             this.task.stop();
             this.task = null;
-            console.log('Scheduled prediction job stopped');
+            logger.info('scheduled_prediction_job_stopped');
         }
     }
     /**
@@ -59,12 +60,12 @@ export class ScheduledPredictionJob {
      */
     async initializeMLModel() {
         try {
-            console.log('Initializing ML model...');
+            logger.info('ml_model_initializing');
             await initializeModel();
-            console.log('ML model initialized successfully');
+            logger.info('ml_model_initialized');
         }
         catch (error) {
-            console.error('Failed to initialize ML model:', error);
+            logger.error('ml_model_initialize_failed', { error });
             throw new Error('Cannot start prediction job without ML model');
         }
     }
@@ -73,7 +74,7 @@ export class ScheduledPredictionJob {
      */
     async runJob() {
         if (this.isRunning) {
-            console.log('Previous job still running, skipping this execution');
+            logger.info('scheduled_prediction_job_skipped_previous_still_running');
             return;
         }
         this.isRunning = true;
@@ -84,10 +85,10 @@ export class ScheduledPredictionJob {
             errors: 0,
         };
         try {
-            console.log(`[${metrics.startTime.toISOString()}] Starting scheduled prediction job`);
+            logger.info('scheduled_prediction_job_run_started', { startTime: metrics.startTime.toISOString() });
             // Fetch all active batteries
             const batteries = await this.fetchActiveBatteries();
-            console.log(`Found ${batteries.length} active batteries to process`);
+            logger.info('scheduled_prediction_job_batteries_fetched', { count: batteries.length });
             // Process each battery with error handling
             for (const battery of batteries) {
                 try {
@@ -97,14 +98,16 @@ export class ScheduledPredictionJob {
                 catch (error) {
                     metrics.errors++;
                     metrics.lastError = error instanceof Error ? error.message : 'Unknown error';
-                    console.error(`Failed to process battery ${battery.id} after retries:`, error);
+                    logger.error('scheduled_prediction_job_battery_failed', { batteryId: battery.id, error });
                 }
             }
             metrics.endTime = new Date();
             this.lastRun = metrics.endTime;
             this.lastMetrics = metrics;
             const duration = metrics.endTime.getTime() - metrics.startTime.getTime();
-            console.log(`[${metrics.endTime.toISOString()}] Job completed in ${duration}ms:`, {
+            logger.info('scheduled_prediction_job_run_completed', {
+                endTime: metrics.endTime.toISOString(),
+                durationMs: duration,
                 batteriesProcessed: metrics.batteriesProcessed,
                 predictionsCreated: metrics.predictionsCreated,
                 errors: metrics.errors,
@@ -114,7 +117,7 @@ export class ScheduledPredictionJob {
             metrics.endTime = new Date();
             metrics.lastError = error instanceof Error ? error.message : 'Unknown error';
             this.lastMetrics = metrics;
-            console.error('Critical error in scheduled prediction job:', error);
+            logger.error('scheduled_prediction_job_critical_error', { error });
         }
         finally {
             this.isRunning = false;
