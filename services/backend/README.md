@@ -69,6 +69,17 @@ npm test -- --watch
 - `GET /api/v1/sensor-readings/latest` - Get latest reading for a battery system
 - `GET /api/v1/sensor-readings/timeseries` - Get time-series data
 
+### ML / AI Insights
+
+Model documentation (architecture, features, training, usage): `../../docs/ML_MODELS.md`.
+
+- `POST /api/v1/ml/predict-maintenance` - Predict maintenance risk (Random Forest)
+- `GET /api/v1/ml/model-metrics` - Get predictive maintenance model metrics
+- `POST /api/v1/ml/train` - Train/retrain predictive maintenance model
+- `GET /api/v1/predictions/:batteryId` - List RUL predictions for a battery
+- `GET /api/v1/predictions/:batteryId/latest` - Get latest RUL prediction
+- `POST /api/v1/predictions` - Create/persist a new RUL prediction
+
 All endpoints require JWT authentication via `Authorization: Bearer <token>` header.
 
 ## Test Coverage

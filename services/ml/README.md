@@ -2,6 +2,10 @@
 
 Complete machine learning pipeline for sensor data with preprocessing, feature engineering, hyperparameter tuning, and model versioning.
 
+## ML Models (Project)
+
+For the project’s end-to-end model documentation (LSTM RUL, Random Forest risk, Isolation Forest anomalies), see `../../docs/ML_MODELS.md`.
+
 ## Features
 
 ✅ **Data Preprocessing**

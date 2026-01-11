@@ -71,6 +71,19 @@ Returns service health status and system information.
 }
 ```
 
+### ML Endpoints
+
+Project model docs (architecture, features, training, usage): `../../docs/ML_MODELS.md`.
+
+**RUL prediction (LSTM)**
+- `POST /ml/predict-rul`
+- `GET /ml/model-info`
+
+**Anomaly detection (Isolation Forest)**
+- `POST /api/v1/ml/train-anomaly`
+- `POST /api/v1/ml/detect-anomaly`
+- `GET /api/v1/ml/anomaly-metrics`
+
 ### Root
 ```bash
 GET /
