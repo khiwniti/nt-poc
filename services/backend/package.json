@@ -1,5 +1,5 @@
 {
-  "name": "backend",
+  "name": "@nt-poc/backend",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
@@ -21,7 +21,7 @@
     "migrate:make": "tsx --tsconfig tsconfig.json node_modules/knex/bin/cli.js migrate:make --knexfile knexfile.ts",
     "seed:run": "tsx --tsconfig tsconfig.json node_modules/knex/bin/cli.js seed:run --knexfile knexfile.ts",
     "db:setup": "npm run migrate && npm run seed:run",
-    "postinstall": "npm run migrate",
+    "postinstall": "echo 'Backend installed. Run npm run migrate manually when database is ready.'",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"src/**/*.{ts,json}\"",

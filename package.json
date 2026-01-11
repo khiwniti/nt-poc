@@ -1,0 +1,30 @@
+{
+  "name": "@nt-poc/monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Battery Management System - Monorepo",
+  "workspaces": [
+    "services/backend",
+    "services/frontend"
+  ],
+  "scripts": {
+    "install:all": "npm install && npm run install:python",
+    "install:python": "echo 'Please install Python dependencies manually with virtual environments. See README.md for instructions.'",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "npm run dev --workspace=@nt-poc/backend",
+    "dev:frontend": "npm run dev --workspace=@nt-poc/frontend",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "quality": "npm run quality --workspaces --if-present",
+    "clean": "rm -rf node_modules services/*/node_modules services/*/dist && find services -type d -name '__pycache__' -exec rm -rf {} +"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=7.0.0"
+  }
+}
