@@ -77,6 +77,7 @@ export default defineConfig({
     },
     rollupOptions: {
       output: {
+        format: 'es',
         manualChunks: {
           // Vendor chunks - only include packages that exist
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
