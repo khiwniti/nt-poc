@@ -1,0 +1,133 @@
+---
+# OWASP ZAP Configuration for Predictive Maintenance PoC
+# This configuration defines automated security scanning rules
+
+env:
+  contexts:
+    - name: "Predictive Maintenance API"
+      urls:
+        - "http://backend:3000/api/v1/.*"
+      includePaths:
+        - "http://backend:3000/api/v1/.*"
+      excludePaths:
+        - "http://backend:3000/metrics"
+        - "http://backend:3000/api/v1/health"
+      authentication:
+        method: "bearer"
+        parameters:
+          token: "${JWT_TOKEN}"
+      sessionManagement:
+        method: "bearer"
+      technology:
+        - "Express"
+        - "Node.js"
+        - "PostgreSQL"
+        - "Docker"
+
+  parameters:
+    failOnError: true
+    failOnWarning: false
+    progressToStdout: true
+
+jobs:
+  # Spider/Crawl the application
+  - type: spider
+    parameters:
+      context: "Predictive Maintenance API"
+      url: "http://backend:3000/"
+      maxDuration: 5
+      maxDepth: 5
+      maxChildren: 10
+
+  # Wait for passive scanning
+  - type: passiveScan-wait
+    parameters:
+      maxDuration: 5
+
+  # Active scanning for common vulnerabilities
+  - type: activeScan
+    parameters:
+      context: "Predictive Maintenance API"
+      policy: "API-Minimal"
+      maxRuleDurationInMins: 5
+      maxScanDurationInMins: 10
+      addQueryParam: false
+      defaultPolicy: "Default Policy"
+
+  # SQL Injection tests
+  - type: activeScan
+    name: "SQL Injection Test"
+    parameters:
+      context: "Predictive Maintenance API"
+      scanners:
+        - id: 40018  # SQL Injection
+        - id: 40019  # SQL Injection - MySQL
+        - id: 40020  # SQL Injection - Hypersonic SQL
+        - id: 40021  # SQL Injection - Oracle
+        - id: 40022  # SQL Injection - PostgreSQL
+      maxRuleDurationInMins: 3
+
+  # XSS tests
+  - type: activeScan
+    name: "XSS Test"
+    parameters:
+      context: "Predictive Maintenance API"
+      scanners:
+        - id: 40012  # Cross Site Scripting (Reflected)
+        - id: 40014  # Cross Site Scripting (Persistent)
+        - id: 40016  # Cross Site Scripting (Persistent - Prime)
+        - id: 40017  # Cross Site Scripting (Persistent - Spider)
+      maxRuleDurationInMins: 3
+
+  # Authentication and session tests
+  - type: activeScan
+    name: "Authentication Test"
+    parameters:
+      context: "Predictive Maintenance API"
+      scanners:
+        - id: 10105  # Weak Authentication Method
+        - id: 10202  # Absence of Anti-CSRF Tokens
+      maxRuleDurationInMins: 2
+
+  # API specific tests
+  - type: activeScan
+    name: "API Security Test"
+    parameters:
+      context: "Predictive Maintenance API"
+      scanners:
+        - id: 90019  # Server Side Code Injection
+        - id: 90020  # Remote OS Command Injection
+        - id: 90021  # XPath Injection
+        - id: 90022  # Application Error Disclosure
+        - id: 90033  # Loosely Scoped Cookie
+      maxRuleDurationInMins: 3
+
+  # Generate reports
+  - type: report
+    parameters:
+      template: "traditional-html"
+      reportDir: "/zap/reports"
+      reportFile: "zap-report-{{timestamp}}"
+      reportTitle: "OWASP ZAP Security Scan Report"
+      reportDescription: "Automated security scan for Predictive Maintenance PoC"
+
+  - type: report
+    parameters:
+      template: "traditional-json"
+      reportDir: "/zap/reports"
+      reportFile: "zap-report-{{timestamp}}"
+
+  - type: report
+    parameters:
+      template: "traditional-xml"
+      reportDir: "/zap/reports"
+      reportFile: "zap-report-{{timestamp}}"
+
+# Risk threshold - fail if high risk vulnerabilities found
+rules:
+  - id: 100000
+    action: FAIL
+    risk: HIGH
+  - id: 100001
+    action: WARN
+    risk: MEDIUM

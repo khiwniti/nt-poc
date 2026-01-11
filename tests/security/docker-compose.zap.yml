@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  zap:
+    image: zaproxy/zap-stable:2.14.0
+    container_name: owasp-zap
+    user: zap
+    command: >
+      zap.sh -daemon 
+      -host 0.0.0.0 
+      -port 8080
+      -config api.addrs.addr.name=.*
+      -config api.addrs.addr.regex=true
+      -config api.disablekey=true
+      -addoninstall ascanrulesBeta
+      -addoninstall pscanrulesBeta
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./reports:/zap/reports:rw
+      - ./zap-config.yaml:/zap/zap-config.yaml:ro
+      - ./scripts:/zap/scripts:ro
+    networks:
+      - security-test
+    environment:
+      - ZAP_PORT=8080
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  backend:
+    build:
+      context: ../../services/backend
+      dockerfile: Dockerfile
+    container_name: backend-security-test
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=test
+      - PORT=3000
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/testdb
+      - JWT_SECRET=test-security-secret
+      - LOG_LEVEL=info
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - security-test
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  db:
+    image: postgres:16-alpine
+    container_name: db-security-test
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=testdb
+    ports:
+      - "5432:5432"
+    networks:
+      - security-test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+networks:
+  security-test:
+    driver: bridge

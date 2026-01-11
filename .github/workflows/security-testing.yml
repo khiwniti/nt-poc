@@ -1,0 +1,180 @@
+name: Security Testing
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run weekly on Sunday at 2 AM UTC
+    - cron: '0 2 * * 0'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  security-tests:
+    name: Run Security Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install Python dependencies
+        run: |
+          cd tests/security
+          pip install -r requirements.txt
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: services/backend/package-lock.json
+      
+      - name: Install backend dependencies
+        run: |
+          cd services/backend
+          npm ci
+      
+      - name: Start PostgreSQL
+        run: |
+          docker run -d \
+            --name postgres-test \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=postgres \
+            -e POSTGRES_DB=testdb \
+            -p 5432:5432 \
+            postgres:16-alpine
+          
+          # Wait for PostgreSQL to be ready
+          timeout 30 bash -c 'until docker exec postgres-test pg_isready -U postgres; do sleep 1; done'
+      
+      - name: Run database migrations
+        run: |
+          cd services/backend
+          export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/testdb
+          npm run migrate
+      
+      - name: Start backend server
+        run: |
+          cd services/backend
+          export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/testdb
+          export JWT_SECRET=test-security-secret
+          export NODE_ENV=test
+          npm run dev &
+          
+          # Wait for backend to be ready
+          timeout 30 bash -c 'until curl -s http://localhost:3000/api/v1/health > /dev/null; do sleep 1; done'
+      
+      - name: Run Python security tests
+        run: |
+          cd tests/security
+          pytest test_security_vulnerabilities.py -v --tb=short
+        env:
+          JWT_SECRET: test-security-secret
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-test-results
+          path: |
+            tests/security/reports/
+            .pytest_cache/
+  
+  zap-scan:
+    name: OWASP ZAP Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Run OWASP ZAP Quick Scan
+        run: |
+          cd tests/security
+          chmod +x scripts/quick-scan.sh
+          bash scripts/quick-scan.sh
+      
+      - name: Upload ZAP reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-reports
+          path: tests/security/reports/
+      
+      - name: Check for critical vulnerabilities
+        run: |
+          # Parse JSON report for high-risk vulnerabilities
+          if [ -f tests/security/reports/quick-scan-report.json ]; then
+            HIGH_COUNT=$(jq '[.site[]?.alerts[]? | select(.riskcode=="3")] | length' tests/security/reports/quick-scan-report.json 2>/dev/null || echo "0")
+            echo "High risk vulnerabilities found: $HIGH_COUNT"
+            
+            if [ "$HIGH_COUNT" -gt 0 ]; then
+              echo "❌ Critical vulnerabilities detected!"
+              exit 1
+            fi
+          fi
+  
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Run npm audit (Backend)
+        run: |
+          cd services/backend
+          npm audit --audit-level=high || true
+      
+      - name: Run npm audit (Frontend)
+        run: |
+          cd services/frontend
+          npm audit --audit-level=high || true
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install safety
+        run: pip install safety
+      
+      - name: Run safety check (ML service)
+        run: |
+          cd services/ml
+          safety check -r requirements.txt --json || true
+      
+      - name: Run safety check (MLOps service)
+        run: |
+          cd services/mlops
+          safety check -r requirements.txt --json || true
+  
+  summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [security-tests, zap-scan, dependency-scan]
+    if: always()
+    
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "## 🔒 Security Testing Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Type | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Python Security Tests | ${{ needs.security-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| OWASP ZAP Scan | ${{ needs.zap-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Dependency Scan | ${{ needs.dependency-scan.result }} |" >> $GITHUB_STEP_SUMMARY
