@@ -20,6 +20,9 @@ export async function seed(knex: Knex): Promise<void> {
         status: 'active',
         latitude: 40.7128,
         longitude: -74.0060,
+        address: '350 5th Ave, New York, NY 10118',
+        city: 'New York',
+        country: 'United States',
       },
       {
         id: '22222222-2222-2222-2222-222222222222',
@@ -30,6 +33,9 @@ export async function seed(knex: Knex): Promise<void> {
         status: 'active',
         latitude: 34.0522,
         longitude: -118.2437,
+        address: '1200 Getty Center Dr, Los Angeles, CA 90049',
+        city: 'Los Angeles',
+        country: 'United States',
       },
       {
         id: '33333333-3333-3333-3333-333333333333',
@@ -40,6 +46,9 @@ export async function seed(knex: Knex): Promise<void> {
         status: 'maintenance',
         latitude: 41.8781,
         longitude: -87.6298,
+        address: '233 S Wacker Dr, Chicago, IL 60606',
+        city: 'Chicago',
+        country: 'United States',
       },
     ])
     .returning('*');
