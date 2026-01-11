@@ -18,6 +18,9 @@
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "quality": "npm run quality --workspaces --if-present",
+    "test:pact": "npm run test:pact --workspace=@nt-poc/frontend && npm run test:pact:verify --workspace=@nt-poc/backend",
+    "test:pact:consumer": "npm run test:pact --workspace=@nt-poc/frontend",
+    "test:pact:provider": "npm run test:pact:verify --workspace=@nt-poc/backend",
     "clean": "rm -rf node_modules services/*/node_modules services/*/dist && find services -type d -name '__pycache__' -exec rm -rf {} +"
   },
   "devDependencies": {

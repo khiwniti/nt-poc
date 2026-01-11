@@ -33,6 +33,9 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,json,css}\"",
     "typecheck": "tsc --noEmit",
     "quality": "npm run typecheck && npm run lint && npm run format:check",
+    "test:pact": "vitest run --config vitest.pact.config.ts --reporter=verbose",
+    "test:pact:watch": "vitest --config vitest.pact.config.ts",
+    "pact:publish": "pact-broker publish ./../../pacts --consumer-app-version=$npm_package_version --broker-base-url=$PACT_BROKER_BASE_URL --broker-token=$PACT_BROKER_TOKEN",
     "prepare": "husky"
   },
   "dependencies": {
@@ -61,6 +64,7 @@
     "@eslint/eslintrc": "^3.3.3",
     "@eslint/js": "^9.39.2",
     "@lhci/cli": "^0.15.1",
+    "@pact-foundation/pact": "^13.2.0",
     "@percy/cli": "^1.31.7",
     "@percy/playwright": "^1.0.10",
     "@playwright/test": "^1.40.0",
@@ -85,6 +89,7 @@
     "jsdom": "^23.2.0",
     "lint-staged": "^16.2.7",
     "msw": "^2.12.7",
+    "node-fetch": "^3.3.2",
     "prettier": "^3.7.4",
     "rollup-plugin-visualizer": "^5.12.0",
     "typescript": "^5.3.3",
