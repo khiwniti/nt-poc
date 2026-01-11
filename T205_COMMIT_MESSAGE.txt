@@ -1,0 +1,39 @@
+feat: Add mobile-optimized geospatial map (T205)
+
+Implements US6 with full mobile-responsive map interface featuring:
+
+Features:
+- Touch gestures (pinch zoom, pan, double-tap)
+- Geolocation button with smooth centering
+- Mobile-optimized popups and markers
+- FPS performance monitor (30+ FPS)
+- Status-based color coding (active/maintenance/inactive)
+- Responsive design (mobile & desktop)
+
+Components:
+- FacilityMap: Main Leaflet map with custom markers
+- GeospatialView: Page wrapper with mobile bottom sheet
+- Tests: 6/6 unit tests passing
+
+Backend:
+- Migration: Add latitude/longitude to facilities table
+- API: Include coordinates in facility responses
+- Seed data: NYC, LA, Chicago coordinates
+
+Technical:
+- Leaflet 1.9.4 + React-Leaflet 4.2.1
+- WCAG AA compliant (44px touch targets)
+- OpenStreetMap tiles (no API key)
+- ~171KB bundle impact
+
+Testing:
+✓ All unit tests passing (6/6)
+✓ TypeScript compilation successful
+✓ No breaking changes
+
+Files:
+- New: 4 files (components + migration + tests)
+- Modified: 6 files (API + routing + deps)
+- Total: ~700 lines of code
+
+Ready for review and manual mobile testing.

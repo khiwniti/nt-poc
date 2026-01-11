@@ -27,6 +27,9 @@ export function Header() {
         <a href="/3d" style={{ textDecoration: 'none' }}>
           3D View
         </a>
+        <a href="/geospatial" style={{ textDecoration: 'none' }}>
+          Map
+        </a>
         <a href="/alerts" style={{ textDecoration: 'none' }}>
           Alerts
         </a>

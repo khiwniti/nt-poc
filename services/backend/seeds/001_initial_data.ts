@@ -18,6 +18,8 @@ export async function seed(knex: Knex): Promise<void> {
         timezone: 'America/New_York',
         total_zones: 4,
         status: 'active',
+        latitude: 40.7128,
+        longitude: -74.0060,
       },
       {
         id: '22222222-2222-2222-2222-222222222222',
@@ -26,6 +28,8 @@ export async function seed(knex: Knex): Promise<void> {
         timezone: 'America/Los_Angeles',
         total_zones: 6,
         status: 'active',
+        latitude: 34.0522,
+        longitude: -118.2437,
       },
       {
         id: '33333333-3333-3333-3333-333333333333',
@@ -34,6 +38,8 @@ export async function seed(knex: Knex): Promise<void> {
         timezone: 'America/Chicago',
         total_zones: 3,
         status: 'maintenance',
+        latitude: 41.8781,
+        longitude: -87.6298,
       },
     ])
     .returning('*');

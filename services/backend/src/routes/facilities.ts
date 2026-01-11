@@ -9,7 +9,7 @@ router.use(authenticate);
 router.get('/', async (req: AuthRequest, res: Response) => {
   try {
     const result = await pool.query(`
-      SELECT id, name, location, timezone, total_zones, status, created_at, updated_at
+      SELECT id, name, location, latitude, longitude, timezone, total_zones, status, created_at, updated_at
       FROM facilities
       WHERE status = 'active'
       ORDER BY created_at DESC
@@ -29,7 +29,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const result = await pool.query(
-      `SELECT id, name, location, timezone, total_zones as "totalZones", status, created_at, updated_at
+      `SELECT id, name, location, latitude, longitude, timezone, total_zones as "totalZones", status, created_at, updated_at
        FROM facilities WHERE id = $1`,
       [id]
     );
