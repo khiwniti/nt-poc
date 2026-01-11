@@ -3,7 +3,8 @@ import { buildCacheKey, getCachedData, setCachedData } from './mapCache.js';
 import logger from '../config/logger.js';
 
 const MAPBOX_API_BASE = 'https://api.mapbox.com';
-const WEATHER_API_BASE = process.env.WEATHER_API_URL || 'https://api.openweathermap.org/data/2.5';
+const DEFAULT_WEATHER_API_BASE = 'https://api.openweathermap.org/data/2.5';
+const WEATHER_API_BASE = process.env.WEATHER_API_URL ?? DEFAULT_WEATHER_API_BASE;
 
 export interface GeocodingResult {
   address: string;
