@@ -7,14 +7,8 @@ from fastapi.testclient import TestClient
 from unittest.mock import Mock, patch
 import numpy as np
 
-import sys
-import os
-
-# Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
-
-from main import app
-from api.rul_service import RULPredictionService
+from src.main import app
+from src.api.rul_service import RULPredictionService
 
 
 @pytest.fixture
@@ -62,7 +56,7 @@ class TestHealthEndpoint:
 class TestRULPredictionEndpoint:
     """Test RUL prediction endpoint"""
     
-    @patch('api.routes.get_prediction_service')
+    @patch('src.api.routes.get_prediction_service')
     def test_predict_rul_success(self, mock_get_service, client, mock_service):
         """Test successful RUL prediction"""
         mock_get_service.return_value = mock_service
@@ -93,7 +87,7 @@ class TestRULPredictionEndpoint:
         assert data['battery_system_id'] == "test-battery-123"
         assert 0 <= data['confidence'] <= 1
     
-    @patch('api.routes.get_prediction_service')
+    @patch('src.api.routes.get_prediction_service')
     def test_predict_rul_validation_error(self, mock_get_service, client, mock_service):
         """Test prediction with invalid input"""
         mock_service.validate_input.side_effect = ValueError("Invalid input")
@@ -107,7 +101,7 @@ class TestRULPredictionEndpoint:
         
         assert response.status_code == 400
     
-    @patch('api.routes.get_prediction_service')
+    @patch('src.api.routes.get_prediction_service')
     def test_predict_rul_model_not_loaded(self, mock_get_service, client, mock_service):
         """Test prediction when model is not loaded"""
         mock_service.predict.side_effect = RuntimeError("Model not loaded")
@@ -121,11 +115,48 @@ class TestRULPredictionEndpoint:
         
         assert response.status_code == 503
 
+    @patch('src.api.routes.get_prediction_service')
+    def test_predict_rul_batch_success(self, mock_get_service, client, mock_service):
+        """Test successful batch RUL prediction"""
+        mock_get_service.return_value = mock_service
+
+        # Mock batch predict
+        mock_service.validate_batch_input.return_value = np.random.rand(2, 10, 5)
+        mock_service.predict_batch.return_value = np.array([245.5, 123.4], dtype=np.float32)
+        mock_service.model_version = "v1.0.0"
+        mock_service.feature_names = ['soc', 'soh', 'temperature', 'voltage', 'cycles']
+
+        request_data = {
+            "sequences": [
+                [[1.0, 2.0, 3.0, 4.0, 5.0]] * 10,
+                [[5.0, 4.0, 3.0, 2.0, 1.0]] * 10,
+            ],
+            "battery_system_ids": ["b1", "b2"],
+        }
+
+        response = client.post("/ml/predict-rul/batch", json=request_data)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["predicted_rul"]) == 2
+        assert len(data["confidence"]) == 2
+        assert data["battery_system_ids"] == ["b1", "b2"]
+
+    def test_predict_rul_batch_id_mismatch(self, client):
+        """Test batch prediction with mismatched IDs length"""
+        request_data = {
+            "sequences": [[[1.0, 2.0, 3.0, 4.0, 5.0]] * 10] * 2,
+            "battery_system_ids": ["only-one"],
+        }
+
+        response = client.post("/ml/predict-rul/batch", json=request_data)
+        assert response.status_code == 400
+
 
 class TestModelInfoEndpoint:
     """Test model info endpoint"""
     
-    @patch('api.routes.get_prediction_service')
+    @patch('src.api.routes.get_prediction_service')
     def test_get_model_info(self, mock_get_service, client, mock_service):
         """Test getting model information"""
         mock_get_service.return_value = mock_service

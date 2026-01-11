@@ -6,13 +6,7 @@ T138: Implement anomaly detection
 import pytest
 from fastapi.testclient import TestClient
 from pathlib import Path
-import sys
-
-# Add paths
-mlops_src = Path(__file__).parent.parent.parent / "src"
-sys.path.insert(0, str(mlops_src))
-
-from main import app
+from src.main import app
 
 client = TestClient(app)
 
@@ -173,7 +167,7 @@ class TestAnomalyMetricsEndpoint:
         data = response.json()
         
         assert data["is_trained"] is True
-        assert data["contamination"] == 0.05
+        assert data["contamination"] == 0.10
         assert data["precision"] is not None
         assert data["recall"] is not None
         assert data["f1_score"] is not None

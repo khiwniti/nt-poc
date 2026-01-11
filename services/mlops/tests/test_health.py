@@ -29,3 +29,12 @@ def test_root_endpoint():
     assert data["version"] == "1.0.0"
     assert data["status"] == "running"
     assert data["docs"] == "/docs"
+
+
+def test_latency_endpoint():
+    """Test latency endpoint returns stats structure"""
+    response = client.get("/ml/latency")
+    assert response.status_code == 200
+    data = response.json()
+    assert "overall" in data
+    assert "by_path" in data

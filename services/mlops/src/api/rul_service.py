@@ -3,14 +3,12 @@ RUL prediction service and model management
 """
 
 import os
-import json
 import numpy as np
 from pathlib import Path
 from typing import Optional, Dict, Any
 import logging
 
-import tensorflow as tf
-from tensorflow import keras
+from ..serving.model_cache import ModelCache
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +16,7 @@ logger = logging.getLogger(__name__)
 class RULPredictionService:
     """Service for RUL predictions using LSTM model"""
     
-    def __init__(self, model_path: Optional[str] = None):
+    def __init__(self, model_path: Optional[str] = None, model_cache: Optional[ModelCache] = None):
         """
         Initialize RUL prediction service.
         
@@ -26,7 +24,9 @@ class RULPredictionService:
             model_path: Path to trained model (.h5 file)
         """
         self.model = None
-        self.metadata = {}
+        self.metadata: Dict[str, Any] = {}
+        self.model_path: Optional[str] = None
+        self._model_cache = model_cache or ModelCache(max_models=4)
         self.model_version = "v1.0.0"
         self.feature_names = ['soc', 'soh', 'temperature', 'voltage', 'cycles']
         
@@ -40,30 +40,37 @@ class RULPredictionService:
         Args:
             model_path: Path to model file
         """
-        try:
-            model_path = Path(model_path)
-            
-            if not model_path.exists():
-                raise FileNotFoundError(f"Model file not found: {model_path}")
-            
-            # Load model
-            self.model = keras.models.load_model(str(model_path))
-            logger.info(f"Model loaded from {model_path}")
-            
-            # Load metadata if available
-            metadata_path = model_path.parent / f"{model_path.stem}_metadata.json"
-            if metadata_path.exists():
-                with open(metadata_path, 'r') as f:
-                    self.metadata = json.load(f)
-                logger.info(f"Metadata loaded from {metadata_path}")
-                
-                # Update feature names if in metadata
-                if 'feature_names' in self.metadata:
-                    self.feature_names = self.metadata['feature_names']
-            
-        except Exception as e:
-            logger.error(f"Error loading model: {e}")
-            raise
+        path = Path(model_path).expanduser().resolve()
+        artifact = self._model_cache.get(path, force_reload=True)
+        self.model_path = str(artifact.path)
+        self.model = artifact.model
+        self.metadata = artifact.metadata or {}
+
+        logger.info("Model loaded from %s", artifact.path)
+
+        if "feature_names" in self.metadata:
+            self.feature_names = list(self.metadata["feature_names"])
+
+    def reload_model(self) -> None:
+        """Force model reload from disk."""
+        if not self.model_path:
+            raise RuntimeError("No model_path configured for reload")
+        artifact = self._model_cache.get(self.model_path, force_reload=True)
+        self.model = artifact.model
+        self.metadata = artifact.metadata or {}
+        if "feature_names" in self.metadata:
+            self.feature_names = list(self.metadata["feature_names"])
+
+    def _refresh_model_if_updated(self) -> None:
+        """Hot-reload the model if its file has been updated."""
+        if not self.model_path:
+            return
+        artifact = self._model_cache.get(self.model_path, force_reload=False)
+        if artifact.model is not self.model:
+            self.model = artifact.model
+            self.metadata = artifact.metadata or {}
+            if "feature_names" in self.metadata:
+                self.feature_names = list(self.metadata["feature_names"])
     
     def predict(
         self,
@@ -80,6 +87,7 @@ class RULPredictionService:
         Returns:
             Dictionary with prediction and confidence
         """
+        self._refresh_model_if_updated()
         if self.model is None:
             raise RuntimeError("Model not loaded")
         
@@ -122,6 +130,7 @@ class RULPredictionService:
         Returns:
             Array of RUL predictions
         """
+        self._refresh_model_if_updated()
         if self.model is None:
             raise RuntimeError("Model not loaded")
         
@@ -142,6 +151,7 @@ class RULPredictionService:
             'loaded': self.model is not None
         }
         
+        self._refresh_model_if_updated()
         if self.model:
             info['sequence_length'] = self.model.input_shape[1]
             info['n_features'] = self.model.input_shape[2]
@@ -165,6 +175,7 @@ class RULPredictionService:
             Validated numpy array
         """
         try:
+            self._refresh_model_if_updated()
             arr = np.array(sequence, dtype=np.float32)
             
             if len(arr.shape) != 2:
@@ -189,9 +200,49 @@ class RULPredictionService:
         except Exception as e:
             raise ValueError(f"Invalid input sequence: {e}")
 
+    def validate_batch_input(self, sequences: list) -> np.ndarray:
+        """
+        Validate and convert a batch of sequences.
+
+        Args:
+            sequences: List of sequences (batch_size x sequence_length x n_features)
+
+        Returns:
+            Validated numpy array (batch_size, sequence_length, n_features)
+        """
+        try:
+            self._refresh_model_if_updated()
+            arr = np.array(sequences, dtype=np.float32)
+
+            if len(arr.shape) != 3:
+                raise ValueError(f"Expected 3D batch, got shape {arr.shape}")
+
+            if arr.shape[0] > 100:
+                raise ValueError(f"Batch size {arr.shape[0]} exceeds max 100")
+
+            if self.model:
+                expected_seq_len = self.model.input_shape[1]
+                expected_n_features = self.model.input_shape[2]
+
+                if arr.shape[1] != expected_seq_len:
+                    raise ValueError(
+                        f"Expected sequence length {expected_seq_len}, got {arr.shape[1]}"
+                    )
+
+                if arr.shape[2] != expected_n_features:
+                    raise ValueError(
+                        f"Expected {expected_n_features} features, got {arr.shape[2]}"
+                    )
+
+            return arr
+
+        except Exception as e:
+            raise ValueError(f"Invalid batch input: {e}")
+
 
 # Global service instance
 _service: Optional[RULPredictionService] = None
+_model_cache: Optional[ModelCache] = None
 
 
 def get_prediction_service() -> RULPredictionService:
@@ -201,7 +252,7 @@ def get_prediction_service() -> RULPredictionService:
     Returns:
         RULPredictionService instance
     """
-    global _service
+    global _service, _model_cache
     
     if _service is None:
         # Look for model in default location
@@ -216,7 +267,8 @@ def get_prediction_service() -> RULPredictionService:
             if local_path.exists():
                 model_path = str(local_path)
         
-        _service = RULPredictionService()
+        _model_cache = ModelCache(max_models=4)
+        _service = RULPredictionService(model_cache=_model_cache)
         
         if Path(model_path).exists():
             try:

@@ -1,12 +1,16 @@
 """MLOps Service - FastAPI Application"""
+
+from contextlib import asynccontextmanager
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
-from src.api.routes import router
-from src.api.explainability import router as explainability_router
-from src.api.anomaly import router as anomaly_router
-from src.config import settings
-import logging
+
+from .api.routes import router
+from .api.explainability import router as explainability_router
+from .api.anomaly import router as anomaly_router
+from .config import settings
+from .utils.latency_monitor import get_latency_monitor, LatencyMonitoringMiddleware
 
 # Configure logging
 logging.basicConfig(
@@ -47,6 +51,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Latency monitoring (in-memory; useful for p95 tracking)
+app.add_middleware(
+    LatencyMonitoringMiddleware,
+    monitor=get_latency_monitor(),
+    include_prefixes=("/ml/", "/api/v1/ml/", "/explain/"),
+)
+
 # Include API routes
 app.include_router(router)
 app.include_router(explainability_router)
@@ -55,7 +66,7 @@ app.include_router(anomaly_router)
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
-        "main:app",
+        "src.main:app",
         host="0.0.0.0",
         port=settings.PORT,
         reload=settings.ENVIRONMENT == "development"

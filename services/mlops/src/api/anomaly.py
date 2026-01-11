@@ -19,6 +19,7 @@ router = APIRouter(prefix="/api/v1/ml", tags=["anomaly-detection"])
 
 # Global model instance
 _anomaly_detector: Optional[AnomalyDetector] = None
+_anomaly_detector_mtime_ns: Optional[int] = None
 
 
 class AnomalyDetectionRequest(BaseModel):
@@ -58,7 +59,7 @@ class ModelMetricsResponse(BaseModel):
 
 def get_detector() -> AnomalyDetector:
     """Get or initialize the anomaly detector."""
-    global _anomaly_detector
+    global _anomaly_detector, _anomaly_detector_mtime_ns
     
     if _anomaly_detector is None:
         # Use contamination=0.10 to match ~9% anomaly rate in training data
@@ -69,8 +70,19 @@ def get_detector() -> AnomalyDetector:
         if model_path.exists():
             try:
                 _anomaly_detector.load(str(model_path))
+                _anomaly_detector_mtime_ns = model_path.stat().st_mtime_ns
             except Exception as e:
                 print(f"Failed to load model: {e}")
+    else:
+        model_path = Path("data/models/anomaly_detector.joblib")
+        if model_path.exists():
+            try:
+                current_mtime_ns = model_path.stat().st_mtime_ns
+                if _anomaly_detector_mtime_ns != current_mtime_ns:
+                    _anomaly_detector.load(str(model_path))
+                    _anomaly_detector_mtime_ns = current_mtime_ns
+            except Exception as e:
+                print(f"Failed to hot-reload model: {e}")
     
     return _anomaly_detector
 
