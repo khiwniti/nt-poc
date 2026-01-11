@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { FacilityMarker, type FacilityMarkerData } from './FacilityMarker';
 
 export interface FacilityMapProps {
@@ -7,6 +8,7 @@ export interface FacilityMapProps {
   onSelectFacility?: (facilityId: string) => void;
   ariaLabel?: string;
   height?: number | string;
+  highContrastMode?: boolean;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -44,33 +46,181 @@ export function FacilityMap({
   onSelectFacility,
   ariaLabel = 'Facility map',
   height = 320,
+  highContrastMode = false,
 }: FacilityMapProps) {
+  const [focusedIndex, setFocusedIndex] = useState<number>(-1);
+  const [zoom, setZoom] = useState<number>(1);
+  const [announcement, setAnnouncement] = useState<string>('');
+  const mapRef = useRef<HTMLDivElement>(null);
+  const markerRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+
   const positions = computePositions(facilities);
+
+  // Focus management
+  useEffect(() => {
+    if (focusedIndex >= 0 && focusedIndex < facilities.length) {
+      const facilityId = facilities[focusedIndex].id;
+      const markerElement = markerRefs.current.get(facilityId);
+      markerElement?.focus();
+    }
+  }, [focusedIndex, facilities]);
+
+  // Keyboard navigation
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (facilities.length === 0) return;
+
+      let handled = false;
+      let newAnnouncement = '';
+
+      switch (event.key) {
+        case 'ArrowRight':
+        case 'ArrowDown':
+          event.preventDefault();
+          setFocusedIndex((prev) => {
+            const nextIndex = (prev + 1) % facilities.length;
+            newAnnouncement = `Focused on ${facilities[nextIndex].name}`;
+            return nextIndex;
+          });
+          handled = true;
+          break;
+
+        case 'ArrowLeft':
+        case 'ArrowUp':
+          event.preventDefault();
+          setFocusedIndex((prev) => {
+            const nextIndex = prev <= 0 ? facilities.length - 1 : prev - 1;
+            newAnnouncement = `Focused on ${facilities[nextIndex].name}`;
+            return nextIndex;
+          });
+          handled = true;
+          break;
+
+        case '+':
+        case '=':
+          event.preventDefault();
+          setZoom((prev) => Math.min(prev + 0.2, 2));
+          newAnnouncement = `Zoomed in to ${Math.round((zoom + 0.2) * 100)}%`;
+          handled = true;
+          break;
+
+        case '-':
+        case '_':
+          event.preventDefault();
+          setZoom((prev) => Math.max(prev - 0.2, 0.5));
+          newAnnouncement = `Zoomed out to ${Math.round((zoom - 0.2) * 100)}%`;
+          handled = true;
+          break;
+
+        case 'Enter':
+        case ' ':
+          if (focusedIndex >= 0 && focusedIndex < facilities.length) {
+            event.preventDefault();
+            const facility = facilities[focusedIndex];
+            onSelectFacility?.(facility.id);
+            newAnnouncement = `Selected ${facility.name}`;
+            handled = true;
+          }
+          break;
+
+        case 'Home':
+          event.preventDefault();
+          setFocusedIndex(0);
+          if (facilities.length > 0) {
+            newAnnouncement = `Focused on first facility: ${facilities[0].name}`;
+          }
+          handled = true;
+          break;
+
+        case 'End':
+          event.preventDefault();
+          setFocusedIndex(facilities.length - 1);
+          if (facilities.length > 0) {
+            newAnnouncement = `Focused on last facility: ${facilities[facilities.length - 1].name}`;
+          }
+          handled = true;
+          break;
+      }
+
+      if (handled && newAnnouncement) {
+        setAnnouncement(newAnnouncement);
+      }
+    },
+    [facilities, focusedIndex, onSelectFacility, zoom]
+  );
+
+  // Clear announcements after they've been read
+  useEffect(() => {
+    if (announcement) {
+      const timer = setTimeout(() => setAnnouncement(''), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [announcement]);
+
+  const handleMarkerRef = useCallback((facilityId: string, element: HTMLButtonElement | null) => {
+    if (element) {
+      markerRefs.current.set(facilityId, element);
+    } else {
+      markerRefs.current.delete(facilityId);
+    }
+  }, []);
+
   const style: CSSProperties = {
     position: 'relative',
     width: '100%',
     height: typeof height === 'number' ? `${height}px` : height,
-    background: 'linear-gradient(180deg, #eef2ff 0%, #f8fafc 100%)',
-    border: '1px solid #e2e8f0',
+    background: highContrastMode
+      ? '#000000'
+      : 'linear-gradient(180deg, #eef2ff 0%, #f8fafc 100%)',
+    border: highContrastMode ? '2px solid #ffffff' : '1px solid #e2e8f0',
     borderRadius: 12,
     overflow: 'hidden',
+    transform: `scale(${zoom})`,
+    transformOrigin: 'center center',
+    transition: 'transform 0.2s ease-in-out',
   };
 
   return (
     <div
+      ref={mapRef}
       className="facility-map"
       data-testid="facility-map"
-      role="region"
-      aria-label={ariaLabel}
+      role="application"
+      aria-label={`${ariaLabel}. Use arrow keys to navigate between facilities, plus and minus keys to zoom, Enter or Space to select.`}
+      aria-describedby="map-instructions"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
       style={style}
     >
-      {facilities.map((facility) => (
+      {/* Screen reader instructions */}
+      <div id="map-instructions" className="sr-only">
+        Interactive map with {facilities.length} facilities. Use arrow keys to navigate between
+        markers, plus and minus keys to zoom in and out, Enter or Space to select a facility, Home
+        to go to first facility, End to go to last facility.
+      </div>
+
+      {/* Live region for screen reader announcements */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+        data-testid="map-announcements"
+      >
+        {announcement}
+      </div>
+
+      {facilities.map((facility, index) => (
         <FacilityMarker
           key={facility.id}
           facility={facility}
           position={positions.get(facility.id)!}
           selected={facility.id === selectedFacilityId}
+          focused={index === focusedIndex}
           onSelect={onSelectFacility}
+          highContrastMode={highContrastMode}
+          ref={(el) => handleMarkerRef(facility.id, el)}
+          tabIndex={-1}
         />
       ))}
     </div>
