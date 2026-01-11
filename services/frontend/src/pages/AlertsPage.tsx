@@ -7,6 +7,7 @@ import { useAlertFilterStore } from '../stores/alertFilterStore';
 import AlertStatsDashboard from '../components/AlertStatsDashboard';
 import { AlertDetailModal } from '../components/AlertDetailModal';
 import { AlertList } from '../components/AlertList';
+import { useAlertSoundNotification } from '../hooks/useAlertSoundNotification';
 
 function AlertsPage() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -19,9 +20,11 @@ function AlertsPage() {
   // Filter store
   const filterStore = useAlertFilterStore();
 
+  // Sound notifications
+  useAlertSoundNotification(alerts);
+
   // Filters
-  const [filters, setFilters] = useState<AlertFilters>({
-  });
+  const [filters, setFilters] = useState<AlertFilters>({});
 
   // Initialize filters from URL on mount
   useEffect(() => {
@@ -73,16 +76,30 @@ function AlertsPage() {
       const createdBefore = now;
 
       // Calculate date range in days for timeline
-      const alertsResponse = await alertsApi.getAlerts({ ...filters, page: 1, limit: 1000, sortBy: 'createdAt', sortOrder: 'desc' });
+      const alertsResponse = await alertsApi.getAlerts({
+        ...filters,
+        page: 1,
+        limit: 1000,
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
+      });
 
       // Filter by date range on frontend if custom
       let filteredAlerts = alertsResponse.data;
-      if (filterStore.dateRange === 'custom' && filterStore.customStartDate && filterStore.customEndDate) {
+      if (
+        filterStore.dateRange === 'custom' &&
+        filterStore.customStartDate &&
+        filterStore.customEndDate
+      ) {
         const startTime = new Date(filterStore.customStartDate).getTime();
         const endTime = new Date(filterStore.customEndDate).getTime() + 86400000; // Add 1 day
-        filteredAlerts = filteredAlerts.filter((a) => a.createdAt >= startTime && a.createdAt < endTime);
+        filteredAlerts = filteredAlerts.filter(
+          (a) => a.createdAt >= startTime && a.createdAt < endTime
+        );
       } else {
-        filteredAlerts = filteredAlerts.filter((a) => a.createdAt >= createdAfter && a.createdAt <= createdBefore);
+        filteredAlerts = filteredAlerts.filter(
+          (a) => a.createdAt >= createdAfter && a.createdAt <= createdBefore
+        );
       }
 
       setAlerts(filteredAlerts);
@@ -97,7 +114,6 @@ function AlertsPage() {
     alertsApi.exportToCSV(alerts);
   };
 
-
   if (loading && alerts.length === 0) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
@@ -108,7 +124,14 @@ function AlertsPage() {
 
   return (
     <div style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div
+        style={{
+          marginBottom: '2rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         <h2 style={{ margin: 0 }}>Alert Management</h2>
         <div style={{ display: 'flex', gap: '1rem' }}>
           <button
@@ -149,13 +172,15 @@ function AlertsPage() {
       </div>
 
       {error && (
-        <div style={{ 
-          padding: '1rem', 
-          backgroundColor: '#fee2e2', 
-          color: '#991b1b', 
-          borderRadius: '8px',
-          marginBottom: '2rem' 
-        }}>
+        <div
+          style={{
+            padding: '1rem',
+            backgroundColor: '#fee2e2',
+            color: '#991b1b',
+            borderRadius: '8px',
+            marginBottom: '2rem',
+          }}
+        >
           {error}
         </div>
       )}
@@ -171,7 +196,11 @@ function AlertsPage() {
       <AlertFilterControls onApplyFilters={applyFiltersToAPI} />
 
       {/* Alert History Section */}
-      <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem', fontWeight: '600', color: '#111827' }}>Alert History</h3>
+      <h3
+        style={{ marginBottom: '1rem', fontSize: '1.25rem', fontWeight: '600', color: '#111827' }}
+      >
+        Alert History
+      </h3>
 
       {/* Alert List */}
       <AlertList
