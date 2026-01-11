@@ -39,6 +39,9 @@ export function Header() {
         <a href="/comparative-analysis" style={{ textDecoration: 'none' }}>
           ML Analysis
         </a>
+        <a href="/health-dashboard" style={{ textDecoration: 'none' }}>
+          Health Dashboard
+        </a>
         <a href="/settings" style={{ textDecoration: 'none' }}>
           Settings
         </a>

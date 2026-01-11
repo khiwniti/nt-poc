@@ -25,6 +25,7 @@ const AIInsights = lazy(() => import('./pages/AIInsights'));
 const WhatIfScenarioAnalysis = lazy(() => import('./pages/WhatIfScenarioAnalysis'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const GeospatialView = lazy(() => import('./pages/GeospatialView'));
+const HealthScoreDashboard = lazy(() => import('./pages/HealthScoreDashboard'));
 const Unauthorized = lazy(() => import('./pages/Unauthorized'));
 
 function App() {
@@ -56,6 +57,7 @@ function App() {
                         <Route path="/what-if-analysis" element={<WhatIfScenarioAnalysis />} />
                         <Route path="/settings" element={<SettingsPage />} />
                         <Route path="/geospatial" element={<GeospatialView />} />
+                        <Route path="/health-dashboard" element={<HealthScoreDashboard />} />
                         <Route path="/unauthorized" element={<Unauthorized />} />
                       </Routes>
                     </Suspense>
