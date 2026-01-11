@@ -1,3 +1,4 @@
+import { logger } from '../observability/logger.js';
 /**
  * Email Notification Service for Critical Alerts
  * Integrates with SendGrid to send email notifications
@@ -21,7 +22,7 @@ export class EmailNotificationService {
         this.fromName = process.env.EMAIL_FROM_NAME || 'Battery Management System';
         this.dashboardBaseUrl = process.env.DASHBOARD_BASE_URL || 'http://localhost:3001';
         if (!this.sendGridApiKey) {
-            console.warn('SENDGRID_API_KEY not configured. Email notifications will be disabled.');
+            logger.warn('sendgrid_api_key_not_configured_email_disabled');
         }
     }
     static getInstance() {

@@ -12,6 +12,8 @@
  */
 import { pool } from '../config/database.js';
 import emailNotificationService from './emailNotificationService.js';
+import { logger } from '../observability/logger.js';
+import { AlertSeverity } from '../types/alertEscalation.js';
 export class AlertEscalationService {
     static instance;
     constructor() { }
@@ -66,10 +68,10 @@ export class AlertEscalationService {
      */
     getNextSeverity(currentSeverity) {
         const escalationPath = {
-            info: 'medium',
-            medium: 'high',
-            high: 'critical',
-            critical: null, // Cannot escalate beyond critical
+            [AlertSeverity.LOW]: AlertSeverity.MEDIUM,
+            [AlertSeverity.MEDIUM]: AlertSeverity.HIGH,
+            [AlertSeverity.HIGH]: AlertSeverity.CRITICAL,
+            [AlertSeverity.CRITICAL]: null, // Cannot escalate beyond critical
         };
         return escalationPath[currentSeverity];
     }
@@ -78,10 +80,10 @@ export class AlertEscalationService {
      */
     getEscalationMinutes(severity, rule) {
         const timeframes = {
-            info: rule.infoToMediumMinutes,
-            medium: rule.mediumToHighMinutes,
-            high: rule.highToCriticalMinutes,
-            critical: null, // No escalation from critical
+            [AlertSeverity.LOW]: rule.lowToMediumMinutes,
+            [AlertSeverity.MEDIUM]: rule.mediumToHighMinutes,
+            [AlertSeverity.HIGH]: rule.highToCriticalMinutes,
+            [AlertSeverity.CRITICAL]: null, // No escalation from critical
         };
         return timeframes[severity];
     }
@@ -193,7 +195,12 @@ export class AlertEscalationService {
           notification_sent as "notificationSent",
           notification_sent_at as "notificationSentAt"`, [alertId, fromSeverity, toSeverity, reason]);
             await client.query('COMMIT');
-            console.log(`Alert ${alertId} escalated from ${fromSeverity} to ${toSeverity}: ${reason}`);
+            logger.info('alert_escalated', {
+                alertId,
+                fromSeverity,
+                toSeverity,
+                reason,
+            });
             return eventResult.rows[0];
         }
         catch (error) {
@@ -209,10 +216,10 @@ export class AlertEscalationService {
      */
     mapAlertSeverityToEmailSeverity(severity) {
         const severityMap = {
-            critical: 'critical',
-            high: 'critical',
-            medium: 'warning',
-            info: 'info',
+            [AlertSeverity.CRITICAL]: 'critical',
+            [AlertSeverity.HIGH]: 'critical',
+            [AlertSeverity.MEDIUM]: 'warning',
+            [AlertSeverity.LOW]: 'info',
         };
         return severityMap[severity];
     }
@@ -257,7 +264,7 @@ export class AlertEscalationService {
             return false;
         }
         catch (error) {
-            console.error('Failed to send escalation notification:', error);
+            logger.error('alert_escalation_notification_failed', { alertId: alert.id, error });
             return false;
         }
     }
@@ -270,7 +277,7 @@ export class AlertEscalationService {
         let notified = 0;
         try {
             const candidates = await this.findEscalationCandidates();
-            console.log(`Found ${candidates.length} alerts eligible for escalation`);
+            logger.info('alert_escalation_candidates_found', { count: candidates.length });
             for (const candidate of candidates) {
                 try {
                     // Escalate the alert
@@ -286,7 +293,7 @@ export class AlertEscalationService {
                 }
                 catch (error) {
                     const errorMsg = `Failed to escalate alert ${candidate.alert.id}: ${error instanceof Error ? error.message : String(error)}`;
-                    console.error(errorMsg);
+                    logger.error('alert_escalation_candidate_failed', { error: errorMsg });
                     errors.push(errorMsg);
                 }
             }
@@ -299,7 +306,7 @@ export class AlertEscalationService {
         }
         catch (error) {
             const errorMsg = `Failed to process escalations: ${error instanceof Error ? error.message : String(error)}`;
-            console.error(errorMsg);
+            logger.error('alert_escalation_processing_failed', { error: errorMsg });
             errors.push(errorMsg);
             return { checked: 0, escalated: 0, notified: 0, errors };
         }
