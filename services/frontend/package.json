@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:coverage": "vitest --coverage",
+    "test:coverage:geospatial": "vitest --config vitest.geospatial.config.ts --coverage",
     "analyze": "vite build && vite-bundle-visualizer",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
