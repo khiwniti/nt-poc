@@ -1,46 +1,252 @@
+# ============================================================================
+# RAILWAY DEPLOYMENT CONFIGURATION
+# ============================================================================
+# Service Architecture:
+#   1. Backend (Node.js/Express) - API server
+#   2. Frontend (React/Vite) - Static web app
+#   3. MLOps (Python/FastAPI) - ML operations
+#   4. PostgreSQL 16 + TimescaleDB (Railway-managed via Dashboard)
+#   5. Redis 7 (Railway-managed via Dashboard)
+#
+# Internal Networking:
+#   Services communicate via Railway's .railway.internal domains
+#   Example: http://mlops.railway.internal:8001
+#
+# Documentation: https://docs.railway.app/deploy/config-as-code
+# ============================================================================
+
 [build]
-builder = "nixpacks"
+builder = "NIXPACKS"
 
-[deploy]
-startCommand = "docker-compose up -d"
-
-[[services]]
-name = "frontend"
-path = "services/frontend"
-buildCommand = "npm run build"
-startCommand = "npm run preview"
-healthcheckPath = "/"
-healthcheckTimeout = 100
+# ============================================================================
+# BACKEND SERVICE (Node.js/Express)
+# ============================================================================
 
 [[services]]
 name = "backend"
-path = "services/backend"
-buildCommand = "npm run build"
+source = "services/backend"
+
+[services.build]
+builder = "NIXPACKS"
+buildCommand = "npm ci && npm run build"
+
+[services.deploy]
 startCommand = "npm start"
-healthcheckPath = "/api/health"
+healthcheckPath = "/api/v1/health"
 healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+# Environment Variables (set via Railway Dashboard):
+# -------------------------------------------------------
+# Database (Auto-provided by PostgreSQL plugin):
+#   DATABASE_URL = ${{Postgres.DATABASE_URL}}
+#   DB_HOST = ${{Postgres.PGHOST}}
+#   DB_PORT = ${{Postgres.PGPORT}}
+#   DB_NAME = ${{Postgres.PGDATABASE}}
+#   DB_USER = ${{Postgres.PGUSER}}
+#   DB_PASSWORD = ${{Postgres.PGPASSWORD}}
+#   DB_SSL = true
+#
+# Redis (Auto-provided by Redis plugin):
+#   REDIS_URL = ${{Redis.REDIS_URL}}
+#
+# Application:
+#   NODE_ENV = production
+#   PORT = 3000
+#
+# Authentication:
+#   JWT_SECRET = <generate-with-openssl-rand-base64-32>
+#   JWT_EXPIRY = 24h
+#
+# Jobs:
+#   PREDICTION_JOB_INTERVAL_MINUTES = 60
+#   ESCALATION_JOB_INTERVAL_MINUTES = 5
+#
+# Email:
+#   SENDGRID_API_KEY = <your-sendgrid-api-key>
+#   EMAIL_FROM = alerts@yourdomain.com
+#   EMAIL_FROM_NAME = Battery Management System
+#   DASHBOARD_BASE_URL = https://${{RAILWAY_PUBLIC_DOMAIN}}
+#
+# Service URLs (Internal networking):
+#   MLOPS_SERVICE_URL = http://mlops.railway.internal:8001
+#
+# Logging:
+#   LOG_LEVEL = info
+#
+# Monitoring (Optional):
+#   METRICS_AUTH_TOKEN = <random-token>
+#   MONITORING_AUTH_TOKEN = <random-token>
+#   SENTRY_DSN = <your-sentry-dsn>
+
+# ============================================================================
+# FRONTEND SERVICE (React/Vite)
+# ============================================================================
+
+[[services]]
+name = "frontend"
+source = "services/frontend"
+
+[services.build]
+builder = "NIXPACKS"
+buildCommand = "npm ci && npm run build"
+
+[services.deploy]
+# Railway auto-serves static files from dist/ - no startCommand needed
+healthcheckPath = "/"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+# Environment Variables (build-time injection):
+# -----------------------------------------------
+# API Endpoints:
+#   VITE_API_BASE_URL = https://${{RAILWAY_PUBLIC_DOMAIN}}/api
+#   VITE_MLOPS_SERVICE_URL = https://${{RAILWAY_PUBLIC_DOMAIN}}/mlops
+#
+# Application:
+#   VITE_APP_NAME = Battery Management System
+#   VITE_APP_VERSION = 1.0.0
+#   VITE_ENVIRONMENT = production
+#
+# Feature Flags:
+#   VITE_ENABLE_ANALYTICS = true
+#   VITE_ENABLE_OFFLINE_MODE = false
+#   VITE_ENABLE_DEBUG_MODE = false
+#
+# UI Settings:
+#   VITE_DEFAULT_THEME = light
+#   VITE_ENABLE_DARK_MODE = true
+#
+# Build:
+#   NODE_ENV = production
+#   GENERATE_SOURCEMAP = false
+#
+# Error Tracking (Optional):
+#   VITE_SENTRY_DSN = <your-frontend-sentry-dsn>
+
+# ============================================================================
+# MLOPS SERVICE (Python/FastAPI)
+# ============================================================================
 
 [[services]]
 name = "mlops"
-path = "services/mlops"
+source = "services/mlops"
+
+[services.build]
+builder = "NIXPACKS"
 buildCommand = "pip install -r requirements.txt"
-startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+
+[services.deploy]
+startCommand = "uvicorn src.main:app --host 0.0.0.0 --port $PORT"
 healthcheckPath = "/health"
 healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
 
-[[services]]
-name = "simulator"
-path = "services/simulator"
-buildCommand = "pip install -r requirements.txt"
-startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
-healthcheckPath = "/api/health"
-healthcheckTimeout = 100
+# Environment Variables:
+# ----------------------
+# Application:
+#   APP_NAME = MLOps Service
+#   ENVIRONMENT = production
+#   PORT = 8001
+#
+# CORS:
+#   CORS_ORIGINS = ["https://${{RAILWAY_PUBLIC_DOMAIN}}"]
+#
+# Models:
+#   MODELS_DIR = /app/models
+#   MODEL_VERSION = v1.0.0
+#
+# Redis (Optional - for caching):
+#   REDIS_URL = ${{Redis.REDIS_URL}}
+#
+# Database (Optional - for metrics):
+#   DATABASE_URL = ${{Postgres.DATABASE_URL}}
+#
+# Logging:
+#   LOG_LEVEL = INFO
+#
+# Performance:
+#   WORKER_PROCESSES = 2
+#   MAX_BATCH_SIZE = 100
 
-[[databases]]
-name = "db"
-image = "timescale/timescaledb:latest-pg16"
-env = [
-  "POSTGRES_USER=${PGUSER}",
-  "POSTGRES_PASSWORD=${PGPASSWORD}",
-  "POSTGRES_DB=${PGDATABASE}"
-]
+# ============================================================================
+# INTERNAL NETWORKING (.railway.internal)
+# ============================================================================
+# Railway provides private networking between services using internal domains.
+# These are only accessible within the Railway project.
+#
+# Internal Service URLs:
+#   backend.railway.internal:3000    - Backend API
+#   mlops.railway.internal:8001      - MLOps API
+#   postgres.railway.internal:5432   - PostgreSQL database
+#   redis.railway.internal:6379      - Redis cache
+#
+# Usage Examples:
+#   Backend → MLOps:  MLOPS_SERVICE_URL = http://mlops.railway.internal:8001
+#   MLOps → Backend:  BACKEND_URL = http://backend.railway.internal:3000
+#   Any → Database:   DB_HOST = postgres.railway.internal
+#   Any → Redis:      REDIS_HOST = redis.railway.internal
+#
+# Public URLs (Railway auto-provides):
+#   Frontend: https://${{RAILWAY_PUBLIC_DOMAIN}}
+#   Backend:  https://<backend>.railway.app
+#   MLOps:    https://<mlops>.railway.app
+#
+# Service Communication Matrix:
+#   Backend → PostgreSQL: Direct connection
+#   Backend → Redis: Direct connection
+#   Backend → MLOps: Internal networking
+#   Frontend → Backend: Public API
+#   Frontend → MLOps: Public API (if needed)
+# ============================================================================
+
+# ============================================================================
+# MANAGED SERVICES (Provision via Railway Dashboard)
+# ============================================================================
+#
+# 4. PostgreSQL 16 + TimescaleDB
+#    How to Provision:
+#      1. Railway Dashboard → New → Database → PostgreSQL
+#      2. Select PostgreSQL 16
+#      3. Enable TimescaleDB extension:
+#         railway run psql $DATABASE_URL -c "CREATE EXTENSION IF NOT EXISTS timescaledb;"
+#
+#    Auto-Generated Variables:
+#      DATABASE_URL, PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD
+#
+#    Internal URL:
+#      postgres.railway.internal:5432
+#
+#    Configuration:
+#      - Storage: 10GB (adjustable)
+#      - Max Connections: 100
+#      - SSL: Enabled by default
+#      - Backups: Daily automatic
+#
+# 5. Redis 7
+#    How to Provision:
+#      1. Railway Dashboard → New → Database → Redis
+#      2. Select Redis 7
+#      3. No additional setup required
+#
+#    Auto-Generated Variables:
+#      REDIS_URL, REDIS_HOST, REDIS_PORT, REDIS_PASSWORD
+#
+#    Internal URL:
+#      redis.railway.internal:6379
+#
+#    Configuration:
+#      - Memory: 512MB-1GB (adjustable)
+#      - Eviction Policy: allkeys-lru
+#      - Persistence: AOF enabled
+#
+# Setup Order:
+#   1. Provision PostgreSQL
+#   2. Provision Redis
+#   3. Deploy MLOps service
+#   4. Deploy Backend service (depends on all above)
+#   5. Deploy Frontend service (depends on Backend)
+# ============================================================================
