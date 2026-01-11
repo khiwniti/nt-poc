@@ -8,6 +8,7 @@ import {
   getMapTileUrl,
 } from '../services/geospatialService.js';
 import { getMapCacheStats } from '../services/mapCache.js';
+import logger from '../config/logger.js';
 
 const router = express.Router();
 
@@ -29,7 +30,7 @@ router.post('/geocode', async (req: AuthRequest, res: Response) => {
 
     res.json({ data: result });
   } catch (error) {
-    console.error('Error geocoding address:', error);
+    logger.error('Error geocoding address:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -54,7 +55,7 @@ router.post('/reverse-geocode', async (req: AuthRequest, res: Response) => {
 
     res.json({ data: result });
   } catch (error) {
-    console.error('Error reverse geocoding:', error);
+    logger.error('Error reverse geocoding:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -80,7 +81,7 @@ router.get('/weather', async (req: AuthRequest, res: Response) => {
 
     res.json({ data: result });
   } catch (error) {
-    console.error('Error fetching weather:', error);
+    logger.error('Error fetching weather:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -107,7 +108,7 @@ router.post('/distance', async (req: AuthRequest, res: Response) => {
 
     res.json({ data: result });
   } catch (error) {
-    console.error('Error calculating distance:', error);
+    logger.error('Error calculating distance:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -131,7 +132,7 @@ router.get('/tile-url', async (req: AuthRequest, res: Response) => {
 
     res.json({ data: { url } });
   } catch (error) {
-    console.error('Error getting tile URL:', error);
+    logger.error('Error getting tile URL:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -141,7 +142,7 @@ router.get('/cache-stats', async (req: AuthRequest, res: Response) => {
     const stats = getMapCacheStats();
     res.json({ data: stats });
   } catch (error) {
-    console.error('Error fetching cache stats:', error);
+    logger.error('Error fetching cache stats:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
