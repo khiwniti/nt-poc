@@ -20,6 +20,7 @@ const ModelPerformance = lazy(() => import('./pages/ModelPerformance'));
 const AIInsights = lazy(() => import('./pages/AIInsights'));
 const WhatIfScenarioAnalysis = lazy(() => import('./pages/WhatIfScenarioAnalysis'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const GeospatialView = lazy(() => import('./pages/GeospatialView'));
 const Unauthorized = lazy(() => import('./pages/Unauthorized'));
 
 function App() {
@@ -49,6 +50,7 @@ function App() {
                         <Route path="/ai-insights" element={<AIInsights />} />
                         <Route path="/what-if-analysis" element={<WhatIfScenarioAnalysis />} />
                         <Route path="/settings" element={<SettingsPage />} />
+                        <Route path="/geospatial" element={<GeospatialView />} />
                         <Route path="/unauthorized" element={<Unauthorized />} />
                       </Routes>
                     </Suspense>
