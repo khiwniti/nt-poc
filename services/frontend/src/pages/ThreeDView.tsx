@@ -7,8 +7,12 @@ import { AssetLoadingIndicator } from '../components/AssetLoadingIndicator';
 import { VRScene } from '../components/VRScene';
 import { VRNavigationController } from '../components/VRControllers';
 import { VRFallbackUI, VRStatusBadge } from '../components/VRFallbackUI';
+import { HeatmapOverlay, type HeatmapMetric } from '../components/HeatmapOverlay';
+import { HeatmapControls } from '../components/HeatmapControls';
+import { HeatmapLegend } from '../components/HeatmapLegend';
 import { useAssetLoader } from '../hooks/useAssetLoader';
 import { useVRCapabilities } from '../hooks/useVRCapabilities';
+import { useHeatmapData } from '../hooks/useHeatmapData';
 import { getRecommendedVRFrameRate } from '../utils/vrDetection';
 
 function ThreeDView() {
@@ -16,6 +20,8 @@ function ThreeDView() {
   const [vrMode, setVRMode] = useState(false);
   const [showVRFallback, setShowVRFallback] = useState(false);
   const [performanceWarning, setPerformanceWarning] = useState<string | null>(null);
+  const [heatmapEnabled, setHeatmapEnabled] = useState(false);
+  const [heatmapMetric, setHeatmapMetric] = useState<HeatmapMetric>('temperature');
 
   const { isLoading, progress, error, reload } = useAssetLoader({
     url: selectedModel,
@@ -24,6 +30,17 @@ function ThreeDView() {
 
   const { capabilities, isVRSupported } = useVRCapabilities();
   const targetFPS = getRecommendedVRFrameRate();
+  
+  const { 
+    data: heatmapData, 
+    minValue, 
+    maxValue,
+    isLoading: heatmapLoading,
+  } = useHeatmapData({
+    metric: heatmapMetric,
+    facilityId: 'facility-1',
+    updateInterval: 5000,
+  });
 
   const demoModels = [
     { name: 'Zone Model', url: '/assets/models/zone.glb' },
@@ -88,26 +105,35 @@ function ThreeDView() {
         </button>
       </div>
 
-      <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-        <label style={{ marginRight: '0.5rem' }}>Load Model:</label>
-        <select
-          value={selectedModel || ''}
-          onChange={(e) => setSelectedModel(e.target.value || null)}
-          style={{ padding: '0.5rem', flex: 1, maxWidth: '300px' }}
-        >
-          <option value="">-- Select a model --</option>
-          {demoModels.map((model) => (
-            <option key={model.url} value={model.url}>
-              {model.name}
-            </option>
-          ))}
-        </select>
+      <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <label style={{ marginRight: '0.5rem' }}>Load Model:</label>
+          <select
+            value={selectedModel || ''}
+            onChange={(e) => setSelectedModel(e.target.value || null)}
+            style={{ padding: '0.5rem', minWidth: '200px' }}
+          >
+            <option value="">-- Select a model --</option>
+            {demoModels.map((model) => (
+              <option key={model.url} value={model.url}>
+                {model.name}
+              </option>
+            ))}
+          </select>
 
-        {selectedModel && (
-          <button onClick={reload} style={{ padding: '0.5rem 1rem' }}>
-            Reload
-          </button>
-        )}
+          {selectedModel && (
+            <button onClick={reload} style={{ padding: '0.5rem 1rem' }}>
+              Reload
+            </button>
+          )}
+        </div>
+
+        <HeatmapControls
+          enabled={heatmapEnabled}
+          metric={heatmapMetric}
+          onToggle={() => setHeatmapEnabled(!heatmapEnabled)}
+          onMetricChange={setHeatmapMetric}
+        />
       </div>
 
       {performanceWarning && (
@@ -150,6 +176,14 @@ function ThreeDView() {
                 autoRotate={false}
               />
             )}
+
+            <HeatmapOverlay
+              data={heatmapData}
+              metric={heatmapMetric}
+              enabled={heatmapEnabled}
+              interpolationRadius={5.0}
+              opacity={0.7}
+            />
           </VRScene>
         ) : (
           <Canvas camera={{ position: [5, 5, 5], fov: 50 }}>
@@ -168,6 +202,14 @@ function ThreeDView() {
                 autoRotate={false}
               />
             )}
+
+            <HeatmapOverlay
+              data={heatmapData}
+              metric={heatmapMetric}
+              enabled={heatmapEnabled}
+              interpolationRadius={5.0}
+              opacity={0.7}
+            />
           </Canvas>
         )}
 
@@ -187,6 +229,14 @@ function ThreeDView() {
           assetName={demoModels.find(m => m.url === selectedModel)?.name}
           onRetry={reload}
         />
+
+        {heatmapEnabled && !heatmapLoading && (
+          <HeatmapLegend
+            metric={heatmapMetric}
+            minValue={minValue}
+            maxValue={maxValue}
+          />
+        )}
       </div>
     </div>
   );
