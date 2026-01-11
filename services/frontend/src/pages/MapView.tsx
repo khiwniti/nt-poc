@@ -231,7 +231,7 @@ export default function MapView() {
                       <div className="map-popup__actions">
                         <Link
                           className="popup-view-details"
-                          to={`/?facilityId=${encodeURIComponent(facility.id)}`}
+                          to={`/facility?facilityId=${encodeURIComponent(facility.id)}`}
                         >
                           View facility dashboard
                         </Link>
