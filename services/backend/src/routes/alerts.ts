@@ -501,7 +501,7 @@ router.post('/escalation/rules', async (req: AuthRequest, res: Response) => {
   try {
     const {
       facilityId,
-      infoToMediumMinutes,
+      lowToMediumMinutes,
       mediumToHighMinutes,
       highToCriticalMinutes,
       enabled = true,
@@ -512,18 +512,18 @@ router.post('/escalation/rules', async (req: AuthRequest, res: Response) => {
     }
 
     if (
-      typeof infoToMediumMinutes !== 'number' ||
+      typeof lowToMediumMinutes !== 'number' ||
       typeof mediumToHighMinutes !== 'number' ||
       typeof highToCriticalMinutes !== 'number'
     ) {
       return res.status(400).json({
-        error: 'infoToMediumMinutes, mediumToHighMinutes, and highToCriticalMinutes must be numbers',
+        error: 'lowToMediumMinutes, mediumToHighMinutes, and highToCriticalMinutes must be numbers',
       });
     }
 
     const rule = await alertEscalationService.upsertEscalationRule(
       facilityId,
-      infoToMediumMinutes,
+      lowToMediumMinutes,
       mediumToHighMinutes,
       highToCriticalMinutes,
       enabled

@@ -45,7 +45,7 @@ export class AlertEscalationService {
         `SELECT 
           id, 
           facility_id as "facilityId",
-          info_to_medium_minutes as "infoToMediumMinutes",
+          info_to_medium_minutes as "lowToMediumMinutes",
           medium_to_high_minutes as "mediumToHighMinutes",
           high_to_critical_minutes as "highToCriticalMinutes",
           enabled,
@@ -63,7 +63,7 @@ export class AlertEscalationService {
           `SELECT 
             id, 
             facility_id as "facilityId",
-            info_to_medium_minutes as "infoToMediumMinutes",
+            info_to_medium_minutes as "lowToMediumMinutes",
             medium_to_high_minutes as "mediumToHighMinutes",
             high_to_critical_minutes as "highToCriticalMinutes",
             enabled,
@@ -430,7 +430,7 @@ export class AlertEscalationService {
    */
   async upsertEscalationRule(
     facilityId: string,
-    infoToMediumMinutes: number,
+    lowToMediumMinutes: number,
     mediumToHighMinutes: number,
     highToCriticalMinutes: number,
     enabled: boolean = true
@@ -457,14 +457,14 @@ export class AlertEscalationService {
         RETURNING 
           id,
           facility_id as "facilityId",
-          info_to_medium_minutes as "infoToMediumMinutes",
+          info_to_medium_minutes as "lowToMediumMinutes",
           medium_to_high_minutes as "mediumToHighMinutes",
           high_to_critical_minutes as "highToCriticalMinutes",
           enabled,
           created_at as "createdAt",
           updated_at as "updatedAt",
           config`,
-        [facilityId, infoToMediumMinutes, mediumToHighMinutes, highToCriticalMinutes, enabled]
+        [facilityId, lowToMediumMinutes, mediumToHighMinutes, highToCriticalMinutes, enabled]
       );
 
       return result.rows[0];
