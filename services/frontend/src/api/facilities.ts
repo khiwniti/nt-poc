@@ -1,4 +1,8 @@
-export interface Facility {
+/**
+ * Extended facility interface with full details
+ * Basic Facility interface (id, name) is defined in dashboard.ts
+ */
+export interface FacilityDetails {
   id: string;
   name: string;
   location: string;
@@ -9,6 +13,10 @@ export interface Facility {
   updated_at: string;
 }
 
+/**
+ * Extended KPIs interface for facilities
+ * Base KPIs interface (totalCapacity, averageSoC) is defined in dashboard.ts
+ */
 export interface FacilityKPIs {
   totalCapacity: number;
   averageSoC: number;
@@ -18,26 +26,26 @@ export interface FacilityKPIs {
 }
 
 export interface FacilityListResponse {
-  data: Facility[];
+  data: FacilityDetails[];
   total: number;
 }
 
 export interface FacilityResponse {
-  data: Facility;
+  data: FacilityDetails;
 }
 
 export interface FacilityKPIsResponse {
   data: FacilityKPIs;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 export const facilitiesApi = {
   /**
    * Get list of all active facilities
    */
   async getFacilities(): Promise<FacilityListResponse> {
-    const response = await fetch(`${API_BASE_URL}/facilities`);
+    const response = await fetch(`${API_BASE_URL}/v1/facilities`);
     if (!response.ok) {
       throw new Error(`Failed to fetch facilities: ${response.statusText}`);
     }
@@ -48,7 +56,7 @@ export const facilitiesApi = {
    * Get a specific facility by ID
    */
   async getFacilityById(id: string): Promise<FacilityResponse> {
-    const response = await fetch(`${API_BASE_URL}/facilities/${id}`);
+    const response = await fetch(`${API_BASE_URL}/v1/facilities/${id}`);
     if (!response.ok) {
       throw new Error(`Failed to fetch facility: ${response.statusText}`);
     }
@@ -59,7 +67,7 @@ export const facilitiesApi = {
    * Get KPIs (Key Performance Indicators) for a specific facility
    */
   async getFacilityKPIs(id: string): Promise<FacilityKPIsResponse> {
-    const response = await fetch(`${API_BASE_URL}/facilities/${id}/kpis`);
+    const response = await fetch(`${API_BASE_URL}/v1/facilities/${id}/kpis`);
     if (!response.ok) {
       throw new Error(`Failed to fetch facility KPIs: ${response.statusText}`);
     }
