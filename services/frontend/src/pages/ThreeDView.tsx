@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { useState, useEffect, useRef } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, Grid } from '@react-three/drei';
 import { Eye, Glasses } from 'lucide-react';
 import { GLTFModel } from '../components/GLTFModel';
@@ -14,6 +14,44 @@ import { useAssetLoader } from '../hooks/useAssetLoader';
 import { useVRCapabilities } from '../hooks/useVRCapabilities';
 import { useHeatmapData } from '../hooks/useHeatmapData';
 import { getRecommendedVRFrameRate } from '../utils/vrDetection';
+import { useKeyboardNavigation3D } from '../hooks/useKeyboardNavigation3D';
+import { ScreenReaderAnnouncer } from '../components/ScreenReaderAnnouncer';
+import { AccessibilityControlPanel } from '../components/AccessibilityControlPanel';
+import { Accessible3DZone } from '../components/Accessible3DZone';
+import { useAccessibilityStore } from '../stores/accessibilityStore';
+import { generateZoneAnnouncement } from '../hooks/useAccessible3DZone';
+import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
+
+// Component to handle keyboard navigation inside Canvas
+function KeyboardNavigationWrapper({ 
+  onZoneSelect, 
+  onAnnouncement 
+}: { 
+  onZoneSelect: (index: number) => void;
+  onAnnouncement: (msg: string) => void;
+}) {
+  const controlsRef = useRef<OrbitControlsImpl>(null);
+  const { camera } = useThree();
+  const cameraRef = useRef(camera);
+  const { keyboardNavigationEnabled } = useAccessibilityStore();
+
+  useEffect(() => {
+    cameraRef.current = camera;
+  }, [camera]);
+
+  const { setTotalZones } = useKeyboardNavigation3D(controlsRef, cameraRef, {
+    enabled: keyboardNavigationEnabled,
+    onZoneSelect,
+    onAnnouncement,
+  });
+
+  useEffect(() => {
+    // Set demo zones count
+    setTotalZones(3);
+  }, [setTotalZones]);
+
+  return <OrbitControls ref={controlsRef} makeDefault />;
+}
 
 function ThreeDView() {
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
@@ -22,6 +60,11 @@ function ThreeDView() {
   const [performanceWarning, setPerformanceWarning] = useState<string | null>(null);
   const [heatmapEnabled, setHeatmapEnabled] = useState(false);
   const [heatmapMetric, setHeatmapMetric] = useState<HeatmapMetric>('temperature');
+  const [selectedZoneIndex, setSelectedZoneIndex] = useState<number>(-1);
+  const [announcement, setAnnouncement] = useState<string>('');
+  const [showA11yPanel, setShowA11yPanel] = useState(false);
+
+  const { highContrastEnabled, colorScheme } = useAccessibilityStore();
 
   const { isLoading, progress, error, reload } = useAssetLoader({
     url: selectedModel,
@@ -47,6 +90,36 @@ function ThreeDView() {
     { name: 'Battery Model', url: '/assets/models/battery.glb' },
     { name: 'Facility Element', url: '/assets/models/facility.glb' },
   ];
+
+  // Demo zones for accessibility testing
+  const demoZones = [
+    { id: 'zone-1', name: 'Zone A', status: 'normal' as const, position: [-2, 0, 0] as [number, number, number], temperature: 22, batteryLevel: 85, alertCount: 0 },
+    { id: 'zone-2', name: 'Zone B', status: 'warning' as const, position: [0, 0, 0] as [number, number, number], temperature: 28, batteryLevel: 45, alertCount: 2 },
+    { id: 'zone-3', name: 'Zone C', status: 'critical' as const, position: [2, 0, 0] as [number, number, number], temperature: 35, batteryLevel: 15, alertCount: 5 },
+  ];
+
+  const handleZoneSelect = (index: number) => {
+    setSelectedZoneIndex(index);
+    if (index >= 0 && index < demoZones.length) {
+      const zone = demoZones[index];
+      const announcement = generateZoneAnnouncement({
+        zoneId: zone.id,
+        zoneName: zone.name,
+        status: zone.status,
+        temperature: zone.temperature,
+        batteryLevel: zone.batteryLevel,
+        alertCount: zone.alertCount,
+        position: zone.position,
+      });
+      setAnnouncement(announcement);
+    } else if (index === -1) {
+      setAnnouncement('Zone deselected');
+    }
+  };
+
+  const handleAnnouncement = (message: string) => {
+    setAnnouncement(message);
+  };
 
   const handleVRToggle = () => {
     if (!isVRSupported) {
@@ -75,34 +148,59 @@ function ThreeDView() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h2>3D Facility View</h2>
 
-        <button
-          onClick={handleVRToggle}
-          style={{
-            padding: '0.75rem 1.5rem',
-            fontSize: '1rem',
-            fontWeight: 'bold',
-            backgroundColor: vrMode ? '#FF5722' : '#2196F3',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-          }}
-        >
-          {vrMode ? (
-            <>
-              <Eye size={20} />
-              Switch to Desktop View
-            </>
-          ) : (
-            <>
-              <Glasses size={20} />
-              Enable VR Mode
-            </>
-          )}
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button
+            onClick={() => setShowA11yPanel(!showA11yPanel)}
+            style={{
+              padding: '0.75rem 1.5rem',
+              fontSize: '1rem',
+              fontWeight: 'bold',
+              backgroundColor: highContrastEnabled ? '#000' : '#4CAF50',
+              color: highContrastEnabled ? '#FFF' : 'white',
+              border: highContrastEnabled ? '2px solid #FFF' : 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+            }}
+            aria-label="Toggle accessibility settings panel"
+            aria-expanded={showA11yPanel}
+          >
+            <Eye size={20} />
+            Accessibility
+          </button>
+
+          <button
+            onClick={handleVRToggle}
+            style={{
+              padding: '0.75rem 1.5rem',
+              fontSize: '1rem',
+              fontWeight: 'bold',
+              backgroundColor: vrMode ? '#FF5722' : '#2196F3',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+            }}
+            aria-label={vrMode ? 'Switch to Desktop View' : 'Enable VR Mode'}
+          >
+            {vrMode ? (
+              <>
+                <Eye size={20} />
+                Switch to Desktop View
+              </>
+            ) : (
+              <>
+                <Glasses size={20} />
+                Enable VR Mode
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -155,10 +253,14 @@ function ThreeDView() {
         flex: 1,
         border: '1px solid #ddd',
         borderRadius: '8px',
-        background: '#f5f5f5',
+        background: highContrastEnabled ? '#000' : '#f5f5f5',
         position: 'relative',
         overflow: 'hidden',
-      }}>
+      }}
+      role="application"
+      aria-label="3D facility visualization"
+      tabIndex={0}
+      >
         {vrMode && isVRSupported ? (
           <VRScene
             enableControllers
@@ -192,7 +294,10 @@ function ThreeDView() {
             <directionalLight position={[-10, -10, -5]} intensity={0.3} />
 
             <Grid infiniteGrid cellSize={1} cellThickness={0.5} sectionSize={5} />
-            <OrbitControls makeDefault />
+            <KeyboardNavigationWrapper 
+              onZoneSelect={handleZoneSelect}
+              onAnnouncement={handleAnnouncement}
+            />
 
             {selectedModel && !error && (
               <GLTFModel
@@ -202,6 +307,22 @@ function ThreeDView() {
                 autoRotate={false}
               />
             )}
+
+            {/* Demo accessible zones */}
+            {demoZones.map((zone, index) => (
+              <Accessible3DZone
+                key={zone.id}
+                zoneId={zone.id}
+                zoneName={zone.name}
+                status={zone.status}
+                temperature={zone.temperature}
+                batteryLevel={zone.batteryLevel}
+                alertCount={zone.alertCount}
+                position={zone.position}
+                isSelected={selectedZoneIndex === index}
+                onSelect={() => handleZoneSelect(index)}
+              />
+            ))}
 
             <HeatmapOverlay
               data={heatmapData}
@@ -237,6 +358,37 @@ function ThreeDView() {
             maxValue={maxValue}
           />
         )}
+
+        {/* Screen reader announcements */}
+        <ScreenReaderAnnouncer message={announcement} priority="polite" />
+
+        {/* Accessibility control panel */}
+        {showA11yPanel && <AccessibilityControlPanel />}
+
+        {/* Keyboard shortcuts help */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '1rem',
+            left: '1rem',
+            padding: '0.5rem 1rem',
+            background: highContrastEnabled ? '#000' : 'rgba(0, 0, 0, 0.7)',
+            color: highContrastEnabled ? '#FFF' : '#fff',
+            border: highContrastEnabled ? '2px solid #FFF' : 'none',
+            borderRadius: '6px',
+            fontSize: '0.85rem',
+            maxWidth: '300px',
+          }}
+          role="status"
+          aria-label="Keyboard navigation instructions"
+        >
+          Press <kbd style={{ 
+            padding: '2px 6px', 
+            background: highContrastEnabled ? '#FFF' : '#fff', 
+            color: highContrastEnabled ? '#000' : '#000', 
+            borderRadius: '3px' 
+          }}>?</kbd> for keyboard shortcuts
+        </div>
       </div>
     </div>
   );
