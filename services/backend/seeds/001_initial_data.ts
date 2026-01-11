@@ -44,7 +44,7 @@ export async function seed(knex: Knex): Promise<void> {
       {
         id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
         facility_id: '11111111-1111-1111-1111-111111111111',
-        name: 'Battery System A1',
+        name: 'Battery System 001',
         zone: 'Zone 1',
         capacity_kwh: 500.00,
         status: 'online',
@@ -53,7 +53,7 @@ export async function seed(knex: Knex): Promise<void> {
       {
         id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
         facility_id: '11111111-1111-1111-1111-111111111111',
-        name: 'Battery System A2',
+        name: 'Battery System 002',
         zone: 'Zone 2',
         capacity_kwh: 750.00,
         status: 'online',
@@ -62,7 +62,7 @@ export async function seed(knex: Knex): Promise<void> {
       {
         id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
         facility_id: '22222222-2222-2222-2222-222222222222',
-        name: 'Battery System B1',
+        name: 'Battery System 003',
         zone: 'Zone 1',
         capacity_kwh: 1000.00,
         status: 'online',
@@ -71,7 +71,7 @@ export async function seed(knex: Knex): Promise<void> {
       {
         id: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
         facility_id: '22222222-2222-2222-2222-222222222222',
-        name: 'Battery System B2',
+        name: 'Battery System 004',
         zone: 'Zone 3',
         capacity_kwh: 850.00,
         status: 'maintenance',
@@ -80,7 +80,7 @@ export async function seed(knex: Knex): Promise<void> {
       {
         id: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
         facility_id: '33333333-3333-3333-3333-333333333333',
-        name: 'Battery System C1',
+        name: 'Battery System 005',
         zone: 'Zone 1',
         capacity_kwh: 600.00,
         status: 'offline',
