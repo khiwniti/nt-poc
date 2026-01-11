@@ -1,0 +1,40 @@
+# Git
+.git
+.gitignore
+
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist
+build
+coverage
+
+# Documentation
+*.md
+docs/
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
+# Docker
+Dockerfile
+docker-compose*.yml
