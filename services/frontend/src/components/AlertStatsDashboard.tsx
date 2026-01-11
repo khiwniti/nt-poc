@@ -85,11 +85,12 @@ function AlertStatsDashboard({ filters = {} }: AlertStatsDashboardProps) {
     count: value,
   }));
 
-  const statusData = [
-    { name: 'Active', value: stats.byStatus.active, color: '#ef4444' },
-    { name: 'Acknowledged', value: stats.byStatus.acknowledged, color: '#f59e0b' },
-    { name: 'Resolved', value: stats.byStatus.resolved, color: '#10b981' },
-  ];
+  // Status data for potential future use
+  // const statusData = [
+  //   { name: 'Active', value: stats.byStatus.active, color: '#ef4444' },
+  //   { name: 'Acknowledged', value: stats.byStatus.acknowledged, color: '#f59e0b' },
+  //   { name: 'Resolved', value: stats.byStatus.resolved, color: '#10b981' },
+  // ];
 
   return (
     <div style={{ padding: '0' }}>
@@ -223,7 +224,7 @@ function AlertStatsDashboard({ filters = {} }: AlertStatsDashboardProps) {
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
                 outerRadius={80}
                 fill="#8884d8"
                 dataKey="value"

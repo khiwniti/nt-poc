@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
-import { useAlertFilterStore, AlertSeverity, AlertStatus, AlertType, DateRange } from '../stores/alertFilterStore';
+import { useAlertFilterStore, DateRange } from '../stores/alertFilterStore';
+import { AlertSeverity, AlertStatus, AlertType } from '../types';
 
 const ALERT_TYPES: AlertType[] = [
   AlertType.TEMPERATURE,

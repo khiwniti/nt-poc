@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface ModelPerformanceData {
   healthScore: {
@@ -599,4 +599,4 @@ function DataQualityCard({
 }
 
 
-export default ModelPerformance;
+export default ModelPerformanceDashboard;
