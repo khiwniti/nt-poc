@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import { useEffect, useRef, useState, useMemo } from 'react';
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
+import { calculateFacilityHealth, getHealthColor } from '../utils/facilityHealth';
 
 interface Facility {
   id: string;
@@ -11,6 +11,9 @@ interface Facility {
   longitude: number;
   status: string;
   total_zones?: number;
+  averageSoH?: number;
+  averageSoC?: number;
+  activeAlerts?: number;
 }
 
 interface FacilityMapProps {
@@ -19,377 +22,318 @@ interface FacilityMapProps {
   isMobile?: boolean;
 }
 
-// Fix Leaflet default icon issue
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-});
-
-const createMarkerIcon = (status: string, isMobile: boolean) => {
-  const color = status === 'active' ? '#10b981' : status === 'maintenance' ? '#f59e0b' : '#ef4444';
-  const size = isMobile ? 30 : 40;
-  
-  return L.divIcon({
-    html: `<div style="
-      background-color: ${color};
-      width: ${size}px;
-      height: ${size}px;
-      border-radius: 50% 50% 50% 0;
-      transform: rotate(-45deg);
-      border: 3px solid white;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    ">
-      <div style="transform: rotate(45deg); color: white; font-weight: bold; font-size: ${isMobile ? '12px' : '14px'};">
-        ${status === 'active' ? '✓' : status === 'maintenance' ? '⚙' : '⚠'}
-      </div>
-    </div>`,
-    className: 'custom-marker',
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size],
-    popupAnchor: [0, -size],
-  });
-};
-
-const GeolocationButton: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
-  const map = useMap();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleGeolocation = () => {
-    setLoading(true);
-    setError(null);
-
-    if (!navigator.geolocation) {
-      setError('Geolocation not supported');
-      setLoading(false);
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        map.setView([latitude, longitude], 13, {
-          animate: true,
-          duration: 1,
-        });
-        setLoading(false);
-      },
-      (error) => {
-        setError(error.message);
-        setLoading(false);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
-      }
-    );
-  };
-
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        top: isMobile ? '10px' : '80px',
-        right: '10px',
-        zIndex: 1000,
-      }}
-    >
-      <button
-        onClick={handleGeolocation}
-        disabled={loading}
-        style={{
-          width: isMobile ? '44px' : '50px',
-          height: isMobile ? '44px' : '50px',
-          backgroundColor: 'white',
-          border: '2px solid rgba(0,0,0,0.2)',
-          borderRadius: '4px',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: isMobile ? '20px' : '24px',
-          boxShadow: '0 1px 5px rgba(0,0,0,0.65)',
-          transition: 'all 0.2s',
-        }}
-        onMouseDown={(e) => {
-          e.currentTarget.style.backgroundColor = '#f4f4f4';
-        }}
-        onMouseUp={(e) => {
-          e.currentTarget.style.backgroundColor = 'white';
-        }}
-        onTouchStart={(e) => {
-          e.currentTarget.style.backgroundColor = '#f4f4f4';
-        }}
-        onTouchEnd={(e) => {
-          e.currentTarget.style.backgroundColor = 'white';
-        }}
-        title="Center on your location"
-        aria-label="Center on your location"
-      >
-        {loading ? '⟳' : '⊙'}
-      </button>
-      {error && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '60px',
-            right: '0',
-            backgroundColor: '#ef4444',
-            color: 'white',
-            padding: '8px',
-            borderRadius: '4px',
-            fontSize: '12px',
-            whiteSpace: 'nowrap',
-            maxWidth: '200px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-          }}
-        >
-          {error}
-        </div>
-      )}
-    </div>
-  );
-};
-
-const PerformanceMonitor: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
-  const [fps, setFps] = useState(60);
-  const frameCountRef = useRef(0);
-  const lastTimeRef = useRef(Date.now());
-
-  useEffect(() => {
-    let animationFrameId: number;
-
-    const measureFPS = () => {
-      frameCountRef.current++;
-      const currentTime = Date.now();
-      const elapsed = currentTime - lastTimeRef.current;
-
-      if (elapsed >= 1000) {
-        setFps(Math.round((frameCountRef.current * 1000) / elapsed));
-        frameCountRef.current = 0;
-        lastTimeRef.current = currentTime;
-      }
-
-      animationFrameId = requestAnimationFrame(measureFPS);
-    };
-
-    animationFrameId = requestAnimationFrame(measureFPS);
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, []);
-
-  if (!isMobile) return null;
-
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        bottom: '10px',
-        left: '10px',
-        zIndex: 1000,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-        color: 'white',
-        padding: '4px 8px',
-        borderRadius: '4px',
-        fontSize: '12px',
-        fontFamily: 'monospace',
-      }}
-    >
-      {fps} FPS {fps >= 30 ? '✓' : '⚠'}
-    </div>
-  );
-};
-
-const MapEventHandlers: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!isMobile) return;
-
-    map.touchZoom.enable();
-    map.doubleClickZoom.enable();
-
-    const mapContainer = map.getContainer();
-    mapContainer.style.touchAction = 'pan-x pan-y';
-
-    const preventZoom = (e: TouchEvent) => {
-      if (e.touches.length > 1) {
-        e.preventDefault();
-      }
-    };
-
-    mapContainer.addEventListener('touchstart', preventZoom, { passive: false });
-
-    return () => {
-      mapContainer.removeEventListener('touchstart', preventZoom);
-    };
-  }, [map, isMobile]);
-
-  return null;
-};
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_API_KEY || '';
 
 export const FacilityMap: React.FC<FacilityMapProps> = ({
   facilities,
   onMarkerClick,
   isMobile = false,
 }) => {
-  const mapRef = useRef<L.Map | null>(null);
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const map = useRef<mapboxgl.Map | null>(null);
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const [mapLoaded, setMapLoaded] = useState(false);
 
-  const center: [number, number] = facilities.length > 0
-    ? [
-        facilities.reduce((sum, f) => sum + f.latitude, 0) / facilities.length,
-        facilities.reduce((sum, f) => sum + f.longitude, 0) / facilities.length,
-      ]
-    : [39.8283, -98.5795];
+  const facilitiesWithHealth = useMemo(() => {
+    return facilities.map((facility) => ({
+      ...facility,
+      health: calculateFacilityHealth({
+        averageSoH: facility.averageSoH,
+        averageSoC: facility.averageSoC,
+        activeAlerts: facility.activeAlerts,
+        status: facility.status,
+      }),
+    }));
+  }, [facilities]);
 
   useEffect(() => {
-    if (mapRef.current && facilities.length > 0) {
-      const bounds = L.latLngBounds(
-        facilities.map((f) => [f.latitude, f.longitude] as [number, number])
-      );
-      mapRef.current.fitBounds(bounds, {
-        padding: isMobile ? [20, 20] : [50, 50],
+    if (!mapContainer.current || map.current) return;
+
+    if (!MAPBOX_TOKEN) {
+      console.warn('Mapbox token not found. Using fallback display.');
+      return;
+    }
+
+    mapboxgl.accessToken = MAPBOX_TOKEN;
+
+    const initialCenter: [number, number] =
+      facilities.length > 0
+        ? [
+            facilities.reduce((sum, f) => sum + f.longitude, 0) / facilities.length,
+            facilities.reduce((sum, f) => sum + f.latitude, 0) / facilities.length,
+          ]
+        : [-98.5795, 39.8283];
+
+    map.current = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: 'mapbox://styles/mapbox/light-v11',
+      center: initialCenter,
+      zoom: 3,
+      attributionControl: true,
+    });
+
+    map.current.addControl(
+      new mapboxgl.NavigationControl({
+        showCompass: true,
+        showZoom: true,
+        visualizePitch: false,
+      }),
+      'top-right'
+    );
+
+    map.current.addControl(new mapboxgl.FullscreenControl(), 'top-right');
+
+    if (!isMobile) {
+      map.current.addControl(new mapboxgl.ScaleControl({ unit: 'imperial' }), 'bottom-left');
+    }
+
+    map.current.addControl(
+      new mapboxgl.GeolocateControl({
+        positionOptions: { enableHighAccuracy: true },
+        trackUserLocation: true,
+        showUserHeading: true,
+      }),
+      'top-right'
+    );
+
+    map.current.on('load', () => {
+      setMapLoaded(true);
+    });
+
+    return () => {
+      markersRef.current.forEach((marker) => marker.remove());
+      markersRef.current = [];
+      map.current?.remove();
+      map.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!map.current || !mapLoaded || facilitiesWithHealth.length === 0) return;
+
+    markersRef.current.forEach((marker) => marker.remove());
+    markersRef.current = [];
+
+    const bounds = new mapboxgl.LngLatBounds();
+    const geojsonData: GeoJSON.FeatureCollection = {
+      type: 'FeatureCollection',
+      features: facilitiesWithHealth.map((facility) => ({
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [facility.longitude, facility.latitude],
+        },
+        properties: {
+          id: facility.id,
+          name: facility.name,
+          location: facility.location,
+          status: facility.status,
+          health: facility.health,
+          total_zones: facility.total_zones,
+          activeAlerts: facility.activeAlerts,
+        },
+      })),
+    };
+
+    if (map.current.getSource('facilities')) {
+      (map.current.getSource('facilities') as mapboxgl.GeoJSONSource).setData(geojsonData);
+    } else {
+      map.current.addSource('facilities', {
+        type: 'geojson',
+        data: geojsonData,
+        cluster: true,
+        clusterMaxZoom: 14,
+        clusterRadius: 50,
+      });
+
+      map.current.addLayer({
+        id: 'clusters',
+        type: 'circle',
+        source: 'facilities',
+        filter: ['has', 'point_count'],
+        paint: {
+          'circle-color': [
+            'step',
+            ['get', 'point_count'],
+            '#51bbd6',
+            10,
+            '#f1f075',
+            30,
+            '#f28cb1',
+          ],
+          'circle-radius': ['step', ['get', 'point_count'], 20, 10, 30, 30, 40],
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#fff',
+        },
+      });
+
+      map.current.addLayer({
+        id: 'cluster-count',
+        type: 'symbol',
+        source: 'facilities',
+        filter: ['has', 'point_count'],
+        layout: {
+          'text-field': '{point_count_abbreviated}',
+          'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+          'text-size': 12,
+        },
+        paint: {
+          'text-color': '#ffffff',
+        },
+      });
+
+      map.current.addLayer({
+        id: 'unclustered-point',
+        type: 'circle',
+        source: 'facilities',
+        filter: ['!', ['has', 'point_count']],
+        paint: {
+          'circle-radius': isMobile ? 8 : 10,
+          'circle-color': [
+            'match',
+            ['get', 'health'],
+            'healthy',
+            '#10b981',
+            'warning',
+            '#f59e0b',
+            'critical',
+            '#ef4444',
+            '#64748b',
+          ],
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#fff',
+        },
+      });
+
+      map.current.on('click', 'clusters', (e) => {
+        const features = map.current?.queryRenderedFeatures(e.point, {
+          layers: ['clusters'],
+        });
+        if (!features || features.length === 0 || !map.current) return;
+
+        const clusterId = features[0].properties?.cluster_id;
+        const source = map.current.getSource('facilities') as mapboxgl.GeoJSONSource;
+        source.getClusterExpansionZoom(clusterId, (err, zoom) => {
+          if (err || !map.current) return;
+
+          const coordinates = (features[0].geometry as GeoJSON.Point).coordinates;
+          map.current.easeTo({
+            center: coordinates as [number, number],
+            zoom: zoom || map.current.getZoom() + 2,
+          });
+        });
+      });
+
+      map.current.on('click', 'unclustered-point', (e) => {
+        if (!e.features || e.features.length === 0) return;
+
+        const feature = e.features[0];
+        const coordinates = (feature.geometry as GeoJSON.Point).coordinates.slice() as [
+          number,
+          number,
+        ];
+        const props = feature.properties!;
+
+        const facility = facilitiesWithHealth.find((f) => f.id === props.id);
+        if (facility && onMarkerClick) {
+          onMarkerClick(facility);
+        }
+
+        const healthColor = getHealthColor(props.health);
+        const statusEmoji =
+          props.status === 'active' ? '✓' : props.status === 'maintenance' ? '⚙' : '⚠';
+
+        const popupHTML = `
+          <div style="padding: 12px; min-width: 200px;">
+            <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold;">
+              ${props.name}
+            </h3>
+            <p style="margin: 4px 0; font-size: 14px; color: #666;">
+              📍 ${props.location}
+            </p>
+            ${props.total_zones ? `<p style="margin: 4px 0; font-size: 14px;">🔋 ${props.total_zones} zones</p>` : ''}
+            ${props.activeAlerts ? `<p style="margin: 4px 0; font-size: 14px; color: #ef4444;">⚠ ${props.activeAlerts} active alerts</p>` : ''}
+            <div style="
+              margin-top: 8px;
+              padding: 4px 8px;
+              background-color: ${healthColor}15;
+              border-radius: 4px;
+              font-size: 12px;
+              font-weight: bold;
+              text-align: center;
+              color: ${healthColor};
+              border: 2px solid ${healthColor};
+            ">
+              ${statusEmoji} ${props.health.toUpperCase()}
+            </div>
+          </div>
+        `;
+
+        while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+          coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+        }
+
+        new mapboxgl.Popup({ offset: 25 }).setLngLat(coordinates).setHTML(popupHTML).addTo(map.current!);
+      });
+
+      map.current.on('mouseenter', 'clusters', () => {
+        if (map.current) map.current.getCanvas().style.cursor = 'pointer';
+      });
+      map.current.on('mouseleave', 'clusters', () => {
+        if (map.current) map.current.getCanvas().style.cursor = '';
+      });
+      map.current.on('mouseenter', 'unclustered-point', () => {
+        if (map.current) map.current.getCanvas().style.cursor = 'pointer';
+      });
+      map.current.on('mouseleave', 'unclustered-point', () => {
+        if (map.current) map.current.getCanvas().style.cursor = '';
+      });
+    }
+
+    facilitiesWithHealth.forEach((facility) => {
+      bounds.extend([facility.longitude, facility.latitude]);
+    });
+
+    if (!bounds.isEmpty()) {
+      map.current.fitBounds(bounds, {
+        padding: isMobile ? 40 : 80,
         maxZoom: 15,
       });
     }
-  }, [facilities, isMobile]);
+  }, [facilitiesWithHealth, mapLoaded, isMobile, onMarkerClick]);
+
+  if (!MAPBOX_TOKEN) {
+    return (
+      <div
+        style={{
+          width: '100%',
+          height: isMobile ? '100vh' : '600px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#f3f4f6',
+          color: '#6b7280',
+          fontSize: '16px',
+          textAlign: 'center',
+          padding: '20px',
+        }}
+      >
+        <div>
+          <p style={{ marginBottom: '8px', fontWeight: 'bold' }}>Mapbox token not configured</p>
+          <p style={{ fontSize: '14px' }}>Set VITE_MAPBOX_API_KEY environment variable</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
+      ref={mapContainer}
       style={{
         width: '100%',
         height: isMobile ? '100vh' : '600px',
         position: 'relative',
       }}
-    >
-      <MapContainer
-        center={center}
-        zoom={4}
-        style={{ width: '100%', height: '100%' }}
-        ref={mapRef}
-        scrollWheelZoom={!isMobile}
-        touchZoom={isMobile}
-        dragging={true}
-        zoomControl={!isMobile}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          maxZoom={19}
-        />
-
-        {facilities.map((facility) => (
-          <Marker
-            key={facility.id}
-            position={[facility.latitude, facility.longitude]}
-            icon={createMarkerIcon(facility.status, isMobile)}
-            eventHandlers={{
-              click: () => {
-                if (onMarkerClick) {
-                  onMarkerClick(facility);
-                }
-              },
-            }}
-          >
-            <Popup
-              maxWidth={isMobile ? 200 : 300}
-              minWidth={isMobile ? 150 : 200}
-              closeButton={!isMobile}
-              className={isMobile ? 'mobile-popup' : ''}
-            >
-              <div style={{ padding: isMobile ? '8px' : '12px' }}>
-                <h3 style={{ 
-                  margin: '0 0 8px 0', 
-                  fontSize: isMobile ? '14px' : '16px',
-                  fontWeight: 'bold',
-                }}>
-                  {facility.name}
-                </h3>
-                <p style={{ 
-                  margin: '4px 0', 
-                  fontSize: isMobile ? '12px' : '14px',
-                  color: '#666',
-                }}>
-                  📍 {facility.location}
-                </p>
-                {facility.total_zones && (
-                  <p style={{ 
-                    margin: '4px 0', 
-                    fontSize: isMobile ? '12px' : '14px',
-                  }}>
-                    🔋 {facility.total_zones} zones
-                  </p>
-                )}
-                <div
-                  style={{
-                    marginTop: '8px',
-                    padding: '4px 8px',
-                    backgroundColor:
-                      facility.status === 'active'
-                        ? '#d1fae5'
-                        : facility.status === 'maintenance'
-                        ? '#fef3c7'
-                        : '#fee2e2',
-                    borderRadius: '4px',
-                    fontSize: isMobile ? '11px' : '12px',
-                    fontWeight: 'bold',
-                    textAlign: 'center',
-                    color:
-                      facility.status === 'active'
-                        ? '#065f46'
-                        : facility.status === 'maintenance'
-                        ? '#92400e'
-                        : '#991b1b',
-                  }}
-                >
-                  {facility.status.toUpperCase()}
-                </div>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
-
-        <GeolocationButton isMobile={isMobile} />
-        <MapEventHandlers isMobile={isMobile} />
-        <PerformanceMonitor isMobile={isMobile} />
-      </MapContainer>
-
-      <style>{`
-        .custom-marker {
-          background: transparent;
-          border: none;
-        }
-        
-        .mobile-popup .leaflet-popup-content-wrapper {
-          border-radius: 8px;
-        }
-        
-        .mobile-popup .leaflet-popup-content {
-          margin: 0;
-        }
-        
-        .leaflet-container {
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-        
-        @media (max-width: 768px) {
-          .leaflet-control-zoom {
-            display: none;
-          }
-          
-          .leaflet-popup-content-wrapper {
-            font-size: 14px;
-          }
-        }
-      `}</style>
-    </div>
+    />
   );
 };

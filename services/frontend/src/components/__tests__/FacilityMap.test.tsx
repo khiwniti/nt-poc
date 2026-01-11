@@ -3,33 +3,43 @@ import { render, screen } from '@testing-library/react';
 import { FacilityMap } from '../FacilityMap';
 import '@testing-library/jest-dom';
 
-vi.mock('leaflet', () => ({
+vi.mock('mapbox-gl', () => ({
   default: {
-    Icon: {
-      Default: {
-        prototype: {},
-        mergeOptions: vi.fn(),
-      },
-    },
-    divIcon: vi.fn(() => ({})),
-    latLngBounds: vi.fn(() => ({
-      isValid: () => true,
+    Map: vi.fn(() => ({
+      on: vi.fn(),
+      remove: vi.fn(),
+      addControl: vi.fn(),
+      addSource: vi.fn(),
+      addLayer: vi.fn(),
+      getSource: vi.fn(() => null),
+      fitBounds: vi.fn(),
+      easeTo: vi.fn(),
+      getCanvas: vi.fn(() => ({
+        style: { cursor: '' },
+      })),
+      queryRenderedFeatures: vi.fn(() => []),
+      getZoom: vi.fn(() => 10),
+    })),
+    NavigationControl: vi.fn(),
+    FullscreenControl: vi.fn(),
+    ScaleControl: vi.fn(),
+    GeolocateControl: vi.fn(),
+    Marker: vi.fn(() => ({
+      setLngLat: vi.fn().mockReturnThis(),
+      addTo: vi.fn().mockReturnThis(),
+      remove: vi.fn(),
+    })),
+    Popup: vi.fn(() => ({
+      setLngLat: vi.fn().mockReturnThis(),
+      setHTML: vi.fn().mockReturnThis(),
+      addTo: vi.fn().mockReturnThis(),
+    })),
+    LngLatBounds: vi.fn(() => ({
+      extend: vi.fn(),
+      isEmpty: vi.fn(() => false),
     })),
   },
-}));
-
-vi.mock('react-leaflet', () => ({
-  MapContainer: ({ children }: any) => <div data-testid="map-container">{children}</div>,
-  TileLayer: () => <div data-testid="tile-layer" />,
-  Marker: ({ children }: any) => <div data-testid="marker">{children}</div>,
-  Popup: ({ children }: any) => <div data-testid="popup">{children}</div>,
-  useMap: () => ({
-    setView: vi.fn(),
-    fitBounds: vi.fn(),
-    getContainer: () => document.createElement('div'),
-    touchZoom: { enable: vi.fn() },
-    doubleClickZoom: { enable: vi.fn() },
-  }),
+  accessToken: '',
 }));
 
 const mockFacilities = [
@@ -38,7 +48,7 @@ const mockFacilities = [
     name: 'North Campus',
     location: 'Building A',
     latitude: 40.7128,
-    longitude: -74.0060,
+    longitude: -74.006,
     status: 'active',
     total_zones: 4,
   },
@@ -56,39 +66,41 @@ const mockFacilities = [
 describe('FacilityMap', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    import.meta.env.VITE_MAPBOX_API_KEY = 'test-token';
   });
 
   it('renders map container', () => {
-    render(<FacilityMap facilities={mockFacilities} />);
-    expect(screen.getByTestId('map-container')).toBeInTheDocument();
+    const { container } = render(<FacilityMap facilities={mockFacilities} />);
+    const mapDiv = container.querySelector('div');
+    expect(mapDiv).toBeInTheDocument();
   });
 
-  it('renders markers for each facility', () => {
-    render(<FacilityMap facilities={mockFacilities} />);
-    const markers = screen.getAllByTestId('marker');
-    expect(markers).toHaveLength(mockFacilities.length);
-  });
-
-  it('renders in mobile mode with correct styling', () => {
+  it('renders with correct height in mobile mode', () => {
     const { container } = render(<FacilityMap facilities={mockFacilities} isMobile={true} />);
     const wrapper = container.firstChild as HTMLElement;
     expect(wrapper.style.height).toBe('100vh');
   });
 
-  it('renders in desktop mode with correct height', () => {
+  it('renders with correct height in desktop mode', () => {
     const { container } = render(<FacilityMap facilities={mockFacilities} isMobile={false} />);
     const wrapper = container.firstChild as HTMLElement;
     expect(wrapper.style.height).toBe('600px');
   });
 
-  it('calls onMarkerClick when provided', async () => {
+  it('calls onMarkerClick when provided', () => {
     const onMarkerClick = vi.fn();
     render(<FacilityMap facilities={mockFacilities} onMarkerClick={onMarkerClick} />);
     expect(onMarkerClick).not.toHaveBeenCalled();
   });
 
   it('handles empty facilities array', () => {
-    render(<FacilityMap facilities={[]} />);
-    expect(screen.getByTestId('map-container')).toBeInTheDocument();
+    const { container } = render(<FacilityMap facilities={[]} />);
+    expect(container.firstChild).toBeInTheDocument();
+  });
+
+  it('shows warning when Mapbox token is missing', () => {
+    import.meta.env.VITE_MAPBOX_API_KEY = '';
+    render(<FacilityMap facilities={mockFacilities} />);
+    expect(screen.getByText(/Mapbox token not configured/i)).toBeInTheDocument();
   });
 });

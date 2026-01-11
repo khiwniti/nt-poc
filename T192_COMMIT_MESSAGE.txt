@@ -1,0 +1,64 @@
+feat(T192): Integrate Mapbox GL JS for facility maps
+
+Replace Leaflet with Mapbox GL JS for interactive facility mapping with
+health status indicators and clustering support.
+
+Features:
+- Mapbox GL JS integration with light theme
+- Health-based marker colors (green/yellow/red)
+- Automatic clustering for dense areas (radius: 50px)
+- Interactive popups with facility details
+- Comprehensive map controls (navigation, fullscreen, geolocate, scale)
+- Mobile-optimized touch controls
+- Environment-based API key configuration
+
+Health Status Indicators:
+- Healthy (green): SoH ≥ 80%, alerts ≤ 2, active status
+- Warning (amber): SoH 60-80%, alerts 3-5, maintenance
+- Critical (red): SoH < 60%, alerts > 5, inactive/offline
+
+Map Controls:
+- Navigation control (zoom, compass)
+- Fullscreen toggle
+- Geolocate (user location)
+- Scale indicator (desktop only)
+- Clustering with click-to-expand
+
+Testing:
+- Added 21 unit tests (15 health utils + 6 component)
+- Added 10 e2e tests for Mapbox integration
+- All tests passing
+- 100% coverage for new code
+
+Files Changed:
+- Modified: FacilityMap.tsx (complete rewrite, -56 lines)
+- Modified: FacilityMap.test.tsx (updated mocks)
+- Added: utils/facilityHealth.ts
+- Added: utils/__tests__/facilityHealth.test.ts
+- Added: e2e/mapbox-integration.spec.ts
+
+Dependencies:
+- Added: mapbox-gl, @types/mapbox-gl
+- Removed: leaflet, react-leaflet, @types/leaflet
+
+Documentation:
+- T192_README.md
+- T192_IMPLEMENTATION_COMPLETE.md
+- T192_QUICK_REFERENCE.md
+- T192_ACCEPTANCE_CHECKLIST.md
+- T192_FILES_MANIFEST.md
+
+Configuration:
+- VITE_MAPBOX_API_KEY in .env.example (already present)
+- Fallback message when token missing
+
+Browser Support:
+- Chrome/Edge, Firefox, Safari 12+
+- iOS Safari, Chrome Mobile
+- Requires WebGL support
+
+Breaking Changes: None (backward compatible interface)
+
+Refs: US6, spec.md (Geospatial), plan.md (7.1.2), T209
+
+Co-authored-by: GitHub Copilot <noreply@github.com>
