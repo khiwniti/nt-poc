@@ -1,7 +1,8 @@
-import Redis from 'ioredis';
 import logger from './logger.js';
 
-export type RedisClient = Redis;
+// Redis is optional - stub if not available
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type RedisClient = any;
 
 let redisClient: RedisClient | null = null;
 
@@ -11,21 +12,8 @@ const getRedisUrl = (): string | null => {
 };
 
 export const getRedisClient = (): RedisClient | null => {
-  if (redisClient) return redisClient;
-
-  const redisUrl = getRedisUrl();
-  if (!redisUrl) return null;
-
-  redisClient = new Redis(redisUrl, {
-    maxRetriesPerRequest: 1,
-    enableOfflineQueue: false,
-    lazyConnect: true,
-  });
-
-  redisClient.on('connect', () => logger.info('redis_connected'));
-  redisClient.on('error', (error) => logger.error('redis_error', { error }));
-  redisClient.on('close', () => logger.warn('redis_connection_closed'));
-
-  return redisClient;
+  // Redis is optional and not installed - caching disabled
+  logger.info('Redis not available - caching disabled');
+  return null;
 };
 
