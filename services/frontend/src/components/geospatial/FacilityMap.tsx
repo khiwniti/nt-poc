@@ -1,6 +1,12 @@
 import type { CSSProperties } from 'react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { FacilityMarker, type FacilityMarkerData } from './FacilityMarker';
+import { MapExportControls, type ExportFormat } from './MapExportControls';
+import {
+  exportMapAsPNG,
+  exportFacilitiesAsGeoJSON,
+  exportFacilitiesAsKML,
+} from '../../geospatial/mapExport';
 
 export interface FacilityMapProps {
   facilities: FacilityMarkerData[];
@@ -9,6 +15,8 @@ export interface FacilityMapProps {
   ariaLabel?: string;
   height?: number | string;
   highContrastMode?: boolean;
+  filters?: Record<string, unknown>;
+  showExportControls?: boolean;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -47,6 +55,8 @@ export function FacilityMap({
   ariaLabel = 'Facility map',
   height = 320,
   highContrastMode = false,
+  filters,
+  showExportControls = true,
 }: FacilityMapProps) {
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const [zoom, setZoom] = useState<number>(1);
@@ -165,6 +175,33 @@ export function FacilityMap({
     }
   }, []);
 
+  const handleExport = useCallback(
+    async (format: ExportFormat) => {
+      if (!mapRef.current) return;
+
+      try {
+        switch (format) {
+          case 'png':
+            await exportMapAsPNG(mapRef.current, 'facility-map.png');
+            setAnnouncement('Map exported as PNG');
+            break;
+          case 'geojson':
+            exportFacilitiesAsGeoJSON(facilities, filters, 'facilities.geojson');
+            setAnnouncement('Facilities exported as GeoJSON');
+            break;
+          case 'kml':
+            exportFacilitiesAsKML(facilities, filters, 'facilities.kml');
+            setAnnouncement('Facilities exported as KML');
+            break;
+        }
+      } catch (error) {
+        console.error('Export failed:', error);
+        setAnnouncement('Export failed. Please try again.');
+      }
+    },
+    [facilities, filters]
+  );
+
   const style: CSSProperties = {
     position: 'relative',
     width: '100%',
@@ -180,18 +217,40 @@ export function FacilityMap({
     transition: 'transform 0.2s ease-in-out',
   };
 
+  const containerStyle: CSSProperties = {
+    position: 'relative',
+    width: '100%',
+  };
+
+  const exportControlsStyle: CSSProperties = {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    zIndex: 10,
+  };
+
   return (
-    <div
-      ref={mapRef}
-      className="facility-map"
-      data-testid="facility-map"
-      role="application"
-      aria-label={`${ariaLabel}. Use arrow keys to navigate between facilities, plus and minus keys to zoom, Enter or Space to select.`}
-      aria-describedby="map-instructions"
-      tabIndex={0}
-      onKeyDown={handleKeyDown}
-      style={style}
-    >
+    <div style={containerStyle}>
+      {showExportControls && (
+        <div style={exportControlsStyle}>
+          <MapExportControls
+            onExport={handleExport}
+            disabled={facilities.length === 0}
+            highContrastMode={highContrastMode}
+          />
+        </div>
+      )}
+      <div
+        ref={mapRef}
+        className="facility-map"
+        data-testid="facility-map"
+        role="application"
+        aria-label={`${ariaLabel}. Use arrow keys to navigate between facilities, plus and minus keys to zoom, Enter or Space to select.`}
+        aria-describedby="map-instructions"
+        tabIndex={0}
+        onKeyDown={handleKeyDown}
+        style={style}
+      >
       {/* Screen reader instructions */}
       <div id="map-instructions" className="sr-only">
         Interactive map with {facilities.length} facilities. Use arrow keys to navigate between
@@ -223,6 +282,7 @@ export function FacilityMap({
           tabIndex={-1}
         />
       ))}
+      </div>
     </div>
   );
 }

@@ -1,7 +1,14 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FacilityMap } from '../FacilityMap';
+import * as mapExport from '../../../geospatial/mapExport';
+
+vi.mock('../../../geospatial/mapExport', () => ({
+  exportMapAsPNG: vi.fn(),
+  exportFacilitiesAsGeoJSON: vi.fn(),
+  exportFacilitiesAsKML: vi.fn(),
+}));
 
 const mockFacilities = [
   {
@@ -27,7 +34,8 @@ describe('FacilityMap', () => {
   it('renders an empty map when no facilities are provided', () => {
     render(<FacilityMap facilities={[]} />);
     expect(screen.getByTestId('facility-map')).toBeInTheDocument();
-    expect(screen.queryAllByRole('button')).toHaveLength(0);
+    // Export button is present, but facility markers are not
+    expect(screen.queryByTestId('facility-marker-facility-1')).not.toBeInTheDocument();
   });
 
   it('accepts a string height', () => {
@@ -261,6 +269,112 @@ describe('FacilityMap', () => {
 
       const map = screen.getByTestId('facility-map');
       expect(map).toHaveStyle({ border: '2px solid #ffffff' });
+    });
+  });
+
+  describe('Export Functionality', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it('renders export controls by default', () => {
+      render(<FacilityMap facilities={mockFacilities} />);
+      expect(screen.getByTestId('map-export-controls')).toBeInTheDocument();
+    });
+
+    it('hides export controls when showExportControls is false', () => {
+      render(<FacilityMap facilities={mockFacilities} showExportControls={false} />);
+      expect(screen.queryByTestId('map-export-controls')).not.toBeInTheDocument();
+    });
+
+    it('exports map as PNG when selected', async () => {
+      vi.mocked(mapExport.exportMapAsPNG).mockResolvedValue(undefined);
+
+      render(<FacilityMap facilities={mockFacilities} />);
+
+      fireEvent.click(screen.getByTestId('export-button'));
+      fireEvent.click(screen.getByTestId('export-png'));
+
+      await vi.waitFor(() => {
+        expect(mapExport.exportMapAsPNG).toHaveBeenCalled();
+      });
+    });
+
+    it('exports facilities as GeoJSON when selected', async () => {
+      render(<FacilityMap facilities={mockFacilities} />);
+
+      fireEvent.click(screen.getByTestId('export-button'));
+      fireEvent.click(screen.getByTestId('export-geojson'));
+
+      await vi.waitFor(() => {
+        expect(mapExport.exportFacilitiesAsGeoJSON).toHaveBeenCalledWith(
+          mockFacilities,
+          undefined,
+          'facilities.geojson'
+        );
+      });
+    });
+
+    it('exports facilities as KML when selected', async () => {
+      render(<FacilityMap facilities={mockFacilities} />);
+
+      fireEvent.click(screen.getByTestId('export-button'));
+      fireEvent.click(screen.getByTestId('export-kml'));
+
+      await vi.waitFor(() => {
+        expect(mapExport.exportFacilitiesAsKML).toHaveBeenCalledWith(
+          mockFacilities,
+          undefined,
+          'facilities.kml'
+        );
+      });
+    });
+
+    it('includes filters in export', async () => {
+      const filters = { status: 'active', region: 'north' };
+      render(<FacilityMap facilities={mockFacilities} filters={filters} />);
+
+      fireEvent.click(screen.getByTestId('export-button'));
+      fireEvent.click(screen.getByTestId('export-geojson'));
+
+      await vi.waitFor(() => {
+        expect(mapExport.exportFacilitiesAsGeoJSON).toHaveBeenCalledWith(
+          mockFacilities,
+          filters,
+          'facilities.geojson'
+        );
+      });
+    });
+
+    it('announces export success', async () => {
+      vi.mocked(mapExport.exportMapAsPNG).mockResolvedValue(undefined);
+
+      render(<FacilityMap facilities={mockFacilities} />);
+
+      fireEvent.click(screen.getByTestId('export-button'));
+      fireEvent.click(screen.getByTestId('export-png'));
+
+      await vi.waitFor(() => {
+        const announcements = screen.getByTestId('map-announcements');
+        expect(announcements).toHaveTextContent('Map exported as PNG');
+      });
+    });
+
+    it('announces export failure on error', async () => {
+      vi.mocked(mapExport.exportMapAsPNG).mockRejectedValue(new Error('Export failed'));
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      render(<FacilityMap facilities={mockFacilities} />);
+
+      fireEvent.click(screen.getByTestId('export-button'));
+      fireEvent.click(screen.getByTestId('export-png'));
+
+      await vi.waitFor(() => {
+        const announcements = screen.getByTestId('map-announcements');
+        expect(announcements).toHaveTextContent('Export failed. Please try again.');
+      });
+
+      consoleSpy.mockRestore();
     });
   });
 });
