@@ -14,7 +14,9 @@ export async function seed(knex: Knex): Promise<void> {
       {
         id: '11111111-1111-1111-1111-111111111111',
         name: 'North Campus Data Center',
-        location: 'Building A, Floor 2',
+        location: '{"lat": 40.7128, "lng": -74.0060, "address": "New York, NY"}',
+        latitude: 40.7128,
+        longitude: -74.0060,
         timezone: 'America/New_York',
         total_zones: 4,
         status: 'active',
@@ -22,7 +24,9 @@ export async function seed(knex: Knex): Promise<void> {
       {
         id: '22222222-2222-2222-2222-222222222222',
         name: 'South Campus Manufacturing',
-        location: 'Building B, Floor 1',
+        location: '{"lat": 34.0522, "lng": -118.2437, "address": "Los Angeles, CA"}',
+        latitude: 34.0522,
+        longitude: -118.2437,
         timezone: 'America/Los_Angeles',
         total_zones: 6,
         status: 'active',
@@ -30,7 +34,9 @@ export async function seed(knex: Knex): Promise<void> {
       {
         id: '33333333-3333-3333-3333-333333333333',
         name: 'East Campus Research Lab',
-        location: 'Building C, Floor 3',
+        location: '{"lat": 41.8781, "lng": -87.6298, "address": "Chicago, IL"}',
+        latitude: 41.8781,
+        longitude: -87.6298,
         timezone: 'America/Chicago',
         total_zones: 3,
         status: 'maintenance',
