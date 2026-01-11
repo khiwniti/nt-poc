@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { reportAnalyticsAPI } from '../api/reportAnalytics';
 
 type PreviewRow = {
   label: string;
@@ -105,6 +106,17 @@ function ReportsPage() {
     await new Promise((resolve) => setTimeout(resolve, 150));
     setPreviewRows(buildPreviewRows(template, includeForecast, metricFocus));
     setGenerationStatus('Report ready for preview');
+    
+    // Track report view
+    try {
+      await reportAnalyticsAPI.trackEvent({
+        report_id: 'demo-report-1', // In real implementation, use actual report ID
+        event_type: 'view',
+        metadata: { template, metricFocus, dateRange },
+      });
+    } catch (err) {
+      console.error('Failed to track view event:', err);
+    }
   };
 
   const handleExport = (format: 'pdf' | 'csv' | 'xlsx') => {
@@ -115,6 +127,14 @@ function ReportsPage() {
 
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     setExportStatus(`${format.toUpperCase()} export prepared at ${timestamp}`);
+    
+    // Track download event
+    reportAnalyticsAPI.trackEvent({
+      report_id: 'demo-report-1',
+      event_type: 'download',
+      format,
+      metadata: { reportName, template },
+    }).catch(err => console.error('Failed to track download:', err));
   };
 
   const handleScheduleSave = () => {
@@ -150,6 +170,13 @@ function ReportsPage() {
     }
 
     setEmailStatus(`Delivery queued to ${schedule.recipients}`);
+    
+    // Track email delivery (simulating email open tracking)
+    reportAnalyticsAPI.trackEvent({
+      report_id: 'demo-report-1',
+      event_type: 'email_open',
+      metadata: { recipients: schedule.recipients },
+    }).catch(err => console.error('Failed to track email:', err));
   };
 
   return (

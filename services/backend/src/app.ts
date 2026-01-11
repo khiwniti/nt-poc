@@ -18,6 +18,7 @@ import explainabilityRouter from './routes/explainability.js';
 import whatIfScenarioRouter from './routes/whatIfScenario.js';
 import streamRouter from './routes/stream.js';
 import geospatialRouter from './routes/geospatial.js';
+import reportAnalyticsRouter from './routes/reportAnalytics.js';
 
 export const app = express();
 
@@ -62,6 +63,7 @@ app.use('/api/v1/jobs', jobsRouter);
 app.use('/api/v1/explainability', explainabilityRouter);
 app.use('/api/v1/what-if', whatIfScenarioRouter);
 app.use('/api/v1/geospatial', geospatialRouter);
+app.use('/api/v1/report-analytics', reportAnalyticsRouter);
 
 // Centralized error handler (logs + Sentry + metrics)
 app.use(errorHandler);
