@@ -8,6 +8,10 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 // Eager load critical routes
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
+import { MapPage } from './pages/MapPage';
+
+// Import map styles
+import './styles/map.css';
 
 // Lazy load non-critical routes
 const ThreeDView = lazy(() => import('./pages/ThreeDView'));
@@ -40,6 +44,7 @@ function App() {
                     <Suspense fallback={<DashboardSkeleton />}>
                       <Routes>
                         <Route path="/" element={<Dashboard />} />
+                        <Route path="/map" element={<MapPage />} />
                         <Route path="/zones/:id" element={<ZoneDetail />} />
                         <Route path="/3d" element={<ThreeDView />} />
                         <Route path="/3d/comparative" element={<ComparativeView3D />} />

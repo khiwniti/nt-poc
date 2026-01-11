@@ -5,6 +5,8 @@ export interface FacilityData {
   id?: string;
   name?: string;
   location?: string;
+  latitude?: number;
+  longitude?: number;
   timezone?: string;
   total_zones?: number;
   status?: 'active' | 'inactive' | 'maintenance';
@@ -15,6 +17,8 @@ export interface FacilityData {
 export const facilityDefaults = {
   name: () => `${faker.company.name()} Energy Facility`,
   location: () => faker.location.city(),
+  latitude: () => faker.location.latitude({ min: 13.5, max: 14.0 }),  // Bangkok area
+  longitude: () => faker.location.longitude({ min: 100.2, max: 100.8 }),
   timezone: () => faker.location.timeZone(),
   total_zones: () => faker.number.int({ min: 1, max: 20 }),
   status: () => faker.helpers.arrayElement(['active', 'inactive', 'maintenance'] as const),
@@ -25,6 +29,8 @@ export async function createFacility(overrides: FacilityData = {}): Promise<any>
     id: overrides.id || `test-fac-${faker.string.uuid()}`,
     name: overrides.name || facilityDefaults.name(),
     location: overrides.location || facilityDefaults.location(),
+    latitude: overrides.latitude ?? facilityDefaults.latitude(),
+    longitude: overrides.longitude ?? facilityDefaults.longitude(),
     timezone: overrides.timezone || facilityDefaults.timezone(),
     total_zones: overrides.total_zones ?? facilityDefaults.total_zones(),
     status: overrides.status || facilityDefaults.status(),
@@ -33,13 +39,15 @@ export async function createFacility(overrides: FacilityData = {}): Promise<any>
   };
 
   const result = await pool.query(
-    `INSERT INTO facilities (id, name, location, timezone, total_zones, status, created_at, updated_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `INSERT INTO facilities (id, name, location, latitude, longitude, timezone, total_zones, status, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      RETURNING *`,
     [
       facility.id,
       facility.name,
       facility.location,
+      facility.latitude,
+      facility.longitude,
       facility.timezone,
       facility.total_zones,
       facility.status,
@@ -56,6 +64,8 @@ export function buildFacility(overrides: FacilityData = {}): FacilityData {
     id: overrides.id || `test-fac-${faker.string.uuid()}`,
     name: overrides.name || facilityDefaults.name(),
     location: overrides.location || facilityDefaults.location(),
+    latitude: overrides.latitude ?? facilityDefaults.latitude(),
+    longitude: overrides.longitude ?? facilityDefaults.longitude(),
     timezone: overrides.timezone || facilityDefaults.timezone(),
     total_zones: overrides.total_zones ?? facilityDefaults.total_zones(),
     status: overrides.status || facilityDefaults.status(),

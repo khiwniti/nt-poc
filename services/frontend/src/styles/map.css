@@ -1,0 +1,105 @@
+/* Import Leaflet CSS */
+@import 'leaflet/dist/leaflet.css';
+
+/* Map container */
+.map-container {
+  height: 100vh;
+  width: 100vw;
+}
+
+/* Custom facility marker */
+.facility-marker {
+  background: transparent;
+  border: none;
+}
+
+.marker-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  transition: background-color 300ms ease;
+  position: relative;
+  border: 3px solid white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.marker-pin {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: white;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Alert badge */
+.alert-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #ef4444;
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 10px;
+  transform: rotate(45deg);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  animation: badge-appear 300ms ease;
+}
+
+@keyframes badge-appear {
+  from {
+    opacity: 0;
+    transform: rotate(45deg) scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(45deg) scale(1);
+  }
+}
+
+/* Popup styles */
+.facility-popup {
+  min-width: 200px;
+}
+
+.status-healthy {
+  color: #10b981;
+}
+.status-warning {
+  color: #f59e0b;
+}
+.status-critical {
+  color: #ef4444;
+}
+.status-offline {
+  color: #6b7280;
+}
+
+/* Connection indicator */
+.connection-indicator {
+  backdrop-filter: blur(8px);
+}
+
+/* Loading skeleton */
+.map-loading-skeleton {
+  font-size: 18px;
+  color: #6b7280;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .facility-popup {
+    min-width: 150px;
+    font-size: 14px;
+  }
+
+  .marker-icon {
+    width: 28px;
+    height: 28px;
+  }
+}
