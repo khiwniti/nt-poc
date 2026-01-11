@@ -1,10 +1,47 @@
 import express, { Response } from 'express';
 import { pool } from '../config/database.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
+import { facilityHealthService } from '../services/facilityHealthService.js';
+import { alertRealtimeService } from '../services/alertRealtimeService.js';
 
 const router = express.Router();
 
 router.use(authenticate);
+
+// GET /map - Optimized endpoint for map view with health status
+router.get('/map', async (req: AuthRequest, res: Response) => {
+  try {
+    // Fetch all facilities (exclude inactive by default for map)
+    const facilitiesResult = await pool.query(`
+      SELECT id, name, location, latitude, longitude, status, timezone, total_zones as "totalZones"
+      FROM facilities
+      ORDER BY name ASC
+    `);
+
+    const facilities = facilitiesResult.rows;
+
+    // Get recent alerts from alertRealtimeService cache
+    const recentAlerts = alertRealtimeService.getRecentAlerts();
+
+    // Calculate health for all facilities
+    const healthMap = facilityHealthService.calculateBulkHealth(facilities, recentAlerts);
+
+    // Combine facility data with health status
+    const mapData = facilities.map((facility: any) => ({
+      ...facility,
+      health: healthMap.get(facility.id)
+    }));
+
+    res.json({
+      data: mapData,
+      total: mapData.length
+    });
+  } catch (error) {
+    console.error('Failed to fetch map data:', error);
+    res.status(500).json({ error: 'Failed to fetch map data' });
+  }
+});
+
 
 router.get('/', async (req: AuthRequest, res: Response) => {
   try {

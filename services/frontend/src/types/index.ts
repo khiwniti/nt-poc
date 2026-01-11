@@ -43,3 +43,24 @@ export interface Alert {
   resolvedAt?: number;
   acknowledgedBy?: string;
 }
+
+export interface Facility {
+  id: string;
+  name: string;
+  location: string;
+  latitude: number;
+  longitude: number;
+  timezone: string;
+  status: 'active' | 'inactive' | 'maintenance';
+  totalZones: number;
+}
+
+export interface FacilityHealthStatus {
+  facilityId: string;
+  status: 'healthy' | 'warning' | 'critical' | 'offline';
+  activeAlertCount: number;
+  criticalCount: number;
+  highCount: number;
+  mediumCount: number;
+  infoCount: number;
+}
