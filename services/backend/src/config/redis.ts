@@ -23,7 +23,7 @@ export const getRedisClient = (): RedisClient | null => {
   });
 
   redisClient.on('connect', () => logger.info('redis_connected'));
-  redisClient.on('error', (error) => logger.error('redis_error', { error }));
+  redisClient.on('error', (error: Error) => logger.error('redis_error', { error }));
   redisClient.on('close', () => logger.warn('redis_connection_closed'));
 
   return redisClient;

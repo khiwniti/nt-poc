@@ -2,7 +2,7 @@ export enum AlertSeverity {
   CRITICAL = 'critical',
   HIGH = 'high',
   MEDIUM = 'medium',
-  LOW = 'low'
+  INFO = 'info'
 }
 
 export enum AlertType {
@@ -51,7 +51,7 @@ export interface EscalationEvent {
 export interface EscalationRule {
   id: string;
   facilityId: string;
-  lowToMediumMinutes: number;
+  infoToMediumMinutes: number;
   mediumToHighMinutes: number;
   highToCriticalMinutes: number;
   enabled: boolean;

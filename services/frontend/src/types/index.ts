@@ -12,7 +12,7 @@ export enum AlertSeverity {
   CRITICAL = 'critical',
   HIGH = 'high',
   MEDIUM = 'medium',
-  LOW = 'low',
+  INFO = 'info',
 }
 
 export enum AlertType {
@@ -42,4 +42,6 @@ export interface Alert {
   acknowledgedAt?: number;
   resolvedAt?: number;
   acknowledgedBy?: string;
+  metadata?: Record<string, any>;
+  duration?: number;
 }

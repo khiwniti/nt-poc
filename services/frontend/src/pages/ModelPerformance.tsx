@@ -599,4 +599,4 @@ function DataQualityCard({
 }
 
 
-export default ModelPerformance;
+export default ModelPerformanceDashboard;
