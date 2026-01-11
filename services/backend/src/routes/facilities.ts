@@ -25,6 +25,60 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// Helper function to extract region from location string
+function extractRegion(location: string): string {
+  // "Bangkok, Thailand" → "Thailand"
+  // "New York, USA" → "USA"
+  const parts = location.split(',').map(p => p.trim());
+  return parts[parts.length - 1] || 'Unknown';
+}
+
+// GET /api/facilities/map - Get all facilities with coordinates and alert counts
+router.get('/map', async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        f.id,
+        f.name,
+        f.location,
+        f.latitude,
+        f.longitude,
+        f.timezone,
+        f.total_zones as "totalZones",
+        f.status,
+        f.created_at as "createdAt",
+        f.updated_at as "updatedAt",
+        COUNT(a.id) FILTER (WHERE a.status = 'active') as "alertCount"
+      FROM facilities f
+      LEFT JOIN zones z ON z.facility_id = f.id
+      LEFT JOIN battery_systems bs ON bs.zone_id = z.id
+      LEFT JOIN alerts a ON a.battery_system_id = bs.id AND a.status = 'active'
+      WHERE f.latitude IS NOT NULL AND f.longitude IS NOT NULL
+      GROUP BY f.id
+      ORDER BY f.name ASC
+    `);
+
+    // Transform and add region extraction
+    const facilities = result.rows.map(facility => ({
+      ...facility,
+      coordinates: {
+        latitude: parseFloat(facility.latitude),
+        longitude: parseFloat(facility.longitude),
+      },
+      alertCount: parseInt(facility.alertCount || 0),
+      region: extractRegion(facility.location),
+    }));
+
+    res.json({
+      data: facilities,
+      total: facilities.length,
+    });
+  } catch (error) {
+    console.error('Error fetching facilities for map:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 router.get('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;

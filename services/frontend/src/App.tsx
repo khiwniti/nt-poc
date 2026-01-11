@@ -19,6 +19,7 @@ const ComparativeAnalysisView = lazy(() => import('./pages/ComparativeAnalysisVi
 const ModelPerformance = lazy(() => import('./pages/ModelPerformance'));
 const AIInsights = lazy(() => import('./pages/AIInsights'));
 const WhatIfScenarioAnalysis = lazy(() => import('./pages/WhatIfScenarioAnalysis'));
+const FacilityMapPage = lazy(() => import('./pages/FacilityMapPage'));
 const Unauthorized = lazy(() => import('./pages/Unauthorized'));
 
 function App() {
@@ -39,6 +40,7 @@ function App() {
                       <Routes>
                         <Route path="/" element={<Dashboard />} />
                         <Route path="/zones/:id" element={<ZoneDetail />} />
+                        <Route path="/facilities/map" element={<FacilityMapPage />} />
                         <Route path="/3d" element={<ThreeDView />} />
                         <Route path="/3d/comparative" element={<ComparativeView3D />} />
                         <Route path="/alerts" element={<AlertsPage />} />
