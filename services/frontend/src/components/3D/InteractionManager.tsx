@@ -64,7 +64,7 @@ export const InteractionManager: React.FC<InteractionManagerProps> = ({
         gl.domElement.style.cursor = 'default';
       }
     },
-    [zones, batteries, camera, gl, raycaster]
+    [zones, batteries, camera, gl]
   );
 
   const handleClick = React.useCallback(() => {
