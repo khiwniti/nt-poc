@@ -163,13 +163,17 @@ Example output:
 ```
 📊 Checking migration status...
 
-✅ Completed migrations (3):
+✅ Completed migrations (7):
    ✓ 20240101000000_create_core_tables.ts
    ✓ 20240102000000_create_rul_predictions.ts
    ✓ 20240103000000_create_model_performance_tables.ts
+   ✓ 20240104000000_create_report_annotations.ts
+   ✓ 20240104000000_create_report_versioning.ts
+   ✓ 20260111_1400_update_alerts_schema.ts
+   ✓ 20260111_1410_create_alert_escalation_tables.ts
 
-⏳ Pending migrations (1):
-   ○ 20240104000000_add_user_roles.ts
+⏳ Pending migrations (0):
+   (none)
 ```
 
 ### Migration History Table
@@ -315,6 +319,81 @@ Creates MLOps monitoring tables:
 - `data_quality_metrics` - Data quality monitoring
 - `model_health_alerts` - Model health alerting
 - `model_health_scores` - Overall model health scores
+
+### 20240104000000_create_report_annotations.ts
+
+Creates report annotations table:
+- `report_annotations` - User annotations and comments on reports
+
+### 20240104000000_create_report_versioning.ts
+
+Creates report versioning table:
+- `report_versioning` - Version history for reports
+
+### 20260111_1400_update_alerts_schema.ts
+
+Updates the alerts table to align with T116 Alert data model specification:
+
+**Schema Changes**:
+- Adds `facility_id` column for facility association
+- Adds `zone_id` column for zone-level tracking
+- Adds `status` enum column ['active', 'acknowledged', 'resolved'] to replace boolean flags
+- Adds `resolution_notes` text column for resolution documentation
+- Updates `severity` enum from ['low', 'medium', 'high', 'critical'] to ['info', 'medium', 'high', 'critical']
+- Removes `acknowledged` boolean column (migrated to `status` enum)
+- Removes `resolved` boolean column (migrated to `status` enum)
+
+**Data Migration**:
+- Automatically converts existing boolean flags to status enum values:
+  - `resolved = true` → `status = 'resolved'`
+  - `acknowledged = true` → `status = 'acknowledged'`
+  - Both false → `status = 'active'`
+
+**New Indexes**:
+- `idx_alerts_facility` on (`facility_id`, `created_at`)
+- `idx_alerts_status_severity` on (`status`, `severity`, `created_at`)
+- `idx_alerts_zone` on (`zone_id`, `created_at`)
+
+**Rollback Support**: Full rollback capability that restores original schema and converts status enum back to boolean flags.
+
+### 20260111_1410_create_alert_escalation_tables.ts
+
+Creates alert escalation system tables for automatic severity escalation and facility-specific rules:
+
+**Tables Created**:
+
+1. **alert_escalation_events** - Tracks severity escalation history
+   - `id` (uuid, primary key)
+   - `alert_id` (uuid, FK to alerts)
+   - `from_severity` (string) - Original severity level
+   - `to_severity` (string) - Escalated severity level
+   - `escalated_at` (timestamptz) - When escalation occurred
+   - `reason` (text) - Escalation reason/trigger
+   - `auto_escalated` (boolean) - Whether escalation was automatic
+   - `notification_sent` (boolean) - Notification delivery status
+   - `notification_sent_at` (timestamptz) - When notification was sent
+
+2. **escalation_rules** - Facility-specific escalation configuration
+   - `id` (uuid, primary key)
+   - `facility_id` (string, unique) - Facility identifier
+   - `info_to_medium_minutes` (integer, default 120) - Time before escalating info to medium
+   - `medium_to_high_minutes` (integer, default 60) - Time before escalating medium to high
+   - `high_to_critical_minutes` (integer, default 30) - Time before escalating high to critical
+   - `enabled` (boolean, default true) - Whether escalation is enabled
+   - `created_at` (timestamptz) - Rule creation time
+   - `updated_at` (timestamptz) - Rule last update time
+   - `config` (jsonb) - Additional configuration options
+
+**Default Data**:
+- Inserts default escalation rule for 'default' facility with standard timing (120/60/30 minutes)
+
+**Indexes**:
+- `idx_escalation_events_alert` on (`alert_id`, `escalated_at`)
+- `idx_escalation_events_time` on (`escalated_at`)
+- `idx_escalation_rules_facility` on (`facility_id`)
+- `idx_escalation_rules_enabled` on (`enabled`, `facility_id`)
+
+**Rollback Support**: Cleanly drops both tables and their indexes.
 
 ## Environment Configuration
 
