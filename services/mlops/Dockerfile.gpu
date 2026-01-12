@@ -19,6 +19,7 @@ RUN pip install --no-cache-dir $(cat requirements.txt | grep -v "^tensorflow")
 
 # Copy application code
 COPY src/ ./src/
+COPY app/ ./app/
 
 # Set Python path
 ENV PYTHONPATH=/app

@@ -6,7 +6,11 @@ from src.api.routes import router
 from src.api.explainability import router as explainability_router
 from src.api.anomaly import router as anomaly_router
 from src.config import settings
+from app.config.sentry import init_sentry
 import logging
+
+# Initialize Sentry (no-op if SENTRY_DSN is unset)
+init_sentry()
 
 # Configure logging
 logging.basicConfig(
