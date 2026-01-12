@@ -146,7 +146,7 @@ export function AlertFilterControls({ onApplyFilters }: AlertFilterControlsProps
             Severity
           </label>
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-            {(['critical', 'warning', 'info'] as AlertSeverity[]).map((s) => {
+            {([AlertSeverity.CRITICAL, AlertSeverity.HIGH, AlertSeverity.MEDIUM, AlertSeverity.LOW] as AlertSeverity[]).map((s) => {
               const colors: Record<AlertSeverity, { bg: string; border: string; text: string }> = {
                 [AlertSeverity.CRITICAL]: { bg: '#fef2f2', border: '#ef4444', text: '#991b1b' },
                 [AlertSeverity.HIGH]: { bg: '#fff7ed', border: '#f97316', text: '#9a3412' },
