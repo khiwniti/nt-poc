@@ -70,7 +70,8 @@ export function SplitCanvas({
   onRightCameraChange,
 }: SplitCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [viewports, setViewports] = useState<{
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_viewports, setViewports] = useState<{
     left: ViewportDimensions;
     right: ViewportDimensions;
   }>({

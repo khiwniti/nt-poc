@@ -57,7 +57,8 @@ export function DifferenceHighlight({
       differenceData.normalizedDifference * highlightIntensity
     );
 
-    const applyHighlight = (obj: Object3D) => {
+    const applyHighlight = (obj: Object3D): (() => void) | undefined => {
+      let cleanup: (() => void) | undefined;
       obj.traverse((child) => {
         if ('material' in child && child.material) {
           const material = child.material as MeshStandardMaterial;
@@ -65,13 +66,14 @@ export function DifferenceHighlight({
           material.emissive = highlightColor;
           material.emissiveIntensity = 0.5 * differenceData.normalizedDifference;
 
-          return () => {
+          cleanup = () => {
             material.color = originalColor;
             material.emissive = new Color(0x000000);
             material.emissiveIntensity = 0;
           };
         }
       });
+      return cleanup;
     };
 
     const cleanupLeft = applyHighlight(leftObject);
