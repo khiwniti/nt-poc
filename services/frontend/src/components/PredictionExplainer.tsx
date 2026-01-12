@@ -383,7 +383,7 @@ export const PredictionExplainer: React.FC<PredictionExplainerProps> = ({
                 </div>
                 <div style={{ marginTop: '4px', fontSize: '0.9em', color: '#666' }}>
                   Value: {feature.value.toFixed(2)} | 
-                  Impact: {feature.abs_impact.toFixed(3)}
+                  Impact: {Math.abs(feature.shap_value).toFixed(3)}
                 </div>
               </div>
             ))}

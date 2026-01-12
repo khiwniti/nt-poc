@@ -19,14 +19,12 @@
     "migrate:make": "tsx --tsconfig tsconfig.json node_modules/knex/bin/cli.js migrate:make --knexfile knexfile.ts",
     "seed:run": "tsx --tsconfig tsconfig.json node_modules/knex/bin/cli.js seed:run --knexfile knexfile.ts",
     "db:setup": "npm run migrate && npm run seed:run",
-    "postinstall": "npm run migrate",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"src/**/*.{ts,json}\"",
     "format:check": "prettier --check \"src/**/*.{ts,json}\"",
     "typecheck": "tsc --noEmit",
-    "quality": "npm run typecheck && npm run lint && npm run format:check",
-    "prepare": "cd ../.. && husky install services/backend/.husky"
+    "quality": "npm run typecheck && npm run lint && npm run format:check"
   },
   "dependencies": {
     "@sentry/node": "^10.32.1",
@@ -35,6 +33,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
+    "ioredis": "^5.9.1",
     "jsonwebtoken": "^9.0.2",
     "knex": "^3.1.0",
     "ml-cart": "^2.1.1",

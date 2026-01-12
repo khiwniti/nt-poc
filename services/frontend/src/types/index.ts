@@ -42,4 +42,6 @@ export interface Alert {
   acknowledgedAt?: number;
   resolvedAt?: number;
   acknowledgedBy?: string;
+  metadata?: Record<string, any>;
+  duration?: number;
 }
