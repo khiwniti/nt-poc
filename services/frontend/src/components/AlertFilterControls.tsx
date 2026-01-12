@@ -2,11 +2,11 @@ import { X } from 'lucide-react';
 import { useAlertFilterStore, AlertSeverity, AlertStatus, AlertType, DateRange } from '../stores/alertFilterStore';
 
 const ALERT_TYPES: AlertType[] = [
-  'Temperature High',
-  'Voltage Anomaly',
-  'SoC Critical',
-  'Communication Lost',
-  'Capacity Degraded',
+  AlertType.TEMPERATURE,
+  AlertType.VOLTAGE,
+  AlertType.SOC,
+  AlertType.CONNECTIVITY,
+  AlertType.RUL,
 ];
 
 interface AlertFilterControlsProps {
@@ -147,10 +147,11 @@ export function AlertFilterControls({ onApplyFilters }: AlertFilterControlsProps
           </label>
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
             {(['critical', 'warning', 'info'] as AlertSeverity[]).map((s) => {
-              const colors = {
-                critical: { bg: '#fef2f2', border: '#ef4444', text: '#991b1b' },
-                warning: { bg: '#fffbeb', border: '#f59e0b', text: '#92400e' },
-                info: { bg: '#eff6ff', border: '#3b82f6', text: '#1e40af' },
+              const colors: Record<AlertSeverity, { bg: string; border: string; text: string }> = {
+                [AlertSeverity.CRITICAL]: { bg: '#fef2f2', border: '#ef4444', text: '#991b1b' },
+                [AlertSeverity.HIGH]: { bg: '#fff7ed', border: '#f97316', text: '#9a3412' },
+                [AlertSeverity.MEDIUM]: { bg: '#fffbeb', border: '#f59e0b', text: '#92400e' },
+                [AlertSeverity.LOW]: { bg: '#eff6ff', border: '#3b82f6', text: '#1e40af' },
               };
               const color = colors[s];
               return (

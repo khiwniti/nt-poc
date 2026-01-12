@@ -1,7 +1,5 @@
 import { useFrame } from '@react-three/fiber';
 import { useXR } from '@react-three/xr';
-import { Vector3 } from 'three';
-import { useRef } from 'react';
 
 export interface VRNavigationControllerProps {
   speed?: number;
@@ -15,15 +13,10 @@ export interface VRNavigationControllerProps {
  * Note: This is a simplified version. Full controller support requires
  * additional XR input handling which will be added in future iterations.
  */
-export function VRNavigationController({
-  speed = 2.0,
-  rotationSpeed = 1.5,
-  teleportEnabled = true,
-}: VRNavigationControllerProps) {
+export function VRNavigationController({}: VRNavigationControllerProps) {
   const { session } = useXR();
-  const velocity = useRef(new Vector3());
 
-  useFrame((state, delta) => {
+  useFrame(() => {
     if (!session) return;
 
     // Basic movement implementation

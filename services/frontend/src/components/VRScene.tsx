@@ -23,7 +23,6 @@ const store = createXRStore();
  */
 export function VRScene({
   children,
-  enableControllers = true,
   targetFrameRate = 90,
   onSessionStart,
   onSessionEnd,
@@ -126,7 +125,7 @@ function VRPerformanceMonitor({
   targetFrameRate: number;
   onPerformanceWarning?: (fps: number) => void;
 }) {
-  const { currentFPS, averageFPS, isUnderPerforming } = useVRPerformanceMonitor(targetFrameRate);
+  const { currentFPS, isUnderPerforming } = useVRPerformanceMonitor(targetFrameRate);
 
   useEffect(() => {
     if (isUnderPerforming && onPerformanceWarning) {

@@ -1,23 +1,27 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Alert, alertsApi } from '../api/alerts';
+import { AlertSeverity } from '../types';
 
 type SortKey = 'time' | 'severity';
 type SortOrder = 'asc' | 'desc';
 
-const severityRank: Record<Alert['severity'], number> = {
-  critical: 3,
-  warning: 2,
-  info: 1,
+const severityRank: Record<AlertSeverity, number> = {
+  [AlertSeverity.CRITICAL]: 4,
+  [AlertSeverity.HIGH]: 3,
+  [AlertSeverity.MEDIUM]: 2,
+  [AlertSeverity.LOW]: 1,
 };
 
 function getSeverityColor(severity: string) {
   switch (severity) {
-    case 'critical':
+    case AlertSeverity.CRITICAL:
       return '#ef4444';
-    case 'warning':
+    case AlertSeverity.HIGH:
+      return '#f97316';
+    case AlertSeverity.MEDIUM:
       return '#f59e0b';
-    case 'info':
+    case AlertSeverity.LOW:
       return '#3b82f6';
     default:
       return '#6b7280';
