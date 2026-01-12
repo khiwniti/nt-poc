@@ -1,0 +1,670 @@
+openapi: 3.1.0
+info:
+  title: Enterprise Facility Manager - Sensor Simulator API
+  version: 1.0.0
+  description: |
+    Sensor simulator API for testing and development.
+
+    **Purpose**: Generate realistic sensor data streams that can be completely replaced
+    with real sensor hardware without affecting production code.
+
+    **Service**: Sensor Simulator Service (Python 3.11+ + FastAPI)
+    **Base URL**: https://simulator.railway.internal (internal only)
+    **Authentication**: API Key
+    **Replaceability**: This API contract MUST be followed by real sensor systems
+
+    ## Replaceability Requirements
+
+    This simulator is designed to be 100% replaceable with real sensors:
+
+    1. **Same API Contract**: Real sensors must implement identical endpoints
+    2. **Same Data Format**: Sensor readings must match the response schema exactly
+    3. **Same SSE Events**: Real-time streams must follow the same event format
+    4. **No Business Logic**: Contains ZERO facility monitoring logic (moved to Backend Service)
+    5. **Configuration-Driven**: Sensor types, facilities, and zones are externally configured
+
+    ## Production Replacement Strategy
+
+    Replace simulator with real sensors by:
+    1. Deploy real sensor gateway with this exact API contract
+    2. Update Backend Service environment variable: `SENSOR_API_URL=https://real-sensors.internal`
+    3. No code changes required in Backend Service
+    4. Simulator can remain for staging/testing environments
+
+servers:
+  - url: https://simulator.railway.internal
+    description: Railway internal network (simulator)
+  - url: https://real-sensors.internal
+    description: Production sensor gateway (future)
+
+security:
+  - apiKeyAuth: []
+
+paths:
+  /api/v1/sensors/stream:
+    get:
+      summary: Real-time sensor data stream (SSE)
+      operationId: streamSensorData
+      tags: [Streaming]
+      parameters:
+        - name: facilityIds
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+          description: Filter by facility IDs (comma-separated)
+        - name: sensorIds
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+          description: Filter by sensor IDs (comma-separated)
+        - name: sensorTypes
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [temperature, humidity, pressure, air_quality, battery_health]
+          description: Filter by sensor types (comma-separated)
+        - name: updateIntervalMs
+          in: query
+          schema:
+            type: integer
+            default: 5000
+            minimum: 1000
+            maximum: 60000
+          description: Update interval in milliseconds
+      responses:
+        '200':
+          description: SSE stream of sensor readings
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              examples:
+                sensorReading:
+                  summary: Sensor reading event
+                  value: |
+                    event: sensor_reading
+                    data: {"id":"123e4567-e89b-12d3-a456-426614174000","sensorId":"550e8400-e29b-41d4-a716-446655440000","facilityId":"7c9e6679-7425-40de-944b-e07fc1f90ae7","zoneId":"8f9e6679-7425-40de-944b-e07fc1f90ae8","timestamp":"2026-01-08T14:32:15.123Z","value":23.5,"unit":"°C","status":"normal","metadata":{"source":"simulator","drift":0.1}}
+
+                heartbeat:
+                  summary: Heartbeat event
+                  value: |
+                    event: heartbeat
+                    data: {"timestamp":"2026-01-08T14:32:20.000Z","activeConnections":5}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/sensors/{sensorId}/readings:
+    parameters:
+      - name: sensorId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Get historical sensor readings
+      operationId: getHistoricalReadings
+      tags: [Readings]
+      parameters:
+        - name: startTime
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: endTime
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 1000
+            maximum: 10000
+      responses:
+        '200':
+          description: Historical sensor readings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SensorReading'
+                  metadata:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                      timeRange:
+                        type: object
+                        properties:
+                          start:
+                            type: string
+                            format: date-time
+                          end:
+                            type: string
+                            format: date-time
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/sensors/{sensorId}/readings/latest:
+    parameters:
+      - name: sensorId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Get latest sensor reading
+      operationId: getLatestReading
+      tags: [Readings]
+      responses:
+        '200':
+          description: Latest sensor reading
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SensorReading'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/sensors:
+    get:
+      summary: List all sensors
+      operationId: listSensors
+      tags: [Configuration]
+      parameters:
+        - name: facilityId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [temperature, humidity, pressure, air_quality, battery_health]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, inactive, error]
+      responses:
+        '200':
+          description: List of sensors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SensorInfo'
+
+  /api/v1/sensors/{sensorId}:
+    parameters:
+      - name: sensorId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Get sensor metadata
+      operationId: getSensorInfo
+      tags: [Configuration]
+      responses:
+        '200':
+          description: Sensor metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SensorInfo'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # Simulator-Specific Configuration Endpoints
+  # NOTE: These endpoints are simulator-only and NOT required in production sensor systems
+
+  /api/v1/simulator/config:
+    get:
+      summary: Get simulator configuration (simulator-only)
+      operationId: getSimulatorConfig
+      tags: [Simulator Config]
+      responses:
+        '200':
+          description: Simulator configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulatorConfig'
+    patch:
+      summary: Update simulator configuration (simulator-only)
+      operationId: updateSimulatorConfig
+      tags: [Simulator Config]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SimulatorConfigUpdate'
+      responses:
+        '200':
+          description: Configuration updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulatorConfig'
+
+  /api/v1/simulator/scenarios:
+    get:
+      summary: List simulation scenarios (simulator-only)
+      operationId: listScenarios
+      tags: [Simulator Config]
+      responses:
+        '200':
+          description: List of scenarios
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  scenarios:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SimulationScenario'
+    post:
+      summary: Trigger simulation scenario (simulator-only)
+      operationId: triggerScenario
+      tags: [Simulator Config]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                scenarioId:
+                  type: string
+                facilityId:
+                  type: string
+                  format: uuid
+                duration:
+                  type: integer
+                  description: Duration in seconds
+              required: [scenarioId, facilityId]
+      responses:
+        '202':
+          description: Scenario triggered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [running]
+                  estimatedEndTime:
+                    type: string
+                    format: date-time
+
+  /api/v1/simulator/reset:
+    post:
+      summary: Reset simulator state (simulator-only)
+      operationId: resetSimulator
+      tags: [Simulator Config]
+      responses:
+        '200':
+          description: Simulator reset
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [reset]
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/health:
+    get:
+      summary: Health check endpoint
+      operationId: healthCheck
+      tags: [System]
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy, degraded, unhealthy]
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                  simulatorMode:
+                    type: boolean
+                    description: True if simulator, false if real sensors
+                  activeSensors:
+                    type: integer
+                  activeStreams:
+                    type: integer
+
+components:
+  securitySchemes:
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    SensorReading:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique reading ID
+        sensorId:
+          type: string
+          format: uuid
+          description: Sensor that generated this reading
+        facilityId:
+          type: string
+          format: uuid
+          description: Facility containing the sensor
+        zoneId:
+          type: string
+          format: uuid
+          description: Zone containing the sensor
+        timestamp:
+          type: string
+          format: date-time
+          description: Reading timestamp (ISO 8601)
+        value:
+          type: number
+          description: Sensor reading value
+        unit:
+          type: string
+          description: Unit of measurement (°C, %, Pa, AQI, etc.)
+        status:
+          type: string
+          enum: [normal, warning, critical]
+          description: Reading status (determined by thresholds)
+        metadata:
+          type: object
+          properties:
+            source:
+              type: string
+              enum: [simulator, hardware]
+              description: Data source identifier
+            drift:
+              type: number
+              description: Simulated drift factor (simulator only)
+            calibrationDate:
+              type: string
+              format: date
+              description: Last calibration date (real sensors)
+            hardwareRevision:
+              type: string
+              description: Sensor hardware revision (real sensors)
+          required: [source]
+      required:
+        - id
+        - sensorId
+        - facilityId
+        - zoneId
+        - timestamp
+        - value
+        - unit
+        - status
+        - metadata
+
+    SensorInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        facilityId:
+          type: string
+          format: uuid
+        zoneId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+          enum: [temperature, humidity, pressure, air_quality, battery_health]
+        unit:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive, error]
+        position3D:
+          type: object
+          properties:
+            x:
+              type: number
+            y:
+              type: number
+            z:
+              type: number
+        thresholds:
+          type: object
+          properties:
+            warning:
+              type: object
+              properties:
+                min:
+                  type: number
+                max:
+                  type: number
+            critical:
+              type: object
+              properties:
+                min:
+                  type: number
+                max:
+                  type: number
+        metadata:
+          type: object
+          properties:
+            manufacturer:
+              type: string
+            model:
+              type: string
+            firmwareVersion:
+              type: string
+            installationDate:
+              type: string
+              format: date
+      required:
+        - id
+        - facilityId
+        - zoneId
+        - name
+        - type
+        - unit
+        - status
+
+    SimulatorConfig:
+      type: object
+      description: Simulator-only configuration (not in production)
+      properties:
+        updateIntervalMs:
+          type: integer
+          description: Default update interval for all sensors
+        noiseFactor:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Noise level (0 = no noise, 1 = high noise)
+        driftEnabled:
+          type: boolean
+          description: Enable sensor drift simulation
+        scenarioMode:
+          type: string
+          enum: [normal, stress_test, failure_injection, battery_degradation]
+        facilities:
+          type: array
+          items:
+            type: object
+            properties:
+              facilityId:
+                type: string
+                format: uuid
+              sensorCount:
+                type: integer
+              sensorTypes:
+                type: array
+                items:
+                  type: string
+                  enum: [temperature, humidity, pressure, air_quality, battery_health]
+
+    SimulatorConfigUpdate:
+      type: object
+      description: Simulator configuration update
+      properties:
+        updateIntervalMs:
+          type: integer
+        noiseFactor:
+          type: number
+        driftEnabled:
+          type: boolean
+        scenarioMode:
+          type: string
+          enum: [normal, stress_test, failure_injection, battery_degradation]
+
+    SimulationScenario:
+      type: object
+      description: Predefined simulation scenario
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum: [normal, alert_trigger, battery_failure, temperature_spike, zone_failure]
+        duration:
+          type: integer
+          description: Default duration in seconds
+        effects:
+          type: array
+          items:
+            type: object
+            properties:
+              sensorType:
+                type: string
+              effect:
+                type: string
+                enum: [spike, gradual_increase, gradual_decrease, flatline, erratic]
+              magnitude:
+                type: number
+      required: [id, name, type]
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+      required: [error]
+
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: VALIDATION_ERROR
+              message: Invalid query parameters
+              details:
+                field: updateIntervalMs
+                issue: must be between 1000 and 60000
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: NOT_FOUND
+              message: Sensor not found
+
+x-replaceability-notes: |
+  ## Production Sensor Requirements
+
+  To replace this simulator with real sensors, the production system MUST:
+
+  1. **Implement Core Endpoints**:
+     - GET /api/v1/sensors/stream (SSE with same event format)
+     - GET /api/v1/sensors/{sensorId}/readings/latest
+     - GET /api/v1/sensors/{sensorId}/readings (historical)
+     - GET /api/v1/sensors (list)
+     - GET /api/v1/sensors/{sensorId} (metadata)
+     - GET /api/health
+
+  2. **Match Response Schemas Exactly**:
+     - SensorReading schema must be identical
+     - SensorInfo schema must be identical
+     - SSE event format must match: event: sensor_reading, data: {...}
+
+  3. **Omit Simulator-Only Endpoints**:
+     - /api/v1/simulator/* endpoints are simulator-specific
+     - Production sensors do NOT need these endpoints
+
+  4. **Configuration**:
+     - Backend Service uses environment variable: SENSOR_API_URL
+     - Change from https://simulator.railway.internal → https://real-sensors.internal
+     - No code changes required in Backend Service
+
+  5. **Metadata Differences**:
+     - Simulator: metadata.source = "simulator", includes drift
+     - Real sensors: metadata.source = "hardware", includes calibrationDate, hardwareRevision
+
+  ## Testing Replaceability
+
+  Use contract tests (Pact) to verify production sensors match this contract:
+  - Schema validation for all responses
+  - SSE event format validation
+  - Threshold status calculation consistency

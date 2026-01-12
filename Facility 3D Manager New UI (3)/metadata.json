@@ -1,0 +1,7 @@
+{
+  "name": "NT Facility 3D Manager New UI",
+  "description": "A 3D locational-based facility and utility management platform for Thailand branches, featuring AI-powered insights and Google Maps integration.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

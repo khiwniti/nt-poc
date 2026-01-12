@@ -1,0 +1,923 @@
+openapi: 3.1.0
+info:
+  title: Enterprise Facility Manager - MLOps Service API
+  version: 1.0.0
+  description: |
+    ML prediction service for battery Remaining Useful Life (RUL) prediction.
+
+    **Service**: MLOps Service (Python 3.11+ + FastAPI + MLflow)
+    **Base URL**: https://mlops.railway.internal (internal only)
+    **Authentication**: API Key
+    **Model Registry**: MLflow with XGBoost → LSTM progression
+
+servers:
+  - url: https://mlops.railway.internal
+    description: Railway internal network (no public access)
+
+security:
+  - apiKeyAuth: []
+
+paths:
+  /api/v1/predictions/rul:
+    post:
+      summary: Predict battery Remaining Useful Life
+      operationId: predictRUL
+      tags: [Predictions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RULPredictionRequest'
+      responses:
+        '200':
+          description: RUL prediction result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RULPredictionResponse'
+          headers:
+            X-Model-Version:
+              schema:
+                type: string
+              description: Model version used for prediction
+            X-Inference-Time-Ms:
+              schema:
+                type: integer
+              description: Inference time in milliseconds
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '503':
+          description: Model not available or inference error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/predictions/rul/batch:
+    post:
+      summary: Batch RUL predictions for multiple batteries
+      operationId: batchPredictRUL
+      tags: [Predictions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                predictions:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/RULPredictionRequest'
+                  maxItems: 100
+              required: [predictions]
+      responses:
+        '200':
+          description: Batch prediction results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RULPredictionResponse'
+                  metadata:
+                    type: object
+                    properties:
+                      totalPredictions:
+                        type: integer
+                      successCount:
+                        type: integer
+                      failureCount:
+                        type: integer
+                      avgInferenceTimeMs:
+                        type: number
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/predictions/history/{batteryId}:
+    parameters:
+      - name: batteryId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Get prediction history for a battery
+      operationId: getPredictionHistory
+      tags: [Predictions]
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+      responses:
+        '200':
+          description: Prediction history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RULPredictionResponse'
+                  metadata:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                      timeRange:
+                        type: object
+                        properties:
+                          start:
+                            type: string
+                            format: date-time
+                          end:
+                            type: string
+                            format: date-time
+
+  /api/v1/models:
+    get:
+      summary: List available ML models
+      operationId: listModels
+      tags: [Models]
+      parameters:
+        - name: modelType
+          in: query
+          schema:
+            type: string
+            enum: [rul_xgboost, rul_lstm]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [production, staging, archived]
+      responses:
+        '200':
+          description: List of models
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  models:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ModelInfo'
+
+  /api/v1/models/{modelVersion}:
+    parameters:
+      - name: modelVersion
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Model version (e.g., "v2.1.3")
+    get:
+      summary: Get model details
+      operationId: getModel
+      tags: [Models]
+      responses:
+        '200':
+          description: Model details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelInfo'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/models/{modelVersion}/promote:
+    parameters:
+      - name: modelVersion
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: Promote model to production
+      operationId: promoteModel
+      tags: [Models]
+      security:
+        - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                stage:
+                  type: string
+                  enum: [production, staging]
+                notes:
+                  type: string
+              required: [stage]
+      responses:
+        '200':
+          description: Model promoted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelInfo'
+        '403':
+          description: Insufficient permissions
+
+  /api/v1/monitoring/drift:
+    get:
+      summary: Get model drift metrics
+      operationId: getDriftMetrics
+      tags: [Monitoring]
+      parameters:
+        - name: modelVersion
+          in: query
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Drift metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriftMetrics'
+
+  /api/v1/monitoring/performance:
+    get:
+      summary: Get model performance metrics
+      operationId: getPerformanceMetrics
+      tags: [Monitoring]
+      parameters:
+        - name: modelVersion
+          in: query
+          schema:
+            type: string
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [hourly, daily, weekly]
+            default: daily
+      responses:
+        '200':
+          description: Performance metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerformanceMetrics'
+
+  /api/v1/training/jobs:
+    get:
+      summary: List training jobs
+      operationId: listTrainingJobs
+      tags: [Training]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, running, completed, failed]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of training jobs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TrainingJob'
+    post:
+      summary: Trigger model retraining
+      operationId: triggerRetraining
+      tags: [Training]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrainingJobCreate'
+      responses:
+        '202':
+          description: Training job created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingJob'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/training/jobs/{jobId}:
+    parameters:
+      - name: jobId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Get training job status
+      operationId: getTrainingJob
+      tags: [Training]
+      responses:
+        '200':
+          description: Training job details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingJob'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/features/engineer:
+    post:
+      summary: Engineer features from raw sensor data
+      operationId: engineerFeatures
+      tags: [Features]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeatureEngineeringRequest'
+      responses:
+        '200':
+          description: Engineered features
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureEngineeringResponse'
+
+  /api/health:
+    get:
+      summary: Health check endpoint
+      operationId: healthCheck
+      tags: [System]
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy, degraded, unhealthy]
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                  dependencies:
+                    type: object
+                    properties:
+                      mlflow:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            enum: [healthy, degraded, unhealthy]
+                          trackingUri:
+                            type: string
+                      database:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            enum: [healthy, degraded, unhealthy]
+                  models:
+                    type: object
+                    properties:
+                      production:
+                        type: object
+                        properties:
+                          version:
+                            type: string
+                          loaded:
+                            type: boolean
+                          lastInference:
+                            type: string
+                            format: date-time
+
+components:
+  securitySchemes:
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    RULPredictionRequest:
+      type: object
+      properties:
+        batteryId:
+          type: string
+          format: uuid
+          description: Battery sensor ID
+        facilityId:
+          type: string
+          format: uuid
+          description: Facility containing the battery
+        features:
+          type: object
+          properties:
+            # Statistical features (4)
+            voltageStats:
+              type: object
+              properties:
+                mean:
+                  type: number
+                std:
+                  type: number
+                min:
+                  type: number
+                max:
+                  type: number
+              required: [mean, std, min, max]
+            currentStats:
+              type: object
+              properties:
+                mean:
+                  type: number
+                std:
+                  type: number
+                min:
+                  type: number
+                max:
+                  type: number
+              required: [mean, std, min, max]
+            temperatureStats:
+              type: object
+              properties:
+                mean:
+                  type: number
+                std:
+                  type: number
+                min:
+                  type: number
+                max:
+                  type: number
+              required: [mean, std, min, max]
+
+            # Cycle-based features (5)
+            cycleCount:
+              type: integer
+              minimum: 0
+              description: Total charge-discharge cycles
+            avgDischargeCapacity:
+              type: number
+              description: Average discharge capacity (Ah)
+            capacityFade:
+              type: number
+              description: Capacity fade rate (% per 100 cycles)
+            chargeTime:
+              type: number
+              description: Average charge time (hours)
+            dischargeTime:
+              type: number
+              description: Average discharge time (hours)
+
+            # Temporal features (5)
+            batteryAge:
+              type: integer
+              description: Days since first use
+            usageIntensity:
+              type: number
+              description: Cycles per day (rolling 30-day avg)
+            timeSinceLastMaintenance:
+              type: integer
+              description: Days since last maintenance
+            seasonalTemperature:
+              type: number
+              description: Seasonal temperature variation factor
+            operatingPattern:
+              type: string
+              enum: [continuous, intermittent, peak_only]
+
+            # Health indicators (5)
+            stateOfHealth:
+              type: number
+              minimum: 0
+              maximum: 1
+              description: Current SoH (0-1)
+            internalResistance:
+              type: number
+              description: Ohms
+            voltageRecovery:
+              type: number
+              description: Voltage recovery after load (%)
+            selfDischargeRate:
+              type: number
+              description: Self-discharge rate (% per day)
+            chargingEfficiency:
+              type: number
+              minimum: 0
+              maximum: 1
+              description: Charging efficiency (0-1)
+          required:
+            - voltageStats
+            - currentStats
+            - temperatureStats
+            - cycleCount
+            - avgDischargeCapacity
+            - capacityFade
+            - batteryAge
+            - usageIntensity
+            - stateOfHealth
+        metadata:
+          type: object
+          properties:
+            requestId:
+              type: string
+              format: uuid
+            timestamp:
+              type: string
+              format: date-time
+      required: [batteryId, facilityId, features]
+
+    RULPredictionResponse:
+      type: object
+      properties:
+        predictionId:
+          type: string
+          format: uuid
+        batteryId:
+          type: string
+          format: uuid
+        facilityId:
+          type: string
+          format: uuid
+        predictedRULCycles:
+          type: integer
+          description: Predicted remaining cycles until failure
+        confidenceInterval:
+          type: object
+          properties:
+            lower:
+              type: integer
+              description: 15th percentile (conservative)
+            upper:
+              type: integer
+              description: 85th percentile (optimistic)
+          required: [lower, upper]
+        confidenceScore:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Model confidence (0-1)
+        modelVersion:
+          type: string
+          description: Model version used (e.g., "v2.1.3")
+        timestamp:
+          type: string
+          format: date-time
+        alertTriggered:
+          type: boolean
+          description: Whether RUL threshold triggered alert
+        metadata:
+          type: object
+          properties:
+            inferenceTimeMs:
+              type: integer
+            driftScore:
+              type: number
+              description: Input drift score (PSI)
+            featureImportance:
+              type: object
+              additionalProperties:
+                type: number
+              description: Top 5 feature importances
+      required:
+        - predictionId
+        - batteryId
+        - facilityId
+        - predictedRULCycles
+        - confidenceInterval
+        - confidenceScore
+        - modelVersion
+        - timestamp
+
+    ModelInfo:
+      type: object
+      properties:
+        modelVersion:
+          type: string
+          description: Semantic version (e.g., "v2.1.3")
+        modelType:
+          type: string
+          enum: [rul_xgboost, rul_lstm]
+        stage:
+          type: string
+          enum: [production, staging, archived]
+        createdAt:
+          type: string
+          format: date-time
+        promotedAt:
+          type: string
+          format: date-time
+        mlflowRunId:
+          type: string
+          description: MLflow experiment run ID
+        metrics:
+          type: object
+          properties:
+            mae:
+              type: number
+              description: Mean Absolute Error (cycles)
+            rmse:
+              type: number
+              description: Root Mean Squared Error
+            r2:
+              type: number
+              description: R² score
+            mape:
+              type: number
+              description: Mean Absolute Percentage Error
+        hyperparameters:
+          type: object
+          description: Model hyperparameters
+        trainingData:
+          type: object
+          properties:
+            samples:
+              type: integer
+            startDate:
+              type: string
+              format: date
+            endDate:
+              type: string
+              format: date
+        notes:
+          type: string
+      required: [modelVersion, modelType, stage, createdAt, metrics]
+
+    DriftMetrics:
+      type: object
+      properties:
+        modelVersion:
+          type: string
+        period:
+          type: object
+          properties:
+            start:
+              type: string
+              format: date-time
+            end:
+              type: string
+              format: date-time
+        psi:
+          type: number
+          description: Population Stability Index
+        driftDetected:
+          type: boolean
+          description: PSI > 0.2 threshold exceeded
+        featureDrift:
+          type: array
+          items:
+            type: object
+            properties:
+              featureName:
+                type: string
+              psi:
+                type: number
+              driftLevel:
+                type: string
+                enum: [none, low, medium, high]
+        recommendation:
+          type: string
+          enum: [no_action, monitor, retrain_recommended, retrain_urgent]
+      required: [modelVersion, period, psi, driftDetected]
+
+    PerformanceMetrics:
+      type: object
+      properties:
+        modelVersion:
+          type: string
+        period:
+          type: object
+          properties:
+            start:
+              type: string
+              format: date-time
+            end:
+              type: string
+              format: date-time
+        totalPredictions:
+          type: integer
+        avgInferenceTimeMs:
+          type: number
+        p50InferenceTimeMs:
+          type: number
+        p95InferenceTimeMs:
+          type: number
+        p99InferenceTimeMs:
+          type: number
+        avgConfidenceScore:
+          type: number
+        errors:
+          type: object
+          properties:
+            count:
+              type: integer
+            rate:
+              type: number
+              description: Error rate (0-1)
+        predictionDistribution:
+          type: object
+          properties:
+            buckets:
+              type: array
+              items:
+                type: object
+                properties:
+                  range:
+                    type: string
+                  count:
+                    type: integer
+      required: [modelVersion, period, totalPredictions]
+
+    TrainingJob:
+      type: object
+      properties:
+        jobId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+        modelType:
+          type: string
+          enum: [rul_xgboost, rul_lstm]
+        startedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        duration:
+          type: integer
+          description: Duration in seconds
+        trainingConfig:
+          type: object
+          properties:
+            dataStartDate:
+              type: string
+              format: date
+            dataEndDate:
+              type: string
+              format: date
+            trainingSamples:
+              type: integer
+            validationSamples:
+              type: integer
+            hyperparameters:
+              type: object
+        resultModelVersion:
+          type: string
+          description: Version of trained model (if completed)
+        mlflowRunId:
+          type: string
+        error:
+          type: string
+          description: Error message (if failed)
+      required: [jobId, status, modelType]
+
+    TrainingJobCreate:
+      type: object
+      properties:
+        modelType:
+          type: string
+          enum: [rul_xgboost, rul_lstm]
+        dataStartDate:
+          type: string
+          format: date
+        dataEndDate:
+          type: string
+          format: date
+        hyperparameters:
+          type: object
+          description: Optional hyperparameter overrides
+        autoPromote:
+          type: boolean
+          default: false
+          description: Automatically promote if metrics improve
+      required: [modelType, dataStartDate, dataEndDate]
+
+    FeatureEngineeringRequest:
+      type: object
+      properties:
+        batteryId:
+          type: string
+          format: uuid
+        sensorReadings:
+          type: array
+          items:
+            type: object
+            properties:
+              timestamp:
+                type: string
+                format: date-time
+              voltage:
+                type: number
+              current:
+                type: number
+              temperature:
+                type: number
+          minItems: 100
+          description: At least 100 readings for statistical features
+      required: [batteryId, sensorReadings]
+
+    FeatureEngineeringResponse:
+      type: object
+      properties:
+        batteryId:
+          type: string
+          format: uuid
+        features:
+          type: object
+          description: Engineered features matching RULPredictionRequest.features schema
+        metadata:
+          type: object
+          properties:
+            readingsProcessed:
+              type: integer
+            featureCount:
+              type: integer
+            processingTimeMs:
+              type: integer
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+      required: [error]
+
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: VALIDATION_ERROR
+              message: Invalid feature values
+              details:
+                field: features.stateOfHealth
+                issue: must be between 0 and 1
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: NOT_FOUND
+              message: Model version not found

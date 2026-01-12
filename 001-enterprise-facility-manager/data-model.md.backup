@@ -1,0 +1,1018 @@
+# Data Model: Enterprise Facility Manager
+
+**Feature**: Complete migration and modernization of Facility 3D Manager UI
+**Created**: 2026-01-08
+**Status**: Phase 1 Design
+
+This document defines the entity schemas and relationships for the enterprise facility manager system, derived from functional requirements in [spec.md](./spec.md).
+
+---
+
+## Entity Overview
+
+The system manages 8 core entities:
+
+1. **Facility** - Physical facility locations with 3D visualization data
+2. **Zone** - Subdivisions within facilities (equipment areas, zones)
+3. **Sensor** - IoT sensors monitoring facility metrics
+4. **Alert** - System-generated notifications for anomalies
+5. **Report** - ISO-compliant compliance reports
+6. **User** - System users with role-based access
+7. **MetricHistory** - Time-series sensor data for historical analysis
+8. **ChatSession** - AI-powered chat interactions for insights
+
+---
+
+## 1. Facility Entity
+
+**Description**: Represents a physical facility location with 3D model, geospatial coordinates, and operational status.
+
+### Schema
+
+```typescript
+interface Facility {
+  // Identity
+  id: string; // UUID
+  name: string;
+  code: string; // Unique facility code (e.g., "CMI-01", "KKN-02")
+
+  // Location
+  location: {
+    address: string;
+    city: string;
+    province: string;
+    postalCode: string;
+    coordinates: {
+      latitude: number;
+      longitude: number;
+    };
+  };
+
+  // Operational
+  status: 'operational' | 'warning' | 'critical' | 'offline';
+  capacity: number; // Max capacity (units depend on facility type)
+  utilization: number; // Current utilization percentage (0-100)
+
+  // 3D Visualization
+  model3D: {
+    path: string; // Path to 3D model file or geometry data
+    position: [number, number, number]; // [x, y, z]
+    rotation: [number, number, number]; // [rx, ry, rz] in radians
+    scale: [number, number, number]; // [sx, sy, sz]
+  };
+
+  // Metadata
+  type: string; // e.g., "Battery Storage", "Shopping Mall", "Data Center"
+  zoneCount: number;
+  sensorCount: number;
+  activeAlerts: number;
+
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+  lastHealthCheck: Date;
+}
+```
+
+### Relationships
+
+- **One-to-Many**: Facility → Zones (1 facility contains N zones)
+- **One-to-Many**: Facility → Sensors (1 facility contains N sensors)
+- **One-to-Many**: Facility → Alerts (1 facility generates N alerts)
+- **One-to-Many**: Facility → Reports (1 facility has N reports)
+- **One-to-Many**: Facility → MetricHistory (1 facility has N metric records)
+
+### Validation Rules
+
+- `id`: Required, UUID format
+- `name`: Required, 1-100 characters
+- `code`: Required, unique, alphanumeric with hyphens
+- `status`: Required, enum validation
+- `capacity`: Required, positive number
+- `utilization`: Required, 0-100 range
+- `coordinates.latitude`: -90 to 90
+- `coordinates.longitude`: -180 to 180
+- `zoneCount`: Non-negative integer
+- `sensorCount`: Non-negative integer
+
+### Indexes (IndexedDB)
+
+```typescript
+// Dexie.js schema
+facilities: {
+  keyPath: 'id',
+  indexes: [
+    { name: 'code', keyPath: 'code', unique: true },
+    { name: 'status', keyPath: 'status' },
+    { name: 'type', keyPath: 'type' },
+    { name: 'province', keyPath: 'location.province' }
+  ]
+}
+```
+
+---
+
+## 2. Zone Entity
+
+**Description**: Subdivisions within a facility representing equipment areas, storage sections, or monitoring zones. Used for 3D visualization and alert localization.
+
+### Schema
+
+```typescript
+interface Zone {
+  // Identity
+  id: string; // UUID
+  facilityId: string; // Foreign key to Facility
+  name: string;
+  code: string; // Unique within facility (e.g., "ZONE-A1", "BAY-03")
+
+  // 3D Visualization
+  geometry: {
+    type: 'box' | 'cylinder' | 'sphere' | 'custom';
+    position: [number, number, number]; // [x, y, z] in facility coordinate system
+    dimensions: {
+      width: number;
+      height: number;
+      depth: number;
+    };
+  };
+
+  // Visual State
+  color: string; // Hex color code (e.g., "#00FF00")
+  opacity: number; // 0.0 - 1.0
+  highlighted: boolean;
+
+  // Operational
+  status: 'normal' | 'warning' | 'critical' | 'maintenance';
+  temperature?: number; // Optional current temperature
+  humidity?: number; // Optional current humidity
+  sensorCount: number;
+
+  // Metadata
+  category: string; // e.g., "Equipment", "Storage", "Access", "Safety"
+  description?: string;
+
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+  lastSensorUpdate?: Date;
+}
+```
+
+### Relationships
+
+- **Many-to-One**: Zone → Facility (N zones belong to 1 facility)
+- **One-to-Many**: Zone → Sensors (1 zone contains N sensors)
+- **One-to-Many**: Zone → Alerts (1 zone generates N alerts)
+
+### Validation Rules
+
+- `id`: Required, UUID format
+- `facilityId`: Required, UUID format, must exist in Facility table
+- `name`: Required, 1-50 characters
+- `code`: Required, unique within facility
+- `geometry.type`: Required, enum validation
+- `geometry.position`: Required, 3-element array of numbers
+- `geometry.dimensions`: Required, all positive numbers
+- `color`: Required, valid hex color code (#RRGGBB)
+- `opacity`: Required, 0.0-1.0 range
+- `status`: Required, enum validation
+- `temperature`: Optional, -50 to 100 (Celsius)
+- `humidity`: Optional, 0-100 (percentage)
+
+### Indexes (IndexedDB)
+
+```typescript
+zones: {
+  keyPath: 'id',
+  indexes: [
+    { name: 'facilityId', keyPath: 'facilityId' },
+    { name: '[facilityId+code]', keyPath: ['facilityId', 'code'], unique: true },
+    { name: 'status', keyPath: 'status' },
+    { name: 'category', keyPath: 'category' }
+  ]
+}
+```
+
+---
+
+## 3. Sensor Entity
+
+**Description**: IoT sensors monitoring environmental or operational metrics within zones.
+
+### Schema
+
+```typescript
+interface Sensor {
+  // Identity
+  id: string; // UUID
+  facilityId: string; // Foreign key to Facility
+  zoneId: string; // Foreign key to Zone
+  name: string;
+  deviceId: string; // Physical device identifier
+
+  // Configuration
+  type: 'temperature' | 'humidity' | 'pressure' | 'vibration' | 'power' | 'air_quality' | 'custom';
+  unit: string; // e.g., "°C", "%", "Pa", "Hz", "kW", "ppm"
+  updateInterval: number; // Seconds between readings
+
+  // Current State
+  currentValue: number;
+  lastReading: Date;
+  status: 'active' | 'inactive' | 'error' | 'maintenance';
+
+  // Thresholds
+  thresholds: {
+    critical: { min?: number; max?: number };
+    warning: { min?: number; max?: number };
+    normal: { min: number; max: number };
+  };
+
+  // Metadata
+  manufacturer?: string;
+  model?: string;
+  firmwareVersion?: string;
+  installDate?: Date;
+  lastCalibration?: Date;
+
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+### Relationships
+
+- **Many-to-One**: Sensor → Facility (N sensors belong to 1 facility)
+- **Many-to-One**: Sensor → Zone (N sensors belong to 1 zone)
+- **One-to-Many**: Sensor → MetricHistory (1 sensor generates N historical records)
+- **One-to-Many**: Sensor → Alerts (1 sensor triggers N alerts)
+
+### Validation Rules
+
+- `id`: Required, UUID format
+- `facilityId`: Required, UUID format, must exist in Facility table
+- `zoneId`: Required, UUID format, must exist in Zone table
+- `name`: Required, 1-100 characters
+- `deviceId`: Required, unique across system
+- `type`: Required, enum validation
+- `unit`: Required, 1-20 characters
+- `updateInterval`: Required, positive integer (seconds)
+- `currentValue`: Required, number
+- `status`: Required, enum validation
+- `thresholds.normal`: Required, min < max
+
+### Indexes (IndexedDB)
+
+```typescript
+sensors: {
+  keyPath: 'id',
+  indexes: [
+    { name: 'facilityId', keyPath: 'facilityId' },
+    { name: 'zoneId', keyPath: 'zoneId' },
+    { name: 'deviceId', keyPath: 'deviceId', unique: true },
+    { name: 'type', keyPath: 'type' },
+    { name: 'status', keyPath: 'status' }
+  ]
+}
+```
+
+---
+
+## 4. Alert Entity
+
+**Description**: System-generated notifications for sensor threshold violations, system anomalies, or operational issues.
+
+### Schema
+
+```typescript
+interface Alert {
+  // Identity
+  id: string; // UUID
+  facilityId: string; // Foreign key to Facility
+  zoneId?: string; // Optional foreign key to Zone
+  sensorId?: string; // Optional foreign key to Sensor
+
+  // Classification
+  type: 'threshold_violation' | 'system_error' | 'maintenance_required' | 'anomaly_detected' | 'custom';
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
+  category: 'safety' | 'operational' | 'environmental' | 'equipment' | 'system';
+
+  // Content
+  title: string;
+  description: string;
+  metadata: Record<string, any>; // Additional context (sensor values, error codes, etc.)
+
+  // State
+  status: 'active' | 'acknowledged' | 'resolved' | 'dismissed';
+  priority: number; // 1-10 (10 = highest)
+
+  // Assignment
+  assignedTo?: string; // User ID
+  acknowledgedBy?: string; // User ID
+  acknowledgedAt?: Date;
+  resolvedBy?: string; // User ID
+  resolvedAt?: Date;
+
+  // Actions
+  recommendedActions: string[]; // Array of action descriptions
+  resolutionNotes?: string;
+
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+  expiresAt?: Date; // Auto-dismiss date
+}
+```
+
+### Relationships
+
+- **Many-to-One**: Alert → Facility (N alerts belong to 1 facility)
+- **Many-to-One**: Alert → Zone (N alerts belong to 1 zone, optional)
+- **Many-to-One**: Alert → Sensor (N alerts triggered by 1 sensor, optional)
+- **Many-to-One**: Alert → User (assigned/acknowledged/resolved by user)
+
+### Validation Rules
+
+- `id`: Required, UUID format
+- `facilityId`: Required, UUID format, must exist in Facility table
+- `zoneId`: Optional, UUID format, must exist in Zone table if provided
+- `sensorId`: Optional, UUID format, must exist in Sensor table if provided
+- `type`: Required, enum validation
+- `severity`: Required, enum validation
+- `category`: Required, enum validation
+- `title`: Required, 1-200 characters
+- `description`: Required, 1-2000 characters
+- `status`: Required, enum validation
+- `priority`: Required, 1-10 range
+- `recommendedActions`: Array of strings
+
+### State Transitions
+
+```
+active → acknowledged → resolved
+       ↘ dismissed
+```
+
+### Indexes (IndexedDB)
+
+```typescript
+alerts: {
+  keyPath: 'id',
+  indexes: [
+    { name: 'facilityId', keyPath: 'facilityId' },
+    { name: 'zoneId', keyPath: 'zoneId' },
+    { name: 'sensorId', keyPath: 'sensorId' },
+    { name: 'severity', keyPath: 'severity' },
+    { name: 'status', keyPath: 'status' },
+    { name: 'createdAt', keyPath: 'createdAt' },
+    { name: '[facilityId+status]', keyPath: ['facilityId', 'status'] },
+    { name: '[severity+createdAt]', keyPath: ['severity', 'createdAt'] }
+  ]
+}
+```
+
+---
+
+## 5. Report Entity
+
+**Description**: ISO-compliant compliance reports (27001, 14001, 9001, 45001) generated for facilities.
+
+### Schema
+
+```typescript
+interface Report {
+  // Identity
+  id: string; // UUID
+  facilityId: string; // Foreign key to Facility
+  reportNumber: string; // Unique report number (e.g., "ISO-27001-2026-001")
+
+  // Classification
+  standard: 'ISO-27001' | 'ISO-14001' | 'ISO-9001' | 'ISO-45001';
+  type: 'audit' | 'compliance' | 'incident' | 'performance' | 'custom';
+  classification: 'public' | 'internal' | 'confidential' | 'restricted';
+
+  // Content
+  title: string;
+  summary: string;
+  findings: ReportFinding[];
+  recommendations: string[];
+  attachments: ReportAttachment[];
+
+  // Metadata
+  status: 'draft' | 'pending_review' | 'approved' | 'published' | 'archived';
+  period: {
+    startDate: Date;
+    endDate: Date;
+  };
+
+  // Audit Trail
+  createdBy: string; // User ID
+  reviewedBy?: string; // User ID
+  approvedBy?: string; // User ID
+  publishedBy?: string; // User ID
+
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+  reviewedAt?: Date;
+  approvedAt?: Date;
+  publishedAt?: Date;
+}
+
+interface ReportFinding {
+  id: string;
+  category: string;
+  severity: 'critical' | 'major' | 'minor' | 'observation';
+  description: string;
+  evidence: string[];
+  recommendation: string;
+}
+
+interface ReportAttachment {
+  id: string;
+  filename: string;
+  mimeType: string;
+  size: number; // bytes
+  url: string;
+  uploadedAt: Date;
+}
+```
+
+### Relationships
+
+- **Many-to-One**: Report → Facility (N reports belong to 1 facility)
+- **Many-to-One**: Report → User (created/reviewed/approved by users)
+
+### Validation Rules
+
+- `id`: Required, UUID format
+- `facilityId`: Required, UUID format, must exist in Facility table
+- `reportNumber`: Required, unique, format pattern validation
+- `standard`: Required, enum validation
+- `type`: Required, enum validation
+- `classification`: Required, enum validation
+- `title`: Required, 1-200 characters
+- `summary`: Required, 1-5000 characters
+- `status`: Required, enum validation
+- `period.startDate`: Required, must be before endDate
+- `period.endDate`: Required, must be after startDate
+- `createdBy`: Required, UUID format, must exist in User table
+
+### State Transitions
+
+```
+draft → pending_review → approved → published
+                      ↘ draft (rejected)
+                                 ↘ archived
+```
+
+### Indexes (IndexedDB)
+
+```typescript
+reports: {
+  keyPath: 'id',
+  indexes: [
+    { name: 'facilityId', keyPath: 'facilityId' },
+    { name: 'reportNumber', keyPath: 'reportNumber', unique: true },
+    { name: 'standard', keyPath: 'standard' },
+    { name: 'status', keyPath: 'status' },
+    { name: 'classification', keyPath: 'classification' },
+    { name: 'createdAt', keyPath: 'createdAt' },
+    { name: '[facilityId+standard]', keyPath: ['facilityId', 'standard'] }
+  ]
+}
+```
+
+---
+
+## 6. User Entity
+
+**Description**: System users with role-based access control and authentication.
+
+### Schema
+
+```typescript
+interface User {
+  // Identity
+  id: string; // UUID
+  username: string; // Unique username
+  email: string; // Unique email
+
+  // Profile
+  firstName: string;
+  lastName: string;
+  displayName: string; // Computed: firstName + lastName
+  avatar?: string; // URL to avatar image
+  phone?: string;
+
+  // Authentication
+  passwordHash: string; // Hashed password (never stored plaintext)
+  emailVerified: boolean;
+  twoFactorEnabled: boolean;
+
+  // Authorization
+  role: 'admin' | 'facility_manager' | 'operator' | 'auditor' | 'viewer';
+  permissions: string[]; // Array of permission strings (e.g., "facilities:read", "alerts:write")
+  facilityAccess: string[]; // Array of Facility IDs user can access
+
+  // Session
+  lastLogin?: Date;
+  loginCount: number;
+  sessionToken?: string; // Current session token
+
+  // Preferences
+  preferences: {
+    language: string; // e.g., "en-US", "th-TH"
+    timezone: string; // e.g., "Asia/Bangkok"
+    theme: 'light' | 'dark' | 'auto';
+    notifications: {
+      email: boolean;
+      inApp: boolean;
+      alertSeverities: ('critical' | 'high' | 'medium' | 'low' | 'info')[];
+    };
+  };
+
+  // Status
+  status: 'active' | 'inactive' | 'suspended' | 'deleted';
+
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt?: Date; // Soft delete
+}
+```
+
+### Relationships
+
+- **One-to-Many**: User → Alerts (1 user handles N alerts)
+- **One-to-Many**: User → Reports (1 user creates N reports)
+- **One-to-Many**: User → ChatSessions (1 user has N chat sessions)
+- **Many-to-Many**: User ↔ Facilities (N users access N facilities via `facilityAccess` array)
+
+### Validation Rules
+
+- `id`: Required, UUID format
+- `username`: Required, unique, 3-50 characters, alphanumeric + underscore
+- `email`: Required, unique, valid email format
+- `firstName`: Required, 1-50 characters
+- `lastName`: Required, 1-50 characters
+- `role`: Required, enum validation
+- `permissions`: Array of permission strings
+- `facilityAccess`: Array of valid Facility UUIDs
+- `preferences.language`: Required, ISO 639-1 format
+- `preferences.timezone`: Required, IANA timezone format
+- `status`: Required, enum validation
+
+### Indexes (IndexedDB)
+
+```typescript
+users: {
+  keyPath: 'id',
+  indexes: [
+    { name: 'username', keyPath: 'username', unique: true },
+    { name: 'email', keyPath: 'email', unique: true },
+    { name: 'role', keyPath: 'role' },
+    { name: 'status', keyPath: 'status' }
+  ]
+}
+```
+
+---
+
+## 7. MetricHistory Entity
+
+**Description**: Time-series historical sensor data for trend analysis, reporting, and anomaly detection.
+
+### Schema
+
+```typescript
+interface MetricHistory {
+  // Identity (composite key)
+  facilityId: string; // Foreign key to Facility
+  sensorId: string; // Foreign key to Sensor
+  timestamp: Date; // Measurement timestamp
+
+  // Measurement
+  metricType: string; // Sensor type (temperature, humidity, etc.)
+  value: number;
+  unit: string;
+
+  // Quality
+  quality: 'good' | 'uncertain' | 'bad'; // Data quality indicator
+  interpolated: boolean; // True if value was interpolated
+
+  // Metadata
+  source: 'sensor' | 'manual' | 'calculated' | 'imported';
+  batchId?: string; // For bulk imports
+}
+```
+
+### Relationships
+
+- **Many-to-One**: MetricHistory → Facility (N records belong to 1 facility)
+- **Many-to-One**: MetricHistory → Sensor (N records belong to 1 sensor)
+
+### Validation Rules
+
+- `facilityId`: Required, UUID format, must exist in Facility table
+- `sensorId`: Required, UUID format, must exist in Sensor table
+- `timestamp`: Required, Date object
+- `metricType`: Required, string matching sensor types
+- `value`: Required, number
+- `unit`: Required, string
+- `quality`: Required, enum validation
+- `source`: Required, enum validation
+
+### Indexes (IndexedDB)
+
+**Critical for query performance on time-series data**:
+
+```typescript
+metricHistory: {
+  keyPath: ['facilityId', 'sensorId', 'timestamp'], // Composite key
+  indexes: [
+    { name: 'facilityId', keyPath: 'facilityId' },
+    { name: 'sensorId', keyPath: 'sensorId' },
+    { name: 'timestamp', keyPath: 'timestamp' },
+    { name: '[facilityId+timestamp]', keyPath: ['facilityId', 'timestamp'] },
+    { name: '[sensorId+timestamp]', keyPath: ['sensorId', 'timestamp'] },
+    { name: 'metricType', keyPath: 'metricType' }
+  ]
+}
+```
+
+### Data Retention Policy
+
+- **Granular data**: Last 30 days (1-minute resolution)
+- **Aggregated data**: 31-365 days (15-minute averages)
+- **Long-term data**: 1+ years (daily averages)
+
+**Aggregation Strategy** (automatic cleanup):
+```typescript
+// Daily aggregation job
+async function aggregateOldData() {
+  const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+
+  // Get old granular data
+  const oldData = await db.metricHistory
+    .where('timestamp')
+    .below(thirtyDaysAgo)
+    .toArray();
+
+  // Aggregate to 15-minute intervals
+  const aggregated = aggregateByInterval(oldData, 15 * 60 * 1000);
+
+  // Replace granular with aggregated
+  await db.metricHistory.bulkDelete(oldData.map(d => [d.facilityId, d.sensorId, d.timestamp]));
+  await db.metricHistoryAggregated.bulkPut(aggregated);
+}
+```
+
+---
+
+## 8. ChatSession Entity
+
+**Description**: AI-powered chat interactions for facility insights, recommendations, and troubleshooting assistance.
+
+### Schema
+
+```typescript
+interface ChatSession {
+  // Identity
+  id: string; // UUID
+  userId: string; // Foreign key to User
+  facilityId?: string; // Optional context - if chat is facility-specific
+
+  // Content
+  title: string; // Auto-generated or user-provided
+  messages: ChatMessage[];
+
+  // State
+  status: 'active' | 'archived';
+  context: {
+    entities: {
+      facilities: string[]; // Facility IDs discussed
+      zones: string[]; // Zone IDs discussed
+      alerts: string[]; // Alert IDs discussed
+    };
+    topics: string[]; // Keywords/tags for search
+  };
+
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+  lastMessageAt: Date;
+}
+
+interface ChatMessage {
+  id: string; // UUID
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: Date;
+
+  // AI Context
+  model?: string; // e.g., "gemini-pro"
+  tokens?: number; // Token count
+  references?: {
+    facilityId?: string;
+    zoneId?: string;
+    alertId?: string;
+    sensorId?: string;
+  };
+
+  // Feedback
+  helpful?: boolean; // User feedback
+  feedbackComment?: string;
+}
+```
+
+### Relationships
+
+- **Many-to-One**: ChatSession → User (N sessions belong to 1 user)
+- **Many-to-One**: ChatSession → Facility (N sessions reference 1 facility, optional)
+
+### Validation Rules
+
+- `id`: Required, UUID format
+- `userId`: Required, UUID format, must exist in User table
+- `facilityId`: Optional, UUID format, must exist in Facility table if provided
+- `title`: Required, 1-200 characters
+- `status`: Required, enum validation
+- `messages`: Array of ChatMessage objects
+- `messages[].role`: Required, enum validation
+- `messages[].content`: Required, 1-10000 characters
+- `messages[].timestamp`: Required, Date object
+
+### Indexes (IndexedDB)
+
+```typescript
+chatSessions: {
+  keyPath: 'id',
+  indexes: [
+    { name: 'userId', keyPath: 'userId' },
+    { name: 'facilityId', keyPath: 'facilityId' },
+    { name: 'status', keyPath: 'status' },
+    { name: 'createdAt', keyPath: 'createdAt' },
+    { name: 'lastMessageAt', keyPath: 'lastMessageAt' },
+    { name: '[userId+status]', keyPath: ['userId', 'status'] }
+  ]
+}
+```
+
+---
+
+## Entity Relationship Diagram
+
+```
+┌──────────┐
+│   User   │
+└────┬─────┘
+     │
+     ├─────────────────────────────────┐
+     │                                 │
+     ▼                                 ▼
+┌──────────┐    1:N              ┌───────────┐
+│ Facility ├────────────────────►│  Report   │
+└────┬─────┘                     └───────────┘
+     │
+     ├─────────┬─────────┬─────────┬─────────┐
+     │         │         │         │         │
+     ▼         ▼         ▼         ▼         ▼
+┌──────┐  ┌──────┐  ┌───────┐ ┌────────┐ ┌────────────┐
+│ Zone │  │Sensor│  │ Alert │ │ Metric │ │ChatSession │
+│      │  │      │  │       │ │History │ │            │
+└──┬───┘  └───┬──┘  └───────┘ └────────┘ └────────────┘
+   │          │
+   └──────────┴─────► Sensors in Zones
+                      Alerts from Zones/Sensors
+```
+
+### Key Relationships
+
+**Facility-Centric**:
+- Facility → Zones (1:N)
+- Facility → Sensors (1:N)
+- Facility → Alerts (1:N)
+- Facility → Reports (1:N)
+- Facility → MetricHistory (1:N)
+
+**Zone-Specific**:
+- Zone → Sensors (1:N)
+- Zone → Alerts (1:N)
+
+**User Interactions**:
+- User → Alerts (assigned/acknowledged/resolved)
+- User → Reports (created/reviewed/approved)
+- User → ChatSessions (1:N)
+
+**Time-Series Data**:
+- Sensor → MetricHistory (1:N)
+
+---
+
+## Complete IndexedDB Schema (Dexie.js)
+
+```typescript
+import Dexie from 'dexie';
+
+const db = new Dexie('FacilityMonitoringDB');
+
+db.version(1).stores({
+  // Core entities
+  facilities: 'id, code, status, type, location.province',
+
+  zones: 'id, facilityId, [facilityId+code], status, category',
+
+  sensors: 'id, facilityId, zoneId, deviceId, type, status',
+
+  alerts: 'id, facilityId, zoneId, sensorId, severity, status, createdAt, [facilityId+status], [severity+createdAt]',
+
+  reports: 'id, facilityId, reportNumber, standard, status, classification, createdAt, [facilityId+standard]',
+
+  users: 'id, username, email, role, status',
+
+  metricHistory: '[facilityId+sensorId+timestamp], facilityId, sensorId, timestamp, [facilityId+timestamp], [sensorId+timestamp], metricType',
+
+  chatSessions: 'id, userId, facilityId, status, createdAt, lastMessageAt, [userId+status]',
+
+  // Aggregated time-series (for long-term storage)
+  metricHistoryAggregated: '[facilityId+sensorId+timestamp], facilityId, sensorId, timestamp, metricType',
+
+  // Sync queue for offline operations
+  syncQueue: '++id, timestamp, status, type'
+});
+
+export default db;
+```
+
+---
+
+## Query Patterns
+
+### Facility Queries
+
+```typescript
+// Get facility with active alerts
+const facilityWithAlerts = await db.facilities.get(facilityId);
+const activeAlerts = await db.alerts
+  .where('[facilityId+status]')
+  .equals([facilityId, 'active'])
+  .toArray();
+
+// Get all facilities by province
+const provinceFacilities = await db.facilities
+  .where('location.province')
+  .equals('Bangkok')
+  .toArray();
+```
+
+### Zone Queries
+
+```typescript
+// Get all zones for a facility
+const facilityZones = await db.zones
+  .where('facilityId')
+  .equals(facilityId)
+  .toArray();
+
+// Get critical status zones
+const criticalZones = await db.zones
+  .where('status')
+  .equals('critical')
+  .toArray();
+```
+
+### Alert Queries
+
+```typescript
+// Get critical alerts for facility
+const criticalAlerts = await db.alerts
+  .where('[severity+createdAt]')
+  .between(['critical', new Date(0)], ['critical', new Date()])
+  .reverse()
+  .limit(50)
+  .toArray();
+
+// Get alerts in time range
+const recentAlerts = await db.alerts
+  .where('createdAt')
+  .above(Date.now() - 86400000) // Last 24 hours
+  .toArray();
+```
+
+### Sensor Queries
+
+```typescript
+// Get all sensors for a zone
+const zoneSensors = await db.sensors
+  .where('zoneId')
+  .equals(zoneId)
+  .toArray();
+
+// Get sensors by type
+const temperatureSensors = await db.sensors
+  .where('type')
+  .equals('temperature')
+  .toArray();
+```
+
+### Time-Series Queries
+
+```typescript
+// Get sensor history for time range
+const sensorHistory = await db.metricHistory
+  .where('[sensorId+timestamp]')
+  .between(
+    [sensorId, startDate],
+    [sensorId, endDate]
+  )
+  .toArray();
+
+// Get facility metrics for last hour
+const facilityMetrics = await db.metricHistory
+  .where('[facilityId+timestamp]')
+  .between(
+    [facilityId, new Date(Date.now() - 3600000)],
+    [facilityId, new Date()]
+  )
+  .toArray();
+```
+
+### Report Queries
+
+```typescript
+// Get ISO-27001 reports for facility
+const iso27001Reports = await db.reports
+  .where('[facilityId+standard]')
+  .equals([facilityId, 'ISO-27001'])
+  .toArray();
+
+// Get published reports
+const publishedReports = await db.reports
+  .where('status')
+  .equals('published')
+  .sortBy('publishedAt');
+```
+
+---
+
+## Validation & Business Rules
+
+### Cross-Entity Rules
+
+1. **Facility Status Calculation**:
+   ```typescript
+   // Facility status derived from zone and alert states
+   function calculateFacilityStatus(facility: Facility): Facility['status'] {
+     const criticalAlerts = alerts.filter(a => a.facilityId === facility.id && a.severity === 'critical');
+     if (criticalAlerts.length > 0) return 'critical';
+
+     const criticalZones = zones.filter(z => z.facilityId === facility.id && z.status === 'critical');
+     if (criticalZones.length > 0) return 'critical';
+
+     // Similar logic for warning, operational
+   }
+   ```
+
+2. **Alert Auto-Assignment**:
+   ```typescript
+   // Assign critical alerts to facility managers automatically
+   if (alert.severity === 'critical') {
+     const facilityManagers = await db.users
+       .where('role')
+       .equals('facility_manager')
+       .and(u => u.facilityAccess.includes(alert.facilityId))
+       .toArray();
+
+     alert.assignedTo = facilityManagers[0]?.id;
+   }
+   ```
+
+3. **Zone Color Mapping**:
+   ```typescript
+   // Zone color reflects operational status
+   const statusColorMap = {
+     normal: '#00FF00',    // Green
+     warning: '#FFA500',   // Orange
+     critical: '#FF0000',  // Red
+     maintenance: '#808080' // Gray
+   };
+
+   zone.color = statusColorMap[zone.status];
+   ```
+
+---
+
+## Next Steps
+
+1. ✅ **Data Model Complete** - Ready for API contract definition
+2. ⏭️ **Generate API Contracts** - Define REST endpoints in `contracts/api-contracts.yaml`
+3. ⏭️ **Generate WebSocket Events** - Define real-time event schemas in `contracts/websocket-events.md`
+4. ⏭️ **Generate AI Chat Protocol** - Define Gemini AI integration in `contracts/ai-chat-protocol.md`
+5. ⏭️ **Generate Quickstart Guide** - Create `quickstart.md` for developer onboarding
+
+---
+
+**Status**: ✅ Complete
+**Next**: Generate API contracts in `contracts/` directory

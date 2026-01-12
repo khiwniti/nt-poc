@@ -1,0 +1,599 @@
+openapi: 3.1.0
+info:
+  title: Enterprise Facility Manager - SSE Events Specification
+  version: 1.0.0
+  description: |
+    Server-Sent Events (SSE) specification for real-time data streaming.
+
+    **Protocol**: SSE (Server-Sent Events) over HTTP
+    **Content-Type**: text/event-stream
+    **Reconnection**: Automatic with exponential backoff
+    **Compression**: gzip supported
+
+    ## Event Streams
+
+    The system provides two primary SSE streams:
+    1. **Facility Stream** - Real-time sensor updates and facility events
+    2. **Alert Stream** - Alert lifecycle events and notifications
+
+    ## SSE Protocol Details
+
+    SSE messages follow the standard format:
+    ```
+    event: <event_type>
+    id: <unique_event_id>
+    data: <json_payload>
+
+    ```
+
+    **Connection Management**:
+    - Heartbeat: Every 30 seconds to keep connection alive
+    - Reconnection: Client should reconnect with Last-Event-ID header
+    - Connection timeout: 5 minutes of inactivity
+    - Max reconnection attempts: Infinite with exponential backoff (1s → 64s max)
+
+    **Client Implementation**:
+    ```typescript
+    const eventSource = new EventSource('/api/v1/facilities/123/stream');
+
+    eventSource.addEventListener('sensor_update', (event) => {
+      const data = JSON.parse(event.data);
+      // Handle sensor update
+    });
+
+    eventSource.addEventListener('heartbeat', (event) => {
+      console.log('Connection alive');
+    });
+
+    eventSource.onerror = (error) => {
+      // Automatic reconnection with Last-Event-ID
+      console.error('SSE error:', error);
+    };
+    ```
+
+servers:
+  - url: https://backend.railway.internal
+    description: Backend service SSE streams
+  - url: https://api.facility-manager.com
+    description: Public API SSE streams
+
+paths:
+  /api/v1/facilities/{facilityId}/stream:
+    get:
+      summary: Real-time facility event stream
+      operationId: facilityStream
+      tags: [SSE Streams]
+      parameters:
+        - name: facilityId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: events
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [sensor_update, alert_created, alert_updated, rul_prediction_updated]
+          description: Filter specific event types (comma-separated)
+        - name: Last-Event-ID
+          in: header
+          schema:
+            type: string
+          description: Resume stream from last received event ID
+      responses:
+        '200':
+          description: SSE stream of facility events
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                default: text/event-stream
+            Cache-Control:
+              schema:
+                type: string
+                default: no-cache
+            Connection:
+              schema:
+                type: string
+                default: keep-alive
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              examples:
+                sensor_update:
+                  summary: Sensor reading update
+                  value: |
+                    event: sensor_update
+                    id: evt_1234567890_001
+                    data: {"eventType":"sensor_update","timestamp":"2026-01-08T14:32:15.123Z","facilityId":"7c9e6679-7425-40de-944b-e07fc1f90ae7","sensorId":"550e8400-e29b-41d4-a716-446655440000","reading":{"id":"123e4567-e89b-12d3-a456-426614174000","sensorId":"550e8400-e29b-41d4-a716-446655440000","facilityId":"7c9e6679-7425-40de-944b-e07fc1f90ae7","zoneId":"8f9e6679-7425-40de-944b-e07fc1f90ae8","timestamp":"2026-01-08T14:32:15.123Z","value":23.5,"unit":"°C","status":"normal"}}
+
+                alert_created:
+                  summary: New alert created
+                  value: |
+                    event: alert_created
+                    id: evt_1234567890_002
+                    data: {"eventType":"alert_created","timestamp":"2026-01-08T14:32:16.456Z","facilityId":"7c9e6679-7425-40de-944b-e07fc1f90ae7","alert":{"id":"a9f7e456-e89b-12d3-a456-426614174001","facilityId":"7c9e6679-7425-40de-944b-e07fc1f90ae7","sensorId":"550e8400-e29b-41d4-a716-446655440000","severity":"critical","title":"Temperature Critical","message":"Temperature exceeded critical threshold: 45°C","status":"active","createdAt":"2026-01-08T14:32:16.456Z"}}
+
+                rul_prediction_updated:
+                  summary: RUL prediction update
+                  value: |
+                    event: rul_prediction_updated
+                    id: evt_1234567890_003
+                    data: {"eventType":"rul_prediction_updated","timestamp":"2026-01-08T14:32:17.789Z","facilityId":"7c9e6679-7425-40de-944b-e07fc1f90ae7","batteryId":"b5f8e456-e89b-12d3-a456-426614174002","prediction":{"predictionId":"p123e4567-e89b-12d3-a456-426614174003","batteryId":"b5f8e456-e89b-12d3-a456-426614174002","facilityId":"7c9e6679-7425-40de-944b-e07fc1f90ae7","predictedRULCycles":150,"confidenceInterval":{"lower":120,"upper":180},"confidenceScore":0.85,"modelVersion":"v2.1.3","timestamp":"2026-01-08T14:32:17.789Z","alertTriggered":false}}
+
+                heartbeat:
+                  summary: Connection heartbeat
+                  value: |
+                    event: heartbeat
+                    id: evt_1234567890_004
+                    data: {"eventType":"heartbeat","timestamp":"2026-01-08T14:32:45.000Z","serverTime":"2026-01-08T14:32:45.000Z"}
+
+  /api/v1/alerts/stream:
+    get:
+      summary: Real-time alert event stream
+      operationId: alertStream
+      tags: [SSE Streams]
+      parameters:
+        - name: facilityIds
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+          description: Filter by facility IDs (comma-separated)
+        - name: severity
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [low, medium, high, critical]
+          description: Filter by severity levels (comma-separated)
+        - name: Last-Event-ID
+          in: header
+          schema:
+            type: string
+          description: Resume stream from last received event ID
+      responses:
+        '200':
+          description: SSE stream of alert events
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                default: text/event-stream
+            Cache-Control:
+              schema:
+                type: string
+                default: no-cache
+            Connection:
+              schema:
+                type: string
+                default: keep-alive
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              examples:
+                new_alert:
+                  summary: New alert created
+                  value: |
+                    event: new_alert
+                    id: evt_alert_1234567890_001
+                    data: {"eventType":"new_alert","timestamp":"2026-01-08T14:32:16.456Z","alert":{"id":"a9f7e456-e89b-12d3-a456-426614174001","facilityId":"7c9e6679-7425-40de-944b-e07fc1f90ae7","sensorId":"550e8400-e29b-41d4-a716-446655440000","severity":"critical","title":"Temperature Critical","message":"Temperature exceeded critical threshold: 45°C","status":"active","createdAt":"2026-01-08T14:32:16.456Z"}}
+
+                alert_acknowledged:
+                  summary: Alert acknowledged by user
+                  value: |
+                    event: alert_acknowledged
+                    id: evt_alert_1234567890_002
+                    data: {"eventType":"alert_acknowledged","timestamp":"2026-01-08T14:33:20.123Z","alertId":"a9f7e456-e89b-12d3-a456-426614174001","acknowledgedBy":"user_123e4567","acknowledgedAt":"2026-01-08T14:33:20.123Z"}
+
+                alert_resolved:
+                  summary: Alert resolved
+                  value: |
+                    event: alert_resolved
+                    id: evt_alert_1234567890_003
+                    data: {"eventType":"alert_resolved","timestamp":"2026-01-08T14:45:30.456Z","alertId":"a9f7e456-e89b-12d3-a456-426614174001","resolution":"Temperature returned to normal after HVAC adjustment","resolvedAt":"2026-01-08T14:45:30.456Z"}
+
+components:
+  schemas:
+    # Event Envelopes
+
+    SensorUpdateEvent:
+      type: object
+      properties:
+        eventType:
+          type: string
+          enum: [sensor_update]
+        timestamp:
+          type: string
+          format: date-time
+          description: Event generation timestamp
+        facilityId:
+          type: string
+          format: uuid
+        sensorId:
+          type: string
+          format: uuid
+        reading:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            sensorId:
+              type: string
+              format: uuid
+            facilityId:
+              type: string
+              format: uuid
+            zoneId:
+              type: string
+              format: uuid
+            timestamp:
+              type: string
+              format: date-time
+            value:
+              type: number
+            unit:
+              type: string
+            status:
+              type: string
+              enum: [normal, warning, critical]
+            metadata:
+              type: object
+          required: [id, sensorId, facilityId, timestamp, value, unit, status]
+      required: [eventType, timestamp, facilityId, sensorId, reading]
+
+    AlertCreatedEvent:
+      type: object
+      properties:
+        eventType:
+          type: string
+          enum: [alert_created]
+        timestamp:
+          type: string
+          format: date-time
+        facilityId:
+          type: string
+          format: uuid
+        alert:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            facilityId:
+              type: string
+              format: uuid
+            sensorId:
+              type: string
+              format: uuid
+            severity:
+              type: string
+              enum: [low, medium, high, critical]
+            title:
+              type: string
+            message:
+              type: string
+            status:
+              type: string
+              enum: [active]
+            createdAt:
+              type: string
+              format: date-time
+          required: [id, facilityId, severity, title, message, status, createdAt]
+      required: [eventType, timestamp, facilityId, alert]
+
+    AlertUpdatedEvent:
+      type: object
+      properties:
+        eventType:
+          type: string
+          enum: [alert_updated]
+        timestamp:
+          type: string
+          format: date-time
+        alertId:
+          type: string
+          format: uuid
+        updates:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [acknowledged, resolved, dismissed]
+            acknowledgedBy:
+              type: string
+              format: uuid
+            acknowledgedAt:
+              type: string
+              format: date-time
+            resolvedAt:
+              type: string
+              format: date-time
+            resolution:
+              type: string
+      required: [eventType, timestamp, alertId, updates]
+
+    RULPredictionUpdatedEvent:
+      type: object
+      properties:
+        eventType:
+          type: string
+          enum: [rul_prediction_updated]
+        timestamp:
+          type: string
+          format: date-time
+        facilityId:
+          type: string
+          format: uuid
+        batteryId:
+          type: string
+          format: uuid
+        prediction:
+          type: object
+          properties:
+            predictionId:
+              type: string
+              format: uuid
+            batteryId:
+              type: string
+              format: uuid
+            facilityId:
+              type: string
+              format: uuid
+            predictedRULCycles:
+              type: integer
+            confidenceInterval:
+              type: object
+              properties:
+                lower:
+                  type: integer
+                upper:
+                  type: integer
+            confidenceScore:
+              type: number
+            modelVersion:
+              type: string
+            timestamp:
+              type: string
+              format: date-time
+            alertTriggered:
+              type: boolean
+          required: [predictionId, batteryId, facilityId, predictedRULCycles, confidenceInterval, confidenceScore, modelVersion, timestamp]
+      required: [eventType, timestamp, facilityId, batteryId, prediction]
+
+    NewAlertEvent:
+      type: object
+      properties:
+        eventType:
+          type: string
+          enum: [new_alert]
+        timestamp:
+          type: string
+          format: date-time
+        alert:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            facilityId:
+              type: string
+              format: uuid
+            sensorId:
+              type: string
+              format: uuid
+            severity:
+              type: string
+              enum: [low, medium, high, critical]
+            title:
+              type: string
+            message:
+              type: string
+            status:
+              type: string
+              enum: [active]
+            createdAt:
+              type: string
+              format: date-time
+          required: [id, facilityId, severity, title, message, status, createdAt]
+      required: [eventType, timestamp, alert]
+
+    AlertAcknowledgedEvent:
+      type: object
+      properties:
+        eventType:
+          type: string
+          enum: [alert_acknowledged]
+        timestamp:
+          type: string
+          format: date-time
+        alertId:
+          type: string
+          format: uuid
+        acknowledgedBy:
+          type: string
+          format: uuid
+        acknowledgedAt:
+          type: string
+          format: date-time
+      required: [eventType, timestamp, alertId, acknowledgedBy, acknowledgedAt]
+
+    AlertResolvedEvent:
+      type: object
+      properties:
+        eventType:
+          type: string
+          enum: [alert_resolved]
+        timestamp:
+          type: string
+          format: date-time
+        alertId:
+          type: string
+          format: uuid
+        resolution:
+          type: string
+        resolvedAt:
+          type: string
+          format: date-time
+      required: [eventType, timestamp, alertId, resolvedAt]
+
+    HeartbeatEvent:
+      type: object
+      properties:
+        eventType:
+          type: string
+          enum: [heartbeat]
+        timestamp:
+          type: string
+          format: date-time
+        serverTime:
+          type: string
+          format: date-time
+          description: Current server time for clock synchronization
+      required: [eventType, timestamp, serverTime]
+
+x-implementation-notes: |
+  ## Backend Implementation (Node.js + Express)
+
+  ```typescript
+  import express from 'express';
+  import { EventEmitter } from 'events';
+
+  const app = express();
+  const eventBus = new EventEmitter();
+  const clients = new Map<string, express.Response>();
+
+  app.get('/api/v1/facilities/:facilityId/stream', (req, res) => {
+    const { facilityId } = req.params;
+    const clientId = crypto.randomUUID();
+
+    // SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // Nginx
+
+    // Store client connection
+    clients.set(clientId, res);
+
+    // Send initial heartbeat
+    res.write(`event: heartbeat\nid: ${Date.now()}\ndata: ${JSON.stringify({
+      eventType: 'heartbeat',
+      timestamp: new Date().toISOString(),
+      serverTime: new Date().toISOString()
+    })}\n\n`);
+
+    // Listen for events
+    const handleSensorUpdate = (data: any) => {
+      if (data.facilityId === facilityId) {
+        res.write(`event: sensor_update\nid: ${data.eventId}\ndata: ${JSON.stringify(data)}\n\n`);
+      }
+    };
+
+    eventBus.on('sensor_update', handleSensorUpdate);
+
+    // Heartbeat interval
+    const heartbeat = setInterval(() => {
+      res.write(`event: heartbeat\nid: ${Date.now()}\ndata: ${JSON.stringify({
+        eventType: 'heartbeat',
+        timestamp: new Date().toISOString(),
+        serverTime: new Date().toISOString()
+      })}\n\n`);
+    }, 30000);
+
+    // Cleanup on disconnect
+    req.on('close', () => {
+      clients.delete(clientId);
+      eventBus.off('sensor_update', handleSensorUpdate);
+      clearInterval(heartbeat);
+    });
+  });
+
+  // Publish event from sensor data ingestion
+  export function publishSensorUpdate(reading: SensorReading) {
+    const event = {
+      eventId: `evt_${Date.now()}_${crypto.randomUUID()}`,
+      eventType: 'sensor_update',
+      timestamp: new Date().toISOString(),
+      facilityId: reading.facilityId,
+      sensorId: reading.sensorId,
+      reading
+    };
+    eventBus.emit('sensor_update', event);
+  }
+  ```
+
+  ## Frontend Implementation (React + Zustand)
+
+  ```typescript
+  import { create } from 'zustand';
+
+  interface SSEStore {
+    eventSource: EventSource | null;
+    connect: (facilityId: string) => void;
+    disconnect: () => void;
+  }
+
+  export const useSSEStore = create<SSEStore>((set, get) => ({
+    eventSource: null,
+
+    connect: (facilityId: string) => {
+      const eventSource = new EventSource(
+        `/api/v1/facilities/${facilityId}/stream`
+      );
+
+      eventSource.addEventListener('sensor_update', (event) => {
+        const data = JSON.parse(event.data);
+        // Update sensor store
+        useSensorStore.getState().updateReading(data.reading);
+      });
+
+      eventSource.addEventListener('alert_created', (event) => {
+        const data = JSON.parse(event.data);
+        // Update alert store
+        useAlertStore.getState().addAlert(data.alert);
+      });
+
+      eventSource.addEventListener('heartbeat', () => {
+        // Connection alive
+      });
+
+      eventSource.onerror = (error) => {
+        console.error('SSE error:', error);
+        // Automatic reconnection with Last-Event-ID
+      };
+
+      set({ eventSource });
+    },
+
+    disconnect: () => {
+      const { eventSource } = get();
+      eventSource?.close();
+      set({ eventSource: null });
+    }
+  }));
+  ```
+
+  ## Performance Considerations
+
+  - **Connection Pooling**: Use Redis pub/sub for multi-server SSE broadcasting
+  - **Memory Management**: Limit max connections per facility (e.g., 1000)
+  - **Event Throttling**: Group rapid sensor updates (e.g., 5 updates/second max)
+  - **Compression**: Enable gzip for text/event-stream
+  - **Load Balancing**: Sticky sessions for SSE endpoints (or Redis pub/sub)
+
+  ## Error Handling
+
+  - **Client reconnection**: Automatic with Last-Event-ID header
+  - **Server restart**: Clients auto-reconnect, replay missed events from ID
+  - **Network timeout**: 5-minute inactivity closes connection
+  - **Backpressure**: Drop events if client can't keep up (log warning)

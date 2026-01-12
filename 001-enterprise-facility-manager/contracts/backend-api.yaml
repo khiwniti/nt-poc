@@ -1,0 +1,1226 @@
+openapi: 3.1.0
+info:
+  title: Enterprise Facility Manager - Backend API
+  version: 1.0.0
+  description: |
+    Core RESTful API for facility monitoring, sensor management, alerting, and reporting.
+
+    **Service**: Backend Service (Node.js + Express + TypeScript)
+    **Base URL**: https://backend.railway.internal (internal) or https://api.facility-manager.com (public)
+    **Authentication**: Bearer token (JWT)
+    **Rate Limiting**: 1000 requests/minute per user
+
+servers:
+  - url: https://backend.railway.internal
+    description: Railway internal network
+  - url: https://api.facility-manager.com
+    description: Public production API
+
+security:
+  - bearerAuth: []
+
+paths:
+  # Facility Endpoints
+  /api/v1/facilities:
+    get:
+      summary: List all facilities
+      operationId: listFacilities
+      tags: [Facilities]
+      parameters:
+        - name: regionId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, maintenance, offline]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: List of facilities
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Facility'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+    post:
+      summary: Create new facility
+      operationId: createFacility
+      tags: [Facilities]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FacilityCreate'
+      responses:
+        '201':
+          description: Facility created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Facility'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/facilities/{facilityId}:
+    parameters:
+      - name: facilityId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Get facility details
+      operationId: getFacility
+      tags: [Facilities]
+      responses:
+        '200':
+          description: Facility details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Facility'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      summary: Update facility
+      operationId: updateFacility
+      tags: [Facilities]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FacilityUpdate'
+      responses:
+        '200':
+          description: Facility updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Facility'
+    delete:
+      summary: Delete facility
+      operationId: deleteFacility
+      tags: [Facilities]
+      responses:
+        '204':
+          description: Facility deleted
+        '409':
+          description: Conflict - facility has active sensors or alerts
+
+  /api/v1/facilities/{facilityId}/zones:
+    parameters:
+      - name: facilityId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: List zones in facility
+      operationId: listZones
+      tags: [Zones]
+      responses:
+        '200':
+          description: List of zones
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Zone'
+
+  # Sensor Endpoints
+  /api/v1/sensors:
+    get:
+      summary: List all sensors
+      operationId: listSensors
+      tags: [Sensors]
+      parameters:
+        - name: facilityId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: zoneId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [temperature, humidity, pressure, air_quality, battery_health]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, inactive, error]
+      responses:
+        '200':
+          description: List of sensors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Sensor'
+
+  /api/v1/sensors/{sensorId}:
+    parameters:
+      - name: sensorId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Get sensor details
+      operationId: getSensor
+      tags: [Sensors]
+      responses:
+        '200':
+          description: Sensor details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sensor'
+
+  /api/v1/sensors/{sensorId}/readings:
+    parameters:
+      - name: sensorId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Get sensor readings (time-series data)
+      operationId: getSensorReadings
+      tags: [Sensors]
+      parameters:
+        - name: startTime
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+          description: Start of time range (ISO 8601)
+        - name: endTime
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+          description: End of time range (ISO 8601)
+        - name: aggregation
+          in: query
+          schema:
+            type: string
+            enum: [raw, hourly, daily]
+            default: raw
+          description: Data aggregation level
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 1000
+            maximum: 10000
+          description: Maximum number of readings to return
+      responses:
+        '200':
+          description: Sensor readings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SensorReading'
+                  metadata:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                      aggregation:
+                        type: string
+                      timeRange:
+                        type: object
+                        properties:
+                          start:
+                            type: string
+                            format: date-time
+                          end:
+                            type: string
+                            format: date-time
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  # Alert Endpoints
+  /api/v1/alerts:
+    get:
+      summary: List alerts
+      operationId: listAlerts
+      tags: [Alerts]
+      parameters:
+        - name: facilityId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, acknowledged, resolved, dismissed]
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [low, medium, high, critical]
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: List of alerts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Alert'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+    post:
+      summary: Create new alert (system-generated)
+      operationId: createAlert
+      tags: [Alerts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertCreate'
+      responses:
+        '201':
+          description: Alert created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+
+  /api/v1/alerts/{alertId}:
+    parameters:
+      - name: alertId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Get alert details
+      operationId: getAlert
+      tags: [Alerts]
+      responses:
+        '200':
+          description: Alert details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+    patch:
+      summary: Update alert status
+      operationId: updateAlert
+      tags: [Alerts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [acknowledged, resolved, dismissed]
+                acknowledgedBy:
+                  type: string
+                  format: uuid
+                resolution:
+                  type: string
+              required: [status]
+      responses:
+        '200':
+          description: Alert updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+
+  # Report Endpoints
+  /api/v1/reports:
+    get:
+      summary: List reports
+      operationId: listReports
+      tags: [Reports]
+      parameters:
+        - name: facilityId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [daily_summary, weekly_performance, monthly_compliance, custom]
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: List of reports
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Report'
+    post:
+      summary: Generate new report
+      operationId: generateReport
+      tags: [Reports]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportCreate'
+      responses:
+        '202':
+          description: Report generation started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reportId:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum: [pending]
+                  estimatedCompletionTime:
+                    type: string
+                    format: date-time
+
+  /api/v1/reports/{reportId}:
+    parameters:
+      - name: reportId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Get report or download
+      operationId: getReport
+      tags: [Reports]
+      parameters:
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, pdf, csv]
+            default: json
+      responses:
+        '200':
+          description: Report data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            text/csv:
+              schema:
+                type: string
+
+  # User Management Endpoints
+  /api/v1/users:
+    get:
+      summary: List users
+      operationId: listUsers
+      tags: [Users]
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [admin, facility_manager, operator, viewer]
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+
+  /api/v1/users/{userId}:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Get user profile
+      operationId: getUser
+      tags: [Users]
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  # LINE OA Integration Endpoints
+  /api/v1/line/webhook:
+    post:
+      summary: LINE Platform webhook
+      operationId: lineWebhook
+      tags: [LINE]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                destination:
+                  type: string
+                events:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        enum: [message, follow, unfollow, join, leave]
+                      timestamp:
+                        type: integer
+                        format: int64
+                      source:
+                        type: object
+                        properties:
+                          type:
+                            type: string
+                          userId:
+                            type: string
+                      message:
+                        type: object
+                        properties:
+                          type:
+                            type: string
+                          id:
+                            type: string
+                          text:
+                            type: string
+      responses:
+        '200':
+          description: Webhook processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+
+  /api/v1/line/link:
+    post:
+      summary: Link LINE account to internal user
+      operationId: linkLineAccount
+      tags: [LINE]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                  format: uuid
+                  description: Internal user ID
+                linkingCode:
+                  type: string
+                  description: 6-digit linking code displayed in LINE
+              required: [userId, linkingCode]
+      responses:
+        '200':
+          description: Account linked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  lineUserId:
+                    type: string
+                  status:
+                    type: string
+                    enum: [linked]
+        '400':
+          description: Invalid or expired linking code
+        '409':
+          description: Account already linked
+
+  /api/v1/line/preferences:
+    patch:
+      summary: Update LINE notification preferences
+      operationId: updateLinePreferences
+      tags: [LINE]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LINEPreferences'
+      responses:
+        '200':
+          description: Preferences updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LINEUser'
+
+  # Health & Monitoring
+  /api/health:
+    get:
+      summary: Health check endpoint
+      operationId: healthCheck
+      tags: [System]
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy]
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                  dependencies:
+                    type: object
+                    properties:
+                      database:
+                        type: string
+                        enum: [healthy, degraded, unhealthy]
+                      mlops:
+                        type: string
+                        enum: [healthy, degraded, unhealthy]
+                      simulator:
+                        type: string
+                        enum: [healthy, degraded, unhealthy]
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Facility:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        regionId:
+          type: string
+          format: uuid
+        location:
+          type: object
+          properties:
+            address:
+              type: string
+            latitude:
+              type: number
+              format: double
+            longitude:
+              type: number
+              format: double
+            timezone:
+              type: string
+        capacity:
+          type: object
+          properties:
+            maxOccupancy:
+              type: integer
+            floorArea:
+              type: number
+            zoneCount:
+              type: integer
+        status:
+          type: string
+          enum: [active, maintenance, offline]
+        operatingHours:
+          type: object
+          properties:
+            open:
+              type: string
+              pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
+            close:
+              type: string
+              pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
+        contactInfo:
+          type: object
+          properties:
+            managerName:
+              type: string
+            email:
+              type: string
+              format: email
+            phone:
+              type: string
+        metadata:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, name, regionId, location, status]
+
+    FacilityCreate:
+      type: object
+      properties:
+        name:
+          type: string
+        regionId:
+          type: string
+          format: uuid
+        location:
+          type: object
+          properties:
+            address:
+              type: string
+            latitude:
+              type: number
+            longitude:
+              type: number
+            timezone:
+              type: string
+          required: [address, latitude, longitude, timezone]
+        capacity:
+          type: object
+        operatingHours:
+          type: object
+        contactInfo:
+          type: object
+      required: [name, regionId, location]
+
+    FacilityUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+          enum: [active, maintenance, offline]
+        capacity:
+          type: object
+        operatingHours:
+          type: object
+        contactInfo:
+          type: object
+
+    Zone:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        facilityId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        floor:
+          type: integer
+        areaSquareMeters:
+          type: number
+        type:
+          type: string
+          enum: [production, storage, office, utility, other]
+        capacity:
+          type: integer
+        position3D:
+          type: object
+          properties:
+            x:
+              type: number
+            y:
+              type: number
+            z:
+              type: number
+        dimensions3D:
+          type: object
+          properties:
+            width:
+              type: number
+            height:
+              type: number
+            depth:
+              type: number
+      required: [id, facilityId, name]
+
+    Sensor:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        facilityId:
+          type: string
+          format: uuid
+        zoneId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+          enum: [temperature, humidity, pressure, air_quality, battery_health]
+        unit:
+          type: string
+        position3D:
+          type: object
+          properties:
+            x:
+              type: number
+            y:
+              type: number
+            z:
+              type: number
+        status:
+          type: string
+          enum: [active, inactive, error]
+        lastReading:
+          type: object
+          properties:
+            value:
+              type: number
+            timestamp:
+              type: string
+              format: date-time
+            status:
+              type: string
+              enum: [normal, warning, critical]
+        thresholds:
+          type: object
+          properties:
+            warning:
+              type: object
+              properties:
+                min:
+                  type: number
+                max:
+                  type: number
+            critical:
+              type: object
+              properties:
+                min:
+                  type: number
+                max:
+                  type: number
+        metadata:
+          type: object
+      required: [id, facilityId, name, type, status]
+
+    SensorReading:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        sensorId:
+          type: string
+          format: uuid
+        facilityId:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        value:
+          type: number
+        unit:
+          type: string
+        status:
+          type: string
+          enum: [normal, warning, critical]
+        metadata:
+          type: object
+      required: [id, sensorId, facilityId, timestamp, value, unit, status]
+
+    Alert:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        facilityId:
+          type: string
+          format: uuid
+        sensorId:
+          type: string
+          format: uuid
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        title:
+          type: string
+        message:
+          type: string
+        status:
+          type: string
+          enum: [active, acknowledged, resolved, dismissed]
+        createdAt:
+          type: string
+          format: date-time
+        acknowledgedAt:
+          type: string
+          format: date-time
+        acknowledgedBy:
+          type: string
+          format: uuid
+        resolvedAt:
+          type: string
+          format: date-time
+        resolution:
+          type: string
+        notificationsSent:
+          type: array
+          items:
+            type: object
+            properties:
+              channel:
+                type: string
+                enum: [email, line, sms]
+              recipientId:
+                type: string
+              timestamp:
+                type: string
+                format: date-time
+              status:
+                type: string
+                enum: [sent, failed]
+      required: [id, facilityId, severity, title, message, status, createdAt]
+
+    AlertCreate:
+      type: object
+      properties:
+        facilityId:
+          type: string
+          format: uuid
+        sensorId:
+          type: string
+          format: uuid
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        title:
+          type: string
+        message:
+          type: string
+      required: [facilityId, severity, title, message]
+
+    Report:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        facilityId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [daily_summary, weekly_performance, monthly_compliance, custom]
+        period:
+          type: object
+          properties:
+            startDate:
+              type: string
+              format: date
+            endDate:
+              type: string
+              format: date
+        status:
+          type: string
+          enum: [pending, completed, failed]
+        generatedAt:
+          type: string
+          format: date-time
+        generatedBy:
+          type: string
+          format: uuid
+        data:
+          type: object
+        fileUrls:
+          type: object
+          properties:
+            pdf:
+              type: string
+              format: uri
+            csv:
+              type: string
+              format: uri
+      required: [id, facilityId, type, period, status]
+
+    ReportCreate:
+      type: object
+      properties:
+        facilityId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [daily_summary, weekly_performance, monthly_compliance, custom]
+        period:
+          type: object
+          properties:
+            startDate:
+              type: string
+              format: date
+            endDate:
+              type: string
+              format: date
+          required: [startDate, endDate]
+        options:
+          type: object
+          properties:
+            includeCharts:
+              type: boolean
+            includeSensorData:
+              type: boolean
+            includeAlertSummary:
+              type: boolean
+      required: [facilityId, type, period]
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        role:
+          type: string
+          enum: [admin, facility_manager, operator, viewer]
+        assignedFacilities:
+          type: array
+          items:
+            type: string
+            format: uuid
+        preferences:
+          type: object
+          properties:
+            language:
+              type: string
+            timezone:
+              type: string
+            notifications:
+              type: object
+        isActive:
+          type: boolean
+        lastLoginAt:
+          type: string
+          format: date-time
+      required: [id, email, name, role]
+
+    LINEUser:
+      type: object
+      properties:
+        lineUserId:
+          type: string
+        internalUserId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        linkingStatus:
+          type: string
+          enum: [linked, unlinked, pending_verification]
+        preferences:
+          $ref: '#/components/schemas/LINEPreferences'
+        isBlocked:
+          type: boolean
+      required: [lineUserId, linkingStatus]
+
+    LINEPreferences:
+      type: object
+      properties:
+        notificationsEnabled:
+          type: boolean
+        severityThreshold:
+          type: string
+          enum: [low, medium, high, critical]
+        facilities:
+          type: array
+          items:
+            type: string
+            format: uuid
+        quietHours:
+          type: object
+          properties:
+            enabled:
+              type: boolean
+            startTime:
+              type: string
+              pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
+            endTime:
+              type: string
+              pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
+            timezone:
+              type: string
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        totalPages:
+          type: integer
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+      required: [error]
+
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: VALIDATION_ERROR
+              message: Invalid input parameters
+              details:
+                field: facilityId
+                issue: must be a valid UUID
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: NOT_FOUND
+              message: Resource not found
