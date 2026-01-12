@@ -36,9 +36,11 @@ describe('MapLayerControls', () => {
     weather: false,
     clustering: false,
     traffic: false,
+    mapStyle: 'standard',
   };
 
   const mockOnLayerToggle = vi.fn();
+  const mockOnStyleChange = vi.fn();
   const mockOnSavePreferences = vi.fn();
 
   beforeEach(() => {
@@ -62,6 +64,7 @@ describe('MapLayerControls', () => {
         weather: true,
         clustering: false,
         traffic: false,
+        mapStyle: 'standard',
       };
 
       render(
@@ -194,6 +197,7 @@ describe('MapLayerControls', () => {
         weather: false,
         clustering: true,
         traffic: false,
+        mapStyle: 'standard',
       };
 
       render(
@@ -242,6 +246,7 @@ describe('MapLayerControls', () => {
         weather: true,
         clustering: false,
         traffic: false,
+        mapStyle: 'standard',
       };
 
       render(
@@ -267,6 +272,7 @@ describe('MapLayerControls', () => {
         weather: true,
         clustering: false,
         traffic: false,
+        mapStyle: 'standard',
       });
     });
 
@@ -381,6 +387,7 @@ describe('MapLayerControls', () => {
         weather: false,
         clustering: true,
         traffic: true,
+        mapStyle: 'satellite',
       };
 
       saveLayerPreferences(preferences);
@@ -395,6 +402,7 @@ describe('MapLayerControls', () => {
         weather: true,
         clustering: false,
         traffic: true,
+        mapStyle: 'dark',
       };
 
       localStorage.setItem('map_layer_preferences', JSON.stringify(preferences));
@@ -422,6 +430,7 @@ describe('MapLayerControls', () => {
         weather: true,
         clustering: true,
         traffic: true,
+        mapStyle: 'standard',
       };
 
       saveLayerPreferences(preferences);
@@ -459,6 +468,7 @@ describe('MapLayerControls', () => {
         weather: true,
         clustering: true,
         traffic: true,
+        mapStyle: 'standard',
       };
 
       render(
@@ -482,6 +492,100 @@ describe('MapLayerControls', () => {
       await user.click(heatmapToggle);
 
       expect(mockOnLayerToggle).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  describe('Map Style Switcher', () => {
+    it('renders all map style options when expanded', async () => {
+      const user = userEvent.setup();
+      render(
+        <MapLayerControls
+          layers={defaultLayers}
+          onLayerToggle={mockOnLayerToggle}
+          onStyleChange={mockOnStyleChange}
+        />
+      );
+
+      await user.click(screen.getByTestId('layer-controls-toggle'));
+
+      expect(screen.getByTestId('map-style-standard')).toBeInTheDocument();
+      expect(screen.getByTestId('map-style-satellite')).toBeInTheDocument();
+      expect(screen.getByTestId('map-style-street')).toBeInTheDocument();
+      expect(screen.getByTestId('map-style-dark')).toBeInTheDocument();
+    });
+
+    it('highlights the current map style', async () => {
+      const user = userEvent.setup();
+      const layers: LayerPreferences = {
+        ...defaultLayers,
+        mapStyle: 'satellite',
+      };
+
+      render(
+        <MapLayerControls
+          layers={layers}
+          onLayerToggle={mockOnLayerToggle}
+          onStyleChange={mockOnStyleChange}
+        />
+      );
+
+      await user.click(screen.getByTestId('layer-controls-toggle'));
+
+      const satelliteButton = screen.getByTestId('map-style-satellite');
+      expect(satelliteButton).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('calls onStyleChange when a style button is clicked', async () => {
+      const user = userEvent.setup();
+      render(
+        <MapLayerControls
+          layers={defaultLayers}
+          onLayerToggle={mockOnLayerToggle}
+          onStyleChange={mockOnStyleChange}
+        />
+      );
+
+      await user.click(screen.getByTestId('layer-controls-toggle'));
+      await user.click(screen.getByTestId('map-style-dark'));
+
+      expect(mockOnStyleChange).toHaveBeenCalledWith('dark');
+    });
+
+    it('switches between map styles', async () => {
+      const user = userEvent.setup();
+      render(
+        <MapLayerControls
+          layers={defaultLayers}
+          onLayerToggle={mockOnLayerToggle}
+          onStyleChange={mockOnStyleChange}
+        />
+      );
+
+      await user.click(screen.getByTestId('layer-controls-toggle'));
+      
+      await user.click(screen.getByTestId('map-style-satellite'));
+      expect(mockOnStyleChange).toHaveBeenCalledWith('satellite');
+
+      await user.click(screen.getByTestId('map-style-street'));
+      expect(mockOnStyleChange).toHaveBeenCalledWith('street');
+    });
+
+    it('displays map style descriptions', async () => {
+      const user = userEvent.setup();
+      render(
+        <MapLayerControls
+          layers={defaultLayers}
+          onLayerToggle={mockOnLayerToggle}
+          onStyleChange={mockOnStyleChange}
+        />
+      );
+
+      await user.click(screen.getByTestId('layer-controls-toggle'));
+
+      expect(screen.getByText('OpenStreetMap default')).toBeInTheDocument();
+      expect(screen.getByText('Aerial imagery')).toBeInTheDocument();
+      expect(screen.getByText('Detailed street view')).toBeInTheDocument();
+      expect(screen.getByText('Dark mode friendly')).toBeInTheDocument();
     });
   });
 });

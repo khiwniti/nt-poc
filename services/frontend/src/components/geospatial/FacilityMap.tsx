@@ -21,6 +21,7 @@ export interface FacilityMapProps {
   showLayerControls?: boolean;
   layers?: LayerPreferences;
   onLayerToggle?: (layer: keyof LayerPreferences) => void;
+  onMapStyleChange?: (style: import('./MapLayerControls').MapStyle) => void;
   onSaveLayerPreferences?: () => void;
 }
 
@@ -65,6 +66,7 @@ export function FacilityMap({
   showLayerControls = false,
   layers,
   onLayerToggle,
+  onMapStyleChange,
   onSaveLayerPreferences,
 }: FacilityMapProps) {
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
@@ -261,6 +263,7 @@ export function FacilityMap({
           <MapLayerControls
             layers={layers}
             onLayerToggle={onLayerToggle}
+            onStyleChange={onMapStyleChange}
             onSavePreferences={onSaveLayerPreferences}
           />
         </div>

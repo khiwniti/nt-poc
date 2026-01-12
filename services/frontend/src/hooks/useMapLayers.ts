@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { LayerPreferences } from '../components/geospatial/MapLayerControls';
+import type { LayerPreferences, MapStyle } from '../components/geospatial/MapLayerControls';
 import { loadLayerPreferences, saveLayerPreferences } from '../components/geospatial/MapLayerControls';
 
 const DEFAULT_LAYERS: LayerPreferences = {
@@ -7,11 +7,13 @@ const DEFAULT_LAYERS: LayerPreferences = {
   weather: false,
   clustering: true,
   traffic: false,
+  mapStyle: 'standard',
 };
 
 export interface UseMapLayersReturn {
   layers: LayerPreferences;
   toggleLayer: (layer: keyof LayerPreferences) => void;
+  setMapStyle: (style: MapStyle) => void;
   setLayers: (layers: LayerPreferences) => void;
   resetLayers: () => void;
   savePreferences: () => void;
@@ -66,6 +68,14 @@ export function useMapLayers(
     }));
   }, []);
 
+  // Set map style
+  const setMapStyle = useCallback((style: MapStyle) => {
+    setLayersState((prev) => ({
+      ...prev,
+      mapStyle: style,
+    }));
+  }, []);
+
   // Set all layers at once
   const setLayers = useCallback((newLayers: LayerPreferences) => {
     setLayersState(newLayers);
@@ -89,6 +99,7 @@ export function useMapLayers(
   return {
     layers,
     toggleLayer,
+    setMapStyle,
     setLayers,
     resetLayers,
     savePreferences,

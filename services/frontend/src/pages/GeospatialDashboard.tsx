@@ -31,7 +31,7 @@ const sampleFacilities: FacilityMarkerData[] = [
 ];
 
 export function GeospatialDashboard() {
-  const { layers, toggleLayer, savePreferences } = useMapLayers();
+  const { layers, toggleLayer, setMapStyle, savePreferences } = useMapLayers();
 
   return (
     <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
@@ -67,6 +67,7 @@ export function GeospatialDashboard() {
           showLayerControls={true}
           layers={layers}
           onLayerToggle={toggleLayer}
+          onMapStyleChange={setMapStyle}
           onSaveLayerPreferences={savePreferences}
         />
 

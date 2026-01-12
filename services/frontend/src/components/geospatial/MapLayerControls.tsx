@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react';
 import { Layers, Thermometer, Cloud, MapPin, Navigation } from 'lucide-react';
 
+export type MapStyle = 'standard' | 'satellite' | 'street' | 'dark';
+
 export interface LayerPreferences {
   heatmap: boolean;
   weather: boolean;
   clustering: boolean;
   traffic: boolean;
+  mapStyle: MapStyle;
 }
 
 export interface MapLayerControlsProps {
   layers: LayerPreferences;
   onLayerToggle: (layer: keyof LayerPreferences) => void;
+  onStyleChange?: (style: MapStyle) => void;
   onSavePreferences?: () => void;
   className?: string;
 }
@@ -64,9 +68,17 @@ const layerOptions = [
   },
 ] as const;
 
+const mapStyleOptions: Array<{ value: MapStyle; label: string; description: string }> = [
+  { value: 'standard', label: 'Standard', description: 'OpenStreetMap default' },
+  { value: 'satellite', label: 'Satellite', description: 'Aerial imagery' },
+  { value: 'street', label: 'Street', description: 'Detailed street view' },
+  { value: 'dark', label: 'Dark', description: 'Dark mode friendly' },
+];
+
 export function MapLayerControls({
   layers,
   onLayerToggle,
+  onStyleChange,
   onSavePreferences,
   className = '',
 }: MapLayerControlsProps) {
@@ -88,13 +100,22 @@ export function MapLayerControls({
     setHasUnsavedChanges(true);
   };
 
+  const handleStyleChange = (style: MapStyle) => {
+    if (onStyleChange) {
+      onStyleChange(style);
+      setHasUnsavedChanges(true);
+    }
+  };
+
   const handleSave = () => {
     saveLayerPreferences(layers);
     setHasUnsavedChanges(false);
     onSavePreferences?.();
   };
 
-  const activeLayerCount = Object.values(layers).filter(Boolean).length;
+  const activeLayerCount = Object.entries(layers).filter(
+    ([key, value]) => key !== 'mapStyle' && value === true
+  ).length;
 
   return (
     <div
@@ -168,6 +189,80 @@ export function MapLayerControls({
             borderTop: '1px solid #e0e0e0',
           }}
         >
+          {/* Map Style Selector */}
+          <div
+            style={{
+              padding: '10px 8px',
+              marginBottom: '8px',
+              borderBottom: '1px solid #e0e0e0',
+            }}
+          >
+            <div
+              style={{
+                fontSize: '12px',
+                fontWeight: 600,
+                color: '#666',
+                marginBottom: '8px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+              }}
+            >
+              Map Style
+            </div>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: '6px',
+              }}
+            >
+              {mapStyleOptions.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => handleStyleChange(option.value)}
+                  data-testid={`map-style-${option.value}`}
+                  aria-label={`${option.label} map style: ${option.description}`}
+                  aria-pressed={layers.mapStyle === option.value}
+                  style={{
+                    padding: '8px',
+                    border: '2px solid',
+                    borderColor: layers.mapStyle === option.value ? '#2196F3' : '#e0e0e0',
+                    borderRadius: '6px',
+                    backgroundColor: layers.mapStyle === option.value ? '#e3f2fd' : 'white',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontWeight: layers.mapStyle === option.value ? 600 : 500,
+                    color: layers.mapStyle === option.value ? '#1976D2' : '#666',
+                    transition: 'all 0.2s',
+                    textAlign: 'center',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (layers.mapStyle !== option.value) {
+                      (e.currentTarget as HTMLElement).style.borderColor = '#bbb';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (layers.mapStyle !== option.value) {
+                      (e.currentTarget as HTMLElement).style.borderColor = '#e0e0e0';
+                    }
+                  }}
+                >
+                  <div>{option.label}</div>
+                  <div
+                    style={{
+                      fontSize: '10px',
+                      marginTop: '2px',
+                      opacity: 0.8,
+                    }}
+                  >
+                    {option.description}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Layer Toggles */}
           {layerOptions.map((option) => {
             const Icon = option.icon;
             const isActive = layers[option.key];
