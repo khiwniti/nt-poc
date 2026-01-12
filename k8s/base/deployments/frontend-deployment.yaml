@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: facility-manager
+  labels:
+    app: frontend
+    tier: presentation
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+        tier: presentation
+    spec:
+      containers:
+      - name: frontend
+        image: facility-manager/frontend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+        env:
+        - name: VITE_API_URL
+          valueFrom:
+            configMapKeyRef:
+              name: frontend-config
+              key: api-url
+        - name: VITE_GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: gemini-key
+              key: api-key
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+      restartPolicy: Always

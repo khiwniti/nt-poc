@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: facility-manager
+  labels:
+    app: frontend
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  selector:
+    app: frontend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: facility-manager
+  labels:
+    app: backend
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3001
+    targetPort: 3001
+    protocol: TCP
+    name: http
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: metrics
+  selector:
+    app: backend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mlops
+  namespace: facility-manager
+  labels:
+    app: mlops
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  selector:
+    app: mlops
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: simulator
+  namespace: facility-manager
+  labels:
+    app: simulator
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: simulator
