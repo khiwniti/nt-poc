@@ -5,8 +5,10 @@
 #   1. Backend (Node.js/Express) - API server
 #   2. Frontend (React/Vite) - Static web app
 #   3. MLOps (Python/FastAPI) - ML operations
-#   4. PostgreSQL 16 + TimescaleDB (Railway-managed via Dashboard)
-#   5. Redis 7 (Railway-managed via Dashboard)
+#   4. Simulator (Python/FastAPI) - Sensor Simulator
+#   5. Line Bot (Node.js/Express) - Line Messaging API Integration
+#   6. PostgreSQL 16 + TimescaleDB (Railway-managed via Dashboard)
+#   7. Redis 7 (Railway-managed via Dashboard)
 #
 # Internal Networking:
 #   Services communicate via Railway's .railway.internal domains
@@ -173,80 +175,60 @@ restartPolicyMaxRetries = 10
 #   MAX_BATCH_SIZE = 100
 
 # ============================================================================
-# INTERNAL NETWORKING (.railway.internal)
-# ============================================================================
-# Railway provides private networking between services using internal domains.
-# These are only accessible within the Railway project.
-#
-# Internal Service URLs:
-#   backend.railway.internal:3000    - Backend API
-#   mlops.railway.internal:8001      - MLOps API
-#   postgres.railway.internal:5432   - PostgreSQL database
-#   redis.railway.internal:6379      - Redis cache
-#
-# Usage Examples:
-#   Backend → MLOps:  MLOPS_SERVICE_URL = http://mlops.railway.internal:8001
-#   MLOps → Backend:  BACKEND_URL = http://backend.railway.internal:3000
-#   Any → Database:   DB_HOST = postgres.railway.internal
-#   Any → Redis:      REDIS_HOST = redis.railway.internal
-#
-# Public URLs (Railway auto-provides):
-#   Frontend: https://${{RAILWAY_PUBLIC_DOMAIN}}
-#   Backend:  https://<backend>.railway.app
-#   MLOps:    https://<mlops>.railway.app
-#
-# Service Communication Matrix:
-#   Backend → PostgreSQL: Direct connection
-#   Backend → Redis: Direct connection
-#   Backend → MLOps: Internal networking
-#   Frontend → Backend: Public API
-#   Frontend → MLOps: Public API (if needed)
+# SIMULATOR SERVICE (Python/FastAPI)
 # ============================================================================
 
+[[services]]
+name = "simulator"
+source = "services/simulator"
+
+[services.build]
+builder = "NIXPACKS"
+buildCommand = "pip install -r requirements.txt"
+
+[services.deploy]
+startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+# Environment Variables:
+# ----------------------
+# Application:
+#   APP_NAME = Sensor Simulator
+#   PORT = 8002
+#   SIMULATION_INTERVAL = 5
+#   KAFKA_BROKER_URL = ${{Kafka.BROKER_URL}} # If using Kafka
+
 # ============================================================================
-# MANAGED SERVICES (Provision via Railway Dashboard)
+# LINE BOT SERVICE (Node.js/Express)
 # ============================================================================
+
+[[services]]
+name = "line-bot"
+source = "services/line-bot"
+
+[services.build]
+builder = "NIXPACKS"
+buildCommand = "npm ci && npm run build"
+
+[services.deploy]
+startCommand = "npm start"
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+# Environment Variables:
+# ----------------------
+# Application:
+#   PORT = 3001
+#   NODE_ENV = production
 #
-# 4. PostgreSQL 16 + TimescaleDB
-#    How to Provision:
-#      1. Railway Dashboard → New → Database → PostgreSQL
-#      2. Select PostgreSQL 16
-#      3. Enable TimescaleDB extension:
-#         railway run psql $DATABASE_URL -c "CREATE EXTENSION IF NOT EXISTS timescaledb;"
+# Line API:
+#   LINE_CHANNEL_ACCESS_TOKEN = <your-token>
+#   LINE_CHANNEL_SECRET = <your-secret>
 #
-#    Auto-Generated Variables:
-#      DATABASE_URL, PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD
-#
-#    Internal URL:
-#      postgres.railway.internal:5432
-#
-#    Configuration:
-#      - Storage: 10GB (adjustable)
-#      - Max Connections: 100
-#      - SSL: Enabled by default
-#      - Backups: Daily automatic
-#
-# 5. Redis 7
-#    How to Provision:
-#      1. Railway Dashboard → New → Database → Redis
-#      2. Select Redis 7
-#      3. No additional setup required
-#
-#    Auto-Generated Variables:
-#      REDIS_URL, REDIS_HOST, REDIS_PORT, REDIS_PASSWORD
-#
-#    Internal URL:
-#      redis.railway.internal:6379
-#
-#    Configuration:
-#      - Memory: 512MB-1GB (adjustable)
-#      - Eviction Policy: allkeys-lru
-#      - Persistence: AOF enabled
-#
-# Setup Order:
-#   1. Provision PostgreSQL
-#   2. Provision Redis
-#   3. Deploy MLOps service
-#   4. Deploy Backend service (depends on all above)
-#   5. Deploy Frontend service (depends on Backend)
-# ============================================================================
+# Integration:
+#   BACKEND_API_URL = http://backend.railway.internal:3000
