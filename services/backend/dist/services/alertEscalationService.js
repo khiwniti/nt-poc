@@ -13,6 +13,7 @@
 import { pool } from '../config/database.js';
 import emailNotificationService from './emailNotificationService.js';
 import { logger } from '../observability/logger.js';
+import { AlertSeverity, } from '../types/alertEscalation.js';
 export class AlertEscalationService {
     static instance;
     constructor() { }
@@ -67,10 +68,10 @@ export class AlertEscalationService {
      */
     getNextSeverity(currentSeverity) {
         const escalationPath = {
-            info: 'medium',
-            medium: 'high',
-            high: 'critical',
-            critical: null, // Cannot escalate beyond critical
+            [AlertSeverity.LOW]: AlertSeverity.MEDIUM,
+            [AlertSeverity.MEDIUM]: AlertSeverity.HIGH,
+            [AlertSeverity.HIGH]: AlertSeverity.CRITICAL,
+            [AlertSeverity.CRITICAL]: null, // Cannot escalate beyond critical
         };
         return escalationPath[currentSeverity];
     }
@@ -79,10 +80,10 @@ export class AlertEscalationService {
      */
     getEscalationMinutes(severity, rule) {
         const timeframes = {
-            info: rule.infoToMediumMinutes,
-            medium: rule.mediumToHighMinutes,
-            high: rule.highToCriticalMinutes,
-            critical: null, // No escalation from critical
+            [AlertSeverity.LOW]: rule.lowToMediumMinutes,
+            [AlertSeverity.MEDIUM]: rule.mediumToHighMinutes,
+            [AlertSeverity.HIGH]: rule.highToCriticalMinutes,
+            [AlertSeverity.CRITICAL]: null, // No escalation from critical
         };
         return timeframes[severity];
     }
@@ -215,10 +216,10 @@ export class AlertEscalationService {
      */
     mapAlertSeverityToEmailSeverity(severity) {
         const severityMap = {
-            critical: 'critical',
-            high: 'critical',
-            medium: 'warning',
-            info: 'info',
+            [AlertSeverity.CRITICAL]: 'critical',
+            [AlertSeverity.HIGH]: 'critical',
+            [AlertSeverity.MEDIUM]: 'warning',
+            [AlertSeverity.LOW]: 'info',
         };
         return severityMap[severity];
     }

@@ -38,3 +38,6 @@ coverage/
 # Misc
 .DS_Store
 *.pem
+
+# Dependency analysis reports
+*-depcheck.json

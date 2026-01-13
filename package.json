@@ -5,9 +5,14 @@
   "description": "Battery Management System - Monorepo",
   "workspaces": [
     "services/backend",
-    "services/frontend"
+    "services/frontend",
+    "services/line-bot"
   ],
   "scripts": {
+    "test:integration:setup": "bash ./tests/scripts/test-env-up.sh",
+    "test:integration:teardown": "bash ./tests/scripts/test-env-down.sh",
+    "test:integration": "npm run test:integration:setup && npm run test:integration:run && npm run test:integration:teardown",
+    "test:integration:run": "vitest run --config tests/integration/vitest.config.ts",
     "install:all": "npm install && npm run install:python",
     "install:python": "echo 'Please install Python dependencies manually with virtual environments. See README.md for instructions.'",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
@@ -24,7 +29,7 @@
     "clean": "rm -rf node_modules services/*/node_modules services/*/dist && find services -type d -name '__pycache__' -exec rm -rf {} +"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^9.2.1"
   },
   "engines": {
     "node": ">=18.0.0",

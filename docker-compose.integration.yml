@@ -1,0 +1,148 @@
+name: bms-integration
+
+services:
+  database:
+    profiles:
+      - core
+      - full-stack
+      - ml-suite
+    networks:
+      - bms-integration-net
+    volumes:
+      - postgres_integration_data:/var/lib/postgresql/data
+    healthcheck:
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    profiles:
+      - core
+      - full-stack
+    networks:
+      - bms-integration-net
+
+  backend:
+    profiles:
+      - core
+      - full-stack
+      - ml-suite
+    environment:
+      PREDICTION_JOB_INTERVAL_MINUTES: ${PREDICTION_JOB_INTERVAL_MINUTES:-0.1}
+      ALERT_ESCALATION_INTERVAL_MINUTES: ${ALERT_ESCALATION_INTERVAL_MINUTES:-0.1}
+      ENABLE_EXTERNAL_MOCKS: ${ENABLE_EXTERNAL_MOCKS:-true}
+      MOCK_SERVICE_BASE_URL: http://mock-server:8080
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      mock-server:
+        condition: service_started
+    networks:
+      - bms-integration-net
+
+  frontend:
+    profiles:
+      - full-stack
+    environment:
+      VITE_API_BASE_URL: http://backend:3000
+      VITE_MLOPS_SERVICE_URL: http://mlops:8001
+    networks:
+      - bms-integration-net
+
+  line-bot:
+    build:
+      context: ./services/line-bot
+      dockerfile: Dockerfile
+    container_name: bms-line-bot-integration
+    profiles:
+      - full-stack
+    depends_on:
+      backend:
+        condition: service_started
+    environment:
+      NODE_ENV: test
+      PORT: 3002
+      BACKEND_API_BASE_URL: http://backend:3000
+      LINE_CHANNEL_ACCESS_TOKEN: test-channel-token
+      LINE_CHANNEL_SECRET: test-channel-secret
+      INTERNAL_API_KEY: test-linebot-key
+    ports:
+      - "3002:3002"
+    networks:
+      - bms-integration-net
+
+  mlops:
+    profiles:
+      - ml-suite
+    environment:
+      ENVIRONMENT: test
+      LATENCY_METRICS_PORT: 8003
+      BACKEND_BASE_URL: http://backend:3000
+    networks:
+      - bms-integration-net
+
+  simulator:
+    profiles:
+      - ml-suite
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002"]
+    environment:
+      SIMULATOR_SEED: ${SIMULATOR_SEED:-42}
+    networks:
+      - bms-integration-net
+
+  mock-server:
+    image: ghcr.io/wiremock/wiremock:3.5.5
+    container_name: bms-mock-server
+    profiles:
+      - core
+      - full-stack
+      - ml-suite
+    environment:
+      WIREMOCK_OPTIONS: "--port 8080"
+    ports:
+      - "8089:8080"
+    networks:
+      - bms-integration-net
+
+  toxiproxy:
+    image: shopify/toxiproxy:2.9.0
+    container_name: bms-toxiproxy
+    profiles:
+      - resilience
+    ports:
+      - "8474:8474"
+      - "8666:8666"
+    networks:
+      - bms-integration-net
+
+  fluent-bit:
+    image: cr.fluentbit.io/fluent/fluent-bit:3.0.4
+    container_name: bms-fluent-bit
+    profiles:
+      - observability
+    volumes:
+      - ./infrastructure/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - ./artifacts/logs:/var/log/fluentbit
+    networks:
+      - bms-integration-net
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.103.1
+    container_name: bms-otel-collector
+    profiles:
+      - observability
+    volumes:
+      - ./infrastructure/otel/collector.yaml:/etc/otel/config.yaml:ro
+    command: ["--config", "/etc/otel/config.yaml"]
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    networks:
+      - bms-integration-net
+
+networks:
+  bms-integration-net:
+    driver: bridge
+
+volumes:
+  postgres_integration_data:
+    driver: local

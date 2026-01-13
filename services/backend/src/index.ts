@@ -8,6 +8,7 @@ import logger from './config/logger.js';
 import app from './app.js';
 import { startScheduledJob } from './services/scheduledPredictionJob.js';
 import { startEscalationJob } from './services/alertEscalationJob.js';
+import sensorIngestionService from './services/sensorIngestionService.js';
 
 // Initialize Sentry first
 initializeSentry();
@@ -30,8 +31,12 @@ async function startServer() {
     startEscalationJob(ESCALATION_JOB_INTERVAL);
     logger.info('alert_escalation_job_active');
 
+    logger.info('sensor_ingestion_starting');
+    await sensorIngestionService.start();
+
     const shutdown = (signal: string) => {
       logger.info('shutdown_signal_received', { signal });
+      sensorIngestionService.stop();
       server.close(() => {
         logger.info('server_closed');
         process.exit(0);

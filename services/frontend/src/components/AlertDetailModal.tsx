@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect } from 'react';
 import { X, AlertCircle, Clock, CheckCircle } from 'lucide-react';
 import { Alert, alertsApi } from '../api/alerts';

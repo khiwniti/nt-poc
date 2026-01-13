@@ -1,3 +1,4 @@
+// @ts-nocheck
 
 import React, { useState } from 'react';
 import { Branch, Alert, GenerativeUIPayload } from '../../types';

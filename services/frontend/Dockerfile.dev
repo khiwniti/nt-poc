@@ -2,11 +2,14 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# Set NODE_ENV to development for dev dependencies
+ENV NODE_ENV=development
+
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies (including devDependencies for dev server)
+RUN npm install --legacy-peer-deps
 
 # Copy source code
 COPY . .

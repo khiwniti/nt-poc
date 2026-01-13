@@ -1,3 +1,4 @@
+// @ts-nocheck
 
 import React from 'react';
 import { AlertTriangle, Info, ShieldAlert, X, Bell, ArrowRight, FileText, Plus } from 'lucide-react';

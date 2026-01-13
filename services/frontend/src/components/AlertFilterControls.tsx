@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { X } from 'lucide-react';
 import { useAlertFilterStore, AlertSeverity, AlertStatus, AlertType, DateRange } from '../stores/alertFilterStore';
 

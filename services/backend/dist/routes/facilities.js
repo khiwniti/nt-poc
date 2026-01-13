@@ -1,12 +1,45 @@
 import express from 'express';
 import { pool } from '../config/database.js';
 import { authenticate } from '../middleware/auth.js';
+import { facilityHealthService } from '../services/facilityHealthService.js';
+import alertRealtimeService from '../services/alertRealtimeService.js';
+import { geocodingService } from '../services/geocodingService.js';
 const router = express.Router();
 router.use(authenticate);
+// GET /map - Optimized endpoint for map view with health status
+router.get('/map', async (req, res) => {
+    try {
+        // Fetch all facilities (exclude inactive by default for map)
+        const facilitiesResult = await pool.query(`
+      SELECT id, name, location, latitude, longitude, status, timezone, total_zones as "totalZones"
+      FROM facilities
+      ORDER BY name ASC
+    `);
+        const facilities = facilitiesResult.rows;
+        // Get recent alerts from alertRealtimeService cache
+        const recentAlerts = alertRealtimeService.getRecentAlerts();
+        // Calculate health for all facilities
+        const healthMap = facilityHealthService.calculateBulkHealth(facilities, recentAlerts);
+        // Combine facility data with health status
+        const mapData = facilities.map((facility) => ({
+            ...facility,
+            health: healthMap.get(facility.id)
+        }));
+        res.json({
+            data: mapData,
+            total: mapData.length
+        });
+    }
+    catch (error) {
+        console.error('Failed to fetch map data:', error);
+        res.status(500).json({ error: 'Failed to fetch map data' });
+    }
+});
 router.get('/', async (req, res) => {
     try {
         const result = await pool.query(`
-      SELECT id, name, location, timezone, total_zones, status, created_at, updated_at
+      SELECT id, name, location, latitude, longitude, address, city, country, 
+             timezone, total_zones, status, created_at, updated_at
       FROM facilities
       WHERE status = 'active'
       ORDER BY created_at DESC
@@ -24,7 +57,8 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const result = await pool.query(`SELECT id, name, location, timezone, total_zones as "totalZones", status, created_at, updated_at
+        const result = await pool.query(`SELECT id, name, location, latitude, longitude, address, city, country,
+              timezone, total_zones as "totalZones", status, created_at, updated_at
        FROM facilities WHERE id = $1`, [id]);
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Facility not found' });
@@ -86,6 +120,97 @@ router.get('/:id/kpis', async (req, res) => {
     catch (error) {
         console.error('Error fetching facility KPIs:', error);
         res.status(500).json({ error: 'Internal server error' });
+    }
+});
+// Geocode an address
+router.post('/geocode', async (req, res) => {
+    try {
+        const { address } = req.body;
+        if (!address) {
+            return res.status(400).json({ error: 'Address is required' });
+        }
+        const result = await geocodingService.geocode(address);
+        if (!result) {
+            return res.status(404).json({ error: 'Address not found' });
+        }
+        res.json({ data: result });
+    }
+    catch (error) {
+        console.error('Error geocoding address:', error);
+        res.status(500).json({ error: 'Failed to geocode address' });
+    }
+});
+// Reverse geocode coordinates
+router.post('/reverse-geocode', async (req, res) => {
+    try {
+        const { latitude, longitude } = req.body;
+        if (latitude === undefined || longitude === undefined) {
+            return res.status(400).json({ error: 'Latitude and longitude are required' });
+        }
+        const result = await geocodingService.reverseGeocode(latitude, longitude);
+        if (!result) {
+            return res.status(404).json({ error: 'Location not found' });
+        }
+        res.json({ data: result });
+    }
+    catch (error) {
+        console.error('Error reverse geocoding:', error);
+        res.status(500).json({ error: 'Failed to reverse geocode coordinates' });
+    }
+});
+// Update facility with geolocation data
+router.patch('/:id/geolocation', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { latitude, longitude, address, city, country } = req.body;
+        // Validate at least one field is provided
+        if (!latitude && !longitude && !address && !city && !country) {
+            return res.status(400).json({ error: 'At least one geolocation field is required' });
+        }
+        // Build dynamic update query
+        const updates = [];
+        const values = [];
+        let paramIndex = 1;
+        if (latitude !== undefined) {
+            updates.push(`latitude = $${paramIndex++}`);
+            values.push(latitude);
+        }
+        if (longitude !== undefined) {
+            updates.push(`longitude = $${paramIndex++}`);
+            values.push(longitude);
+        }
+        if (address !== undefined) {
+            updates.push(`address = $${paramIndex++}`);
+            values.push(address);
+        }
+        if (city !== undefined) {
+            updates.push(`city = $${paramIndex++}`);
+            values.push(city);
+        }
+        if (country !== undefined) {
+            updates.push(`country = $${paramIndex++}`);
+            values.push(country);
+        }
+        updates.push(`updated_at = $${paramIndex++}`);
+        values.push(new Date());
+        values.push(id);
+        const query = `
+      UPDATE facilities 
+      SET ${updates.join(', ')}
+      WHERE id = $${paramIndex}
+      RETURNING id, name, location, timezone, total_zones as "totalZones", status,
+                latitude, longitude, address, city, country,
+                created_at, updated_at
+    `;
+        const result = await pool.query(query, values);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Facility not found' });
+        }
+        res.json({ data: result.rows[0] });
+    }
+    catch (error) {
+        console.error('Error updating facility geolocation:', error);
+        res.status(500).json({ error: 'Failed to update facility geolocation' });
     }
 });
 export default router;

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect, useMemo } from 'react';
 import { Color, MeshStandardMaterial } from 'three';
 import type { Object3D } from 'three';

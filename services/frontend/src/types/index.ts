@@ -64,3 +64,6 @@ export interface FacilityHealthStatus {
   mediumCount: number;
   infoCount: number;
 }
+
+// Re-export all types from facility-manager for new UI components
+export * from './facility-manager';

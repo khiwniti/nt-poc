@@ -10,7 +10,7 @@ import {
 
 type CacheBackend = 'redis' | 'disabled';
 
-type MapCacheType = 'tile' | 'geocoding' | 'weather' | 'distance';
+type MapCacheType = 'tile' | 'geocoding' | 'weather' | 'distance' | 'weather_current' | 'weather_forecast' | 'weather_historical';
 
 type CacheLabels = {
   cache_type: MapCacheType;
@@ -29,6 +29,9 @@ const CACHE_KEY_PREFIXES: Record<MapCacheType, string> = {
   geocoding: 'geocoding:',
   weather: 'weather:',
   distance: 'distance:',
+  weather_current: 'weather:current:',
+  weather_forecast: 'weather:forecast:',
+  weather_historical: 'weather:historical:',
 };
 
 const CACHE_TTL_SECONDS: Record<MapCacheType, number> = {
@@ -36,6 +39,9 @@ const CACHE_TTL_SECONDS: Record<MapCacheType, number> = {
   geocoding: 24 * 60 * 60, // 24 hours for geocoding
   weather: 60 * 60, // 1 hour for weather
   distance: 7 * 24 * 60 * 60, // 7 days for distance calculations
+  weather_current: 60 * 60, // 1 hour for current weather
+  weather_forecast: 3 * 60 * 60, // 3 hours for forecast
+  weather_historical: 24 * 60 * 60, // 24 hours for historical
 };
 
 const stats: CacheStats = {

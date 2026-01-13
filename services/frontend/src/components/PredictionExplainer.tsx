@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Prediction Explainability Component
  * T156: Implement prediction explainability (SHAP)

@@ -20,8 +20,8 @@ spec:
       serviceAccountName: backend-sa
       containers:
       - name: backend
-        image: facility-manager/backend:latest
-        imagePullPolicy: Always
+        image: facility-manager/backend:dev
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3001
           name: http
