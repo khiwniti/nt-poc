@@ -52,70 +52,54 @@ export interface AlertFilters {
   sortOrder?: 'asc' | 'desc';
 }
 
+const handleResponse = async <T>(response: Response, errorMessage: string): Promise<T> => {
+  if (!response.ok) {
+    throw new Error(`${errorMessage}: ${response.statusText}`);
+  }
+  return response.json();
+};
+
+const buildQueryString = (params: Record<string, string | number | undefined>): string => {
+  const searchParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined) {
+      searchParams.append(key, String(value));
+    }
+  });
+  return searchParams.toString();
+};
+
 export const alertsApi = {
   async getAlerts(filters: AlertFilters = {}): Promise<AlertListResponse> {
-    const params = new URLSearchParams();
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined) {
-        params.append(key, String(value));
-      }
-    });
-
-    const response = await fetch(`${API_BASE_URL}/alerts?${params}`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch alerts: ${response.statusText}`);
-    }
-    return response.json();
+    const queryString = buildQueryString(filters as Record<string, string | number | undefined>);
+    const response = await fetch(`${API_BASE_URL}/alerts?${queryString}`);
+    return handleResponse(response, 'Failed to fetch alerts');
   },
 
   async getAlert(id: string): Promise<{ data: Alert }> {
     const response = await fetch(`${API_BASE_URL}/alerts/${id}`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch alert: ${response.statusText}`);
-    }
-    return response.json();
+    return handleResponse(response, 'Failed to fetch alert');
   },
 
   async getAlertStats(
     filters: { batteryId?: string; zoneId?: string; timeRange?: string } = {}
   ): Promise<{ data: AlertStats }> {
-    const params = new URLSearchParams();
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined) {
-        params.append(key, String(value));
-      }
-    });
-
-    const response = await fetch(`${API_BASE_URL}/alerts/stats/summary?${params}`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch alert stats: ${response.statusText}`);
-    }
-    return response.json();
+    const queryString = buildQueryString(filters);
+    const response = await fetch(`${API_BASE_URL}/alerts/stats/summary?${queryString}`);
+    return handleResponse(response, 'Failed to fetch alert stats');
   },
 
   async getTimelineData(
     filters: { batteryId?: string; zoneId?: string; days?: number } = {}
   ): Promise<{ data: TimelineDataPoint[] }> {
-    const params = new URLSearchParams();
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined) {
-        params.append(key, String(value));
-      }
-    });
-
-    const response = await fetch(`${API_BASE_URL}/alerts/timeline/data?${params}`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch timeline data: ${response.statusText}`);
-    }
-    return response.json();
+    const queryString = buildQueryString(filters);
+    const response = await fetch(`${API_BASE_URL}/alerts/timeline/data?${queryString}`);
+    return handleResponse(response, 'Failed to fetch timeline data');
   },
 
   async getSensorHistory(alertId: string): Promise<{ readings: any[]; timeline: any[] }> {
     const response = await fetch(`${API_BASE_URL}/alerts/${alertId}/history`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch sensor history: ${response.statusText}`);
-    }
-    return response.json();
+    return handleResponse(response, 'Failed to fetch sensor history');
   },
 
   async acknowledgeAlert(alertId: string): Promise<{ data: Alert }> {
@@ -125,10 +109,7 @@ export const alertsApi = {
         'Content-Type': 'application/json',
       },
     });
-    if (!response.ok) {
-      throw new Error(`Failed to acknowledge alert: ${response.statusText}`);
-    }
-    return response.json();
+    return handleResponse(response, 'Failed to acknowledge alert');
   },
 
   async resolveAlert(alertId: string, notes: string): Promise<{ data: Alert }> {
@@ -139,10 +120,7 @@ export const alertsApi = {
       },
       body: JSON.stringify({ notes }),
     });
-    if (!response.ok) {
-      throw new Error(`Failed to resolve alert: ${response.statusText}`);
-    }
-    return response.json();
+    return handleResponse(response, 'Failed to resolve alert');
   },
 
   exportToCSV(alerts: Alert[]): void {
