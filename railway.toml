@@ -33,7 +33,7 @@ builder = "NIXPACKS"
 buildCommand = "npm ci && npm run build"
 
 [services.deploy]
-startCommand = "npm start"
+startCommand = "node dist/index.js"
 healthcheckPath = "/api/v1/health"
 healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"
@@ -95,7 +95,7 @@ builder = "NIXPACKS"
 buildCommand = "npm ci && npm run build"
 
 [services.deploy]
-# Railway auto-serves static files from dist/ - no startCommand needed
+startCommand = "npx serve -s dist -p $PORT"
 healthcheckPath = "/"
 healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"
@@ -214,7 +214,7 @@ builder = "NIXPACKS"
 buildCommand = "npm ci && npm run build"
 
 [services.deploy]
-startCommand = "npm start"
+startCommand = "node dist/index.js"
 healthcheckPath = "/health"
 healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"
