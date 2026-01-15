@@ -1,3 +1,5 @@
+# Simulator Service Dockerfile
+# Built from repository root with service-specific paths
 # Multi-stage build for Python 3.11 + FastAPI
 
 # Builder stage
@@ -5,8 +7,10 @@ FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
+# Copy requirements from simulator service directory
+COPY services/simulator/requirements.txt .
+
 # Install dependencies
-COPY requirements.txt .
 RUN python -m venv /opt/venv && \
     /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
 
@@ -18,8 +22,8 @@ WORKDIR /app
 # Copy virtual environment from builder
 COPY --from=builder /opt/venv /opt/venv
 
-# Copy application code
-COPY app/ ./app/
+# Copy application code from simulator service directory
+COPY services/simulator/app/ ./app/
 
 # Create non-root user
 RUN useradd -m -u 1001 python && \

@@ -1,4 +1,5 @@
 # MLOps Service Dockerfile
+# Built from repository root with service-specific paths
 # Multi-stage build for optimized production image
 
 # Stage 1: Build
@@ -12,8 +13,8 @@ RUN apt-get update && apt-get install -y \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements
-COPY requirements.txt .
+# Copy requirements from mlops service directory
+COPY services/mlops/requirements.txt .
 
 # Install Python dependencies in a virtual environment
 RUN python -m venv /opt/venv
@@ -34,8 +35,8 @@ RUN apt-get update && apt-get install -y \
 # Copy virtual environment from builder
 COPY --from=builder /opt/venv /opt/venv
 
-# Copy application code
-COPY src/ ./src/
+# Copy application code from mlops service directory
+COPY services/mlops/src/ ./src/
 
 # Create non-root user
 RUN groupadd -g 1001 python && \

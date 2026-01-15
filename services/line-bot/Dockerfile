@@ -1,16 +1,19 @@
-# Multi-stage build for LINE Bot Service
+# LINE Bot Service Dockerfile
+# Built from repository root with service-specific paths
+# Multi-stage build for optimized production image
+
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package files from line-bot service directory
+COPY services/line-bot/package*.json ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies (skip lifecycle scripts like husky)
+RUN npm ci --ignore-scripts
 
-# Copy source code
-COPY . .
+# Copy source code from line-bot service directory
+COPY services/line-bot/ .
 
 # Build TypeScript
 RUN npm run build
@@ -21,10 +24,10 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY services/line-bot/package*.json ./
 
-# Install production dependencies only
-RUN npm ci --only=production && npm cache clean --force
+# Install production dependencies only (skip lifecycle scripts)
+RUN npm ci --only=production --ignore-scripts && npm cache clean --force
 
 # Copy built application from builder
 COPY --from=builder /app/dist ./dist

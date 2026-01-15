@@ -129,11 +129,11 @@ restartPolicyMaxRetries = 10
 
 [[services]]
 name = "mlops"
-source = "services/mlops"
 
 [services.build]
 builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
+dockerfilePath = "services/mlops/Dockerfile"
+watchPatterns = ["services/mlops/**"]
 
 [services.deploy]
 healthcheckPath = "/health"
@@ -174,11 +174,11 @@ restartPolicyMaxRetries = 10
 
 [[services]]
 name = "simulator"
-source = "services/simulator"
 
 [services.build]
 builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
+dockerfilePath = "services/simulator/Dockerfile"
+watchPatterns = ["services/simulator/**"]
 
 [services.deploy]
 healthcheckPath = "/health"
@@ -200,11 +200,11 @@ restartPolicyMaxRetries = 10
 
 [[services]]
 name = "line-bot"
-source = "services/line-bot"
 
 [services.build]
 builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
+dockerfilePath = "services/line-bot/Dockerfile"
+watchPatterns = ["services/line-bot/**"]
 
 [services.deploy]
 healthcheckPath = "/health"
