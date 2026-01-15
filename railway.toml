@@ -23,11 +23,11 @@
 
 [[services]]
 name = "backend"
-source = "services/backend"
 
 [services.build]
 builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
+dockerfilePath = "Dockerfile.backend"
+watchPatterns = ["services/backend/**", "Dockerfile.backend"]
 
 [services.deploy]
 healthcheckPath = "/api/v1/health"
