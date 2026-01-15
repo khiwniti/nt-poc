@@ -19,7 +19,6 @@ COPY knexfile.ts ./
 COPY src/ ./src/
 COPY migrations/ ./migrations/
 COPY seeds/ ./seeds/
-COPY scripts/ ./scripts/
 
 # Build TypeScript
 RUN npm run build
@@ -41,7 +40,6 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/knexfile.ts ./
 COPY --from=builder /app/migrations ./migrations
 COPY --from=builder /app/seeds ./seeds
-COPY --from=builder /app/scripts ./scripts
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
