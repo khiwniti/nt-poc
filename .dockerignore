@@ -4,8 +4,11 @@
 
 # Dependencies
 node_modules
+**/node_modules
 npm-debug.log
 yarn-error.log
+.pnp
+.pnp.js
 
 # Environment
 .env
@@ -22,14 +25,56 @@ yarn-error.log
 .DS_Store
 Thumbs.db
 
-# Build artifacts
-dist
-build
+# Build artifacts (keep dist for production builds)
 coverage
+*.lcov
+.next
+out
+*.tgz
+
+# Cache directories - CRITICAL for Railway
+.cache
+**/.cache
+.npm
+.yarn
+.parcel-cache
+.vite
+**/.vite
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+
+# ML Models
+*.h5
+*.pkl
+*.joblib
+*.model
+*.weights
+*.ckpt
+*.pb
+*.pth
+*.onnx
+models/
 
 # Documentation
 *.md
+!README.md
 docs/
+
+# Development
+opc-ua-sensor-simulator/
+plans/
+backups/
+claudedocs/
+.claude/
 
 # CI/CD
 .github
@@ -38,3 +83,9 @@ docs/
 # Docker
 Dockerfile
 docker-compose*.yml
+
+# Railway scripts
+railway-*.sh
+deploy-*.sh
+*-deploy*.sh
+setup-*.sh
