@@ -76,4 +76,25 @@ export class MLOpsClient {
       clear();
     }
   }
+
+  async detectAnomaly(features: Record<string, number>): Promise<any> {
+    const { request, clear } = this.withTimeout({
+      method: 'POST',
+      headers: {
+        ...this.defaultHeaders,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ features }),
+    });
+
+    try {
+      const response = await fetch(`${this.baseUrl}/ml/detect-anomaly`, request);
+      if (!response.ok) {
+        throw new Error(`MLOps detect-anomaly returned ${response.status}`);
+      }
+      return await response.json();
+    } finally {
+      clear();
+    }
+  }
 }

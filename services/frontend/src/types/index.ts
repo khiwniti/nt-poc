@@ -42,6 +42,13 @@ export interface Alert {
   acknowledgedAt?: number;
   resolvedAt?: number;
   acknowledgedBy?: string;
+  duration?: number;
+  // Legacy compatibility
+  branchId?: string;
+  title?: string;
+  timestamp?: Date;
+  read?: boolean;
+  category?: 'equipment' | 'energy' | 'security';
 }
 
 export interface Facility {
@@ -53,6 +60,12 @@ export interface Facility {
   timezone: string;
   status: 'active' | 'inactive' | 'maintenance';
   totalZones: number;
+  // Legacy compatibility
+  lat?: number;
+  lng?: number;
+  region?: string;
+  coordinates?: { x: number; y: number };
+  metrics?: any;
 }
 
 export interface FacilityHealthStatus {

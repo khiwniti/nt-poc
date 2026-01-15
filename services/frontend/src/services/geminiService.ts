@@ -1,35 +1,15 @@
-// @ts-nocheck
 
 import { GoogleGenAI, Type } from "@google/genai";
 import { ChatMessage, AIResponse, Branch, Alert, ReportDocument, ReportBlock, ISOStandard } from "../types";
 
-// Only initialize if API key is available
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
-const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
-
-// Helper to check if AI is available
-const checkAI = () => {
-  if (!ai) {
-    console.warn('Gemini API key not configured. AI features will be disabled.');
-    return false;
-  }
-  return true;
-};
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const sendChatMessage = async (
   message: string,
   history: ChatMessage[],
   context: any
 ): Promise<AIResponse> => {
-  // If no API key, return a fallback response
-  if (!ai) {
-    return {
-      text: "ขออภัยครับ ระบบ AI ยังไม่พร้อมใช้งาน กรุณาติดต่อผู้ดูแลระบบเพื่อตั้งค่า API Key",
-      actions: []
-    };
-  }
-
-  const response = await ai!.models.generateContent({
+  const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: [
         { role: 'user', parts: [{ text: `You are an NT AIOps Assistant for a 3D Facility Management Platform.
@@ -52,10 +32,7 @@ export const sendChatMessage = async (
 };
 
 export const generateReportDraft = async (prompt: string, standard: ISOStandard = 'ISO-27001'): Promise<Partial<ReportDocument>> => {
-    if (!checkAI()) {
-        return { title: 'Draft Report', blocks: [{ id: '1', type: 'paragraph', content: 'AI service not available' }] };
-    }
-    const response = await ai!.models.generateContent({
+    const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: `Create a professional report draft for: "${prompt}".
         Standard: ${standard}. 
@@ -67,10 +44,7 @@ export const generateReportDraft = async (prompt: string, standard: ISOStandard 
 };
 
 export const generateReportFromAlert = async (alert: Alert, branch?: Branch): Promise<Partial<ReportDocument>> => {
-    if (!checkAI()) {
-        return { title: 'Incident Report', blocks: [{ id: '1', type: 'paragraph', content: 'AI service not available' }] };
-    }
-    const response = await ai!.models.generateContent({
+    const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: `Create a professional incident report draft for:
         Alert Title: ${alert.title}
@@ -85,10 +59,7 @@ export const generateReportFromAlert = async (alert: Alert, branch?: Branch): Pr
 };
 
 export const runComplianceAudit = async (content: string, standard: ISOStandard): Promise<{ score: number, findings: string[], recommendations: string[] }> => {
-    if (!checkAI()) {
-        return { score: 0, findings: ['AI service not available'], recommendations: [] };
-    }
-    const response = await ai!.models.generateContent({
+    const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: `Audit this report against ${standard}. 
         Report: ${content}
@@ -108,9 +79,30 @@ export const runComplianceAudit = async (content: string, standard: ISOStandard)
     return JSON.parse(response.text || "{}");
 };
 
+export const getIsoContext = async (text: string, standard: ISOStandard): Promise<{ clauses: { code: string, title: string, relevance: string }[] }> => {
+    const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: `Analyze this text segment from a facility report. Identify relevant ${standard} clauses that apply.
+        Text: "${text}"
+        Return JSON: { clauses: [{ code: string, title: string, relevance: string }] } (in Thai)`,
+        config: { responseMimeType: "application/json" }
+    });
+    return JSON.parse(response.text || "{ \"clauses\": [] }");
+};
+
+export const getWritingSuggestions = async (text: string): Promise<{ suggestions: string[] }> => {
+    const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: `Analyze this text. Suggest 3 short improvements for clarity, tone, or specific detail.
+        Text: "${text}"
+        Return JSON: { suggestions: string[] } (in Thai)`,
+        config: { responseMimeType: "application/json" }
+    });
+    return JSON.parse(response.text || "{ \"suggestions\": [] }");
+};
+
 export const enhanceReportContent = async (originalText: string, instruction: string): Promise<string> => {
-    if (!checkAI()) return originalText;
-    const response = await ai!.models.generateContent({
+    const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: `Instruction: ${instruction}\nText: ${originalText}\nRefine text professionally.`
     });
@@ -127,17 +119,28 @@ export const aiEditorTask = async (task: 'improve' | 'shorten' | 'longer' | 'for
         check: "Check this text for technical accuracy and professional terminology."
     };
     
-    if (!checkAI()) return text;
-    const response = await ai!.models.generateContent({
+    const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: `${prompts[task]}\n\nText: ${text}`,
     });
     return response.text?.trim() || text;
 };
 
+export const chatWithDocument = async (documentContent: string, userMessage: string): Promise<string> => {
+    const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: `Context: You are an expert auditor analyzing a facility report.
+        Report Content: "${documentContent.substring(0, 10000)}..."
+        
+        User Question: ${userMessage}
+        
+        Answer concisely and professionally in Thai based ONLY on the report content provided.`
+    });
+    return response.text || "ไม่สามารถตอบคำถามได้ในขณะนี้";
+};
+
 export const summarizeReport = async (reportContent: string): Promise<string> => {
-    if (!checkAI()) return reportContent;
-    const response = await ai!.models.generateContent({
+    const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: `Summarize for Executive Board: ${reportContent}`
     });
@@ -145,8 +148,7 @@ export const summarizeReport = async (reportContent: string): Promise<string> =>
 };
 
 export const analyzeBatteryHealth = async (data: any): Promise<string> => {
-    if (!checkAI()) return "AI analysis not available";
-    const response = await ai!.models.generateContent({
+    const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
         contents: `Analyze health for battery unit: ${JSON.stringify(data)}. Provide detailed summary and proactive recommendations.`,
     });
@@ -154,8 +156,7 @@ export const analyzeBatteryHealth = async (data: any): Promise<string> => {
 };
 
 export const analyzeLocation = async (query: string, lat: number, lng: number): Promise<{ text: string; chunks?: any[] }> => {
-    if (!checkAI()) return { text: "Location analysis not available" };
-    const response = await ai!.models.generateContent({
+    const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: `Audit energy potential at ${lat}, ${lng}. ${query}`,
         config: { tools: [{ googleSearch: {} }] }

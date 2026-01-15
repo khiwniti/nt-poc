@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card } from '../ui/Card';
 import { PredictiveAsset } from '../../types';
 import { 
@@ -7,77 +7,7 @@ import {
     AlertTriangle, CheckCircle2, TrendingDown, Timer, Wrench, 
     Search, Filter, ArrowRight, Loader2, BarChart3 
 } from 'lucide-react';
-
-const MOCK_PREDICTIVE_DATA: PredictiveAsset[] = [
-    {
-        id: 'AHU-BKK-01',
-        name: 'Main Air Handling Unit',
-        category: 'HVAC',
-        branchId: 'Bangrak',
-        healthScore: 42,
-        predictedFailureDate: '2025-05-28',
-        confidence: 89,
-        telemetry: { vibration: 8.5, temperature: 48, sound: 72, efficiency: 65 },
-        logs: [
-            { timestamp: '2025-05-12 08:30', code: 'ERR-VIB-01', message: 'Vibration exceeding threshold (Class B)' },
-            { timestamp: '2025-05-11 14:20', code: 'WARN-TMP-02', message: 'Bearing temperature deviation +5%' }
-        ],
-        maintenanceSuggestion: 'Replace bearing assembly and align shaft'
-    },
-    {
-        id: 'GEN-NON-02',
-        name: 'Backup Generator 2',
-        category: 'Power',
-        branchId: 'Nonthaburi',
-        healthScore: 94,
-        predictedFailureDate: '2026-11-15',
-        confidence: 92,
-        telemetry: { vibration: 1.2, temperature: 35, sound: 65, efficiency: 98 },
-        logs: [],
-        maintenanceSuggestion: 'Routine oil analysis recommended'
-    },
-    {
-        id: 'PUMP-CM-01',
-        name: 'Cooling Tower Pump',
-        category: 'Plumbing',
-        branchId: 'Chiang Mai',
-        healthScore: 68,
-        predictedFailureDate: '2025-08-10',
-        confidence: 75,
-        telemetry: { vibration: 4.1, temperature: 42, sound: 68, efficiency: 82 },
-        logs: [
-            { timestamp: '2025-05-10 09:00', code: 'WARN-FLOW-01', message: 'Flow rate fluctuation detected' }
-        ],
-        maintenanceSuggestion: 'Inspect impeller for cavitation damage'
-    },
-    {
-        id: 'UPS-PKT-A',
-        name: 'UPS Module A',
-        category: 'Power',
-        branchId: 'Phuket',
-        healthScore: 25,
-        predictedFailureDate: '2025-05-18',
-        confidence: 95,
-        telemetry: { vibration: 0.5, temperature: 55, sound: 45, efficiency: 78 },
-        logs: [
-            { timestamp: '2025-05-12 10:15', code: 'ERR-CAP-03', message: 'Capacitor bank degrading rapidly' },
-            { timestamp: '2025-05-12 10:10', code: 'ALARM-HEAT', message: 'Internal temp critical' }
-        ],
-        maintenanceSuggestion: 'Urgent: Capacitor replacement required immediately'
-    },
-    {
-        id: 'ELV-SR-01',
-        name: 'Passenger Elevator 1',
-        category: 'Transport',
-        branchId: 'Sriracha',
-        healthScore: 88,
-        predictedFailureDate: '2026-02-20',
-        confidence: 85,
-        telemetry: { vibration: 2.2, temperature: 28, sound: 50, efficiency: 95 },
-        logs: [],
-        maintenanceSuggestion: 'Schedule preventative lubrication'
-    }
-];
+import { db } from '../../services/database';
 
 // SVG P-F Curve Chart (Degradation Model)
 const DegradationChart = ({ health }: { health: number }) => {
@@ -132,24 +62,29 @@ const DegradationChart = ({ health }: { health: number }) => {
 };
 
 export const PredictiveMaintenance: React.FC = () => {
+    const [predictiveAssets, setPredictiveAssets] = useState<PredictiveAsset[]>([]);
     const [selectedAsset, setSelectedAsset] = useState<PredictiveAsset | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [analyzingId, setAnalyzingId] = useState<string | null>(null);
 
-    const filteredAssets = MOCK_PREDICTIVE_DATA.filter(a => 
+    useEffect(() => {
+        db.getPredictiveAssets().then(setPredictiveAssets).catch(console.error);
+    }, []);
+
+    const filteredAssets = predictiveAssets.filter(a => 
         a.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
         a.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         a.branchId.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const atRiskCount = filteredAssets.filter(a => a.healthScore < 50).length;
-    const avgHealth = Math.round(filteredAssets.reduce((acc, curr) => acc + curr.healthScore, 0) / filteredAssets.length);
+    const avgHealth = filteredAssets.length > 0 ? Math.round(filteredAssets.reduce((acc, curr) => acc + curr.healthScore, 0) / filteredAssets.length) : 0;
 
     const handleRunAnalysis = (id: string) => {
         setAnalyzingId(id);
         setTimeout(() => {
             setAnalyzingId(null);
-            const asset = MOCK_PREDICTIVE_DATA.find(a => a.id === id);
+            const asset = predictiveAssets.find(a => a.id === id);
             if(asset) setSelectedAsset(asset);
         }, 1500);
     };

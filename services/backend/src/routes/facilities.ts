@@ -222,13 +222,13 @@ router.patch('/:id/geolocation', async (req: AuthRequest, res: Response) => {
       updates.push(`country = $${paramIndex++}`);
       values.push(country);
     }
-    
+
     updates.push(`updated_at = $${paramIndex++}`);
     values.push(new Date());
     values.push(id);
 
     const query = `
-      UPDATE facilities 
+      UPDATE facilities
       SET ${updates.join(', ')}
       WHERE id = $${paramIndex}
       RETURNING id, name, location, timezone, total_zones as "totalZones", status,
@@ -246,6 +246,38 @@ router.patch('/:id/geolocation', async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error('Error updating facility geolocation:', error);
     res.status(500).json({ error: 'Failed to update facility geolocation' });
+  }
+});
+
+// PATCH /facilities/:id/metrics - Update facility metrics (for facility management UI)
+router.patch('/:id/metrics', async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const metrics = req.body;
+
+    const query = `
+      UPDATE facilities
+      SET metrics = $1, updated_at = $2
+      WHERE id = $3
+      RETURNING id, name, location, region, lat, lng, status, metrics, created_at, updated_at
+    `;
+
+    const result = await pool.query(query, [JSON.stringify(metrics), new Date(), id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Facility not found' });
+    }
+
+    // Parse metrics back to object
+    const facility = result.rows[0];
+    if (facility.metrics) {
+      facility.metrics = typeof facility.metrics === 'string' ? JSON.parse(facility.metrics) : facility.metrics;
+    }
+
+    res.json({ data: facility });
+  } catch (error) {
+    console.error('Error updating facility metrics:', error);
+    res.status(500).json({ error: 'Failed to update facility metrics' });
   }
 });
 

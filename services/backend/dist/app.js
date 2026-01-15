@@ -20,6 +20,7 @@ import geospatialRouter from './routes/geospatial.js';
 import reportAnalyticsRouter from './routes/reportAnalytics.js';
 import weatherRouter from './routes/weather.js';
 import batteryHealthRouter from './routes/batteryHealth.js';
+import settingsRouter from './routes/settings.js';
 export const app = express();
 app.use(cors());
 app.use(express.json());
@@ -61,6 +62,7 @@ app.use('/api/v1/geospatial', geospatialRouter);
 app.use('/api/v1/report-analytics', reportAnalyticsRouter);
 app.use('/api/v1/weather', weatherRouter);
 app.use('/api/v1/battery-health', batteryHealthRouter);
+app.use('/api/v1/settings', settingsRouter);
 // Centralized error handler (logs + Sentry + metrics)
 app.use(errorHandler);
 export default app;

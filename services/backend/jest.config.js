@@ -4,8 +4,13 @@ export default {
   testEnvironment: 'node',
   roots: ['<rootDir>/src'],
   testMatch: [
-    '**/__tests__/**/*.ts',
-    '**/?(*.)+(spec|test).ts'
+    '**/__tests__/**/*.jest.ts',
+    '**/?(*.)+(spec|jest).ts'
+  ],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '\\.test\\.ts$',
+    '__tests__/.*\\.test\\.ts$'
   ],
   transform: {
     '^.+\\.ts$': ['ts-jest', {

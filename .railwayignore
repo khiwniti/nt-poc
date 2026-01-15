@@ -1,0 +1,98 @@
+# Railway Ignore File
+# Prevents these files/directories from being uploaded to Railway
+
+# Python virtual environments
+venv/
+env/
+ENV/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Node modules (including root)
+node_modules/
+**/node_modules/
+
+# ML Models
+services/ml/models/
+services/ml/venv/
+services/mlops/models/
+models/
+*.h5
+*.pkl
+*.joblib
+*.model
+*.weights
+*.ckpt
+*.pb
+*.pth
+*.onnx
+
+# Logs
+training.log
+*.log
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Test coverage
+coverage/
+.nyc_output/
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env.local
+.env.*.local
+
+# Backup directories
+backups/
+src-backup-*/
+*-backup-*/
+claudedocs/
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+docs/
+*.md
+!README.md
+!services/*/README.md
+
+# Scripts
+*.sh
+!services/*/start.sh
+
+# Tests
+tests/
+**/tests/
+**/__tests__/
+*.test.*
+*.spec.*
+e2e/
+
+# Development
+opc-ua-sensor-simulator/
+plans/
+pacts/
+data/
+
+# Kubernetes
+k8s/
+infrastructure/

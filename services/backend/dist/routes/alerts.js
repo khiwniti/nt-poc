@@ -182,6 +182,27 @@ router.get('/timeline/data', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+// GET /api/v1/alerts/summary - Get alert summary statistics (for facility management UI)
+router.get('/summary', async (req, res) => {
+    try {
+        const alerts = [...alertRealtimeService.getRecentAlerts(), ...generateMockAlerts(100)];
+        const critical = alerts.filter(a => a.severity === 'critical' && a.status === 'active').length;
+        const warning = alerts.filter(a => a.severity === 'warning' && a.status === 'active').length;
+        const info = alerts.filter(a => a.severity === 'info' && a.status === 'active').length;
+        res.json({
+            data: {
+                critical,
+                warning,
+                info,
+                total: critical + warning + info,
+            },
+        });
+    }
+    catch (error) {
+        console.error('Error fetching alert summary:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 // GET /api/v1/alerts/:id - Get single alert details
 router.get('/:id', async (req, res) => {
     try {
@@ -531,6 +552,40 @@ router.post('/escalation/trigger', async (req, res) => {
             return res.status(409).json({ error: 'Job is already running' });
         }
         console.error('Error triggering escalation job:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+// PATCH /api/v1/alerts/:id/read - Mark alert as read (for facility management UI)
+router.patch('/:id/read', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const alerts = alertRealtimeService.getRecentAlerts();
+        const alert = alerts.find(a => a.id === id);
+        if (!alert) {
+            return res.status(404).json({ error: 'Alert not found' });
+        }
+        // Mark as acknowledged (treated as "read" in the UI)
+        alert.status = 'acknowledged';
+        alert.acknowledgedAt = Date.now();
+        res.json({ data: alert });
+    }
+    catch (error) {
+        console.error('Error marking alert as read:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+// DELETE /api/v1/alerts - Clear all alerts (for facility management UI)
+router.delete('/', async (req, res) => {
+    try {
+        // Clear in-memory alerts
+        alertRealtimeService.clearAlerts();
+        res.json({
+            success: true,
+            message: 'All alerts cleared successfully',
+        });
+    }
+    catch (error) {
+        console.error('Error clearing alerts:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

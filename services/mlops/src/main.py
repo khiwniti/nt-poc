@@ -7,8 +7,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .api.routes import router
-from .api.explainability import router as explainability_router
-from .api.anomaly import router as anomaly_router
+# from .api.explainability import router as explainability_router  # Temporarily disabled - requires ML service code
+# from .api.anomaly import router as anomaly_router  # Temporarily disabled - requires ML service code
 from .config import settings
 from .utils.latency_monitor import get_latency_monitor, LatencyMonitoringMiddleware
 
@@ -60,8 +60,8 @@ app.add_middleware(
 
 # Include API routes
 app.include_router(router)
-app.include_router(explainability_router)
-app.include_router(anomaly_router)
+# app.include_router(explainability_router)  # Temporarily disabled - requires ML service code
+# app.include_router(anomaly_router)  # Temporarily disabled - requires ML service code
 
 if __name__ == "__main__":
     import uvicorn

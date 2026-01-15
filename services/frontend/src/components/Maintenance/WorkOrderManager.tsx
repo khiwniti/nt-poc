@@ -1,92 +1,9 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { WorkOrder, WorkOrderPriority, WorkOrderStatus } from '../../types';
 import { Card } from '../ui/Card';
 import { Search, Filter, Plus, Wrench, Clock, CheckCircle2, AlertTriangle, MoreHorizontal, Calendar, User, Hammer, AlertCircle, X, ChevronRight, ClipboardCheck, LayoutGrid, List as ListIcon, GripVertical, TrendingUp, DollarSign, Activity, BarChart3 } from 'lucide-react';
-
-// Mock Data moved inside or used as initial state
-const INITIAL_TICKETS: WorkOrder[] = [
-    {
-        id: 'WO-2025-081',
-        title: 'HVAC Unit B Compressor Failure',
-        branchId: 'Bangrak',
-        assetId: 'HVAC-BANGRAK-B',
-        priority: 'Critical',
-        status: 'Open',
-        type: 'Corrective',
-        assignedTo: 'Somchai J.',
-        reportedBy: 'System AI',
-        createdAt: new Date('2025-05-12T08:00:00'),
-        dueDate: new Date('2025-05-12T16:00:00'),
-        description: 'SCADA detected critical vibration and temperature spike in compressor unit. Immediate inspection required.',
-        estimatedCost: 15000,
-        checklist: [{ item: 'Inspect Vibration Dampers', completed: false }, { item: 'Check Refrigerant Levels', completed: false }, { item: 'Test Compressor Motor', completed: false }]
-    },
-    {
-        id: 'WO-2025-079',
-        title: 'Monthly UPS Maintenance',
-        branchId: 'Nonthaburi',
-        assetId: 'UPS-NON-01',
-        priority: 'Medium',
-        status: 'In_Progress',
-        type: 'Preventive',
-        assignedTo: 'Wichai R.',
-        reportedBy: 'Scheduler',
-        createdAt: new Date('2025-05-10T09:00:00'),
-        dueDate: new Date('2025-05-15T17:00:00'),
-        description: 'Standard monthly PM for UPS Rack 1. Check battery impedance and clean fans.',
-        estimatedCost: 2500,
-        checklist: [{ item: 'Clean Air Filters', completed: true }, { item: 'Verify Input Voltage', completed: true }, { item: 'Battery Impedance Test', completed: false }]
-    },
-    {
-        id: 'WO-2025-075',
-        title: 'CCTV Camera 4 Offline',
-        branchId: 'Chiang Mai',
-        assetId: 'CCTV-CM-04',
-        priority: 'High',
-        status: 'On_Hold',
-        type: 'Corrective',
-        assignedTo: 'Nattapong K.',
-        reportedBy: 'Security Ops',
-        createdAt: new Date('2025-05-08T14:30:00'),
-        dueDate: new Date('2025-05-09T12:00:00'),
-        description: 'Camera feed lost connection. Reboot remote failed. Requires onsite cabling check.',
-        estimatedCost: 5000,
-        checklist: [{ item: 'Check POE Switch', completed: true }, { item: 'Replace Cat6 Cable', completed: false }]
-    },
-    {
-        id: 'WO-2025-072',
-        title: 'Lighting Retrofit - Zone A',
-        branchId: 'Phuket',
-        assetId: 'LIGHT-PKT-ZA',
-        priority: 'Low',
-        status: 'Completed',
-        type: 'Installation',
-        assignedTo: 'Contractor Team A',
-        reportedBy: 'Facility Mgr',
-        createdAt: new Date('2025-05-01T08:00:00'),
-        dueDate: new Date('2025-05-05T17:00:00'),
-        description: 'Replace traditional fluorescent bulbs with LED panels in lobby area.',
-        estimatedCost: 45000,
-        checklist: [{ item: 'Remove Old Fixtures', completed: true }, { item: 'Install LED Panels', completed: true }, { item: 'Lux Level Test', completed: true }]
-    },
-    {
-        id: 'WO-2025-082',
-        title: 'Water Pump Leak',
-        branchId: 'Khon Kaen',
-        assetId: 'PUMP-KK-02',
-        priority: 'High',
-        status: 'Open',
-        type: 'Corrective',
-        assignedTo: 'Unassigned',
-        reportedBy: 'Local Staff',
-        createdAt: new Date('2025-05-12T10:15:00'),
-        dueDate: new Date('2025-05-13T10:00:00'),
-        description: 'Minor leak detected at main distribution pump seal.',
-        estimatedCost: 3500,
-        checklist: [{ item: 'Replace Mechanical Seal', completed: false }, { item: 'Pressure Test', completed: false }]
-    }
-];
+import { db } from '../../services/database';
 
 const PriorityBadge: React.FC<{ priority: WorkOrderPriority }> = ({ priority }) => {
     const colors = {
@@ -95,10 +12,16 @@ const PriorityBadge: React.FC<{ priority: WorkOrderPriority }> = ({ priority }) 
         Medium: 'bg-blue-50 text-blue-700 border-blue-200',
         Low: 'bg-slate-100 text-slate-600 border-slate-200'
     };
+    const labels = {
+        Critical: 'วิกฤต',
+        High: 'สูง',
+        Medium: 'ปานกลาง',
+        Low: 'ต่ำ'
+    };
     const icon = priority === 'Critical' ? <AlertCircle size={12} /> : null;
     return (
         <span className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${colors[priority]}`}>
-            {icon} {priority}
+            {icon} {labels[priority]}
         </span>
     );
 };
@@ -110,28 +33,38 @@ const StatusBadge: React.FC<{ status: WorkOrderStatus }> = ({ status }) => {
         On_Hold: 'bg-slate-500 text-white',
         Completed: 'bg-emerald-500 text-white'
     };
+    const labels = {
+        Open: 'เปิดงาน',
+        In_Progress: 'กำลังดำเนินการ',
+        On_Hold: 'พักงาน',
+        Completed: 'เสร็จสิ้น'
+    };
     return (
         <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider shadow-sm ${colors[status]}`}>
-            {status.replace('_', ' ')}
+            {labels[status]}
         </span>
     );
 };
 
 const KANBAN_COLUMNS: { id: WorkOrderStatus; label: string; color: string }[] = [
-    { id: 'Open', label: 'To Do / Open', color: 'border-blue-500' },
-    { id: 'In_Progress', label: 'In Progress', color: 'border-amber-500' },
-    { id: 'On_Hold', label: 'On Hold / Blocked', color: 'border-slate-500' },
-    { id: 'Completed', label: 'Completed', color: 'border-emerald-500' }
+    { id: 'Open', label: 'งานใหม่ / เปิดอยู่', color: 'border-blue-500' },
+    { id: 'In_Progress', label: 'กำลังดำเนินการ', color: 'border-amber-500' },
+    { id: 'On_Hold', label: 'พักงาน / รออะไหล่', color: 'border-slate-500' },
+    { id: 'Completed', label: 'เสร็จสิ้น', color: 'border-emerald-500' }
 ];
 
 export const WorkOrderManager: React.FC = () => {
-    const [tickets, setTickets] = useState<WorkOrder[]>(INITIAL_TICKETS);
+    const [tickets, setTickets] = useState<WorkOrder[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<WorkOrderStatus | 'All'>('All');
     const [selectedTicket, setSelectedTicket] = useState<WorkOrder | null>(null);
     const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
     const [draggedTicketId, setDraggedTicketId] = useState<string | null>(null);
     const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+
+    useEffect(() => {
+        db.getWorkOrders().then(setTickets).catch(console.error);
+    }, []);
 
     const filteredTickets = useMemo(() => {
         return tickets.filter(ticket => {
@@ -176,11 +109,11 @@ export const WorkOrderManager: React.FC = () => {
     const onDrop = (e: React.DragEvent, status: WorkOrderStatus) => {
         e.preventDefault();
         const id = e.dataTransfer.getData("text/plain");
-        
+
         if (id) {
-            setTickets(prev => prev.map(t => 
-                t.id === id ? { ...t, status: status } : t
-            ));
+            db.updateWorkOrder(id, { status }).then(() => {
+              return db.getWorkOrders();
+            }).then(setTickets).catch(console.error);
         }
         setDraggedTicketId(null);
         setDragOverColumn(null);
@@ -194,7 +127,7 @@ export const WorkOrderManager: React.FC = () => {
                     <div className="flex justify-between items-end mb-6">
                         <div>
                             <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
-                                <Wrench className="text-slate-400" /> Maintenance Management
+                                <Wrench className="text-slate-400" /> การบริหารจัดการซ่อมบำรุง
                             </h1>
                             <p className="text-sm text-slate-500 mt-1 font-mono">/ops/work-orders</p>
                         </div>
@@ -203,20 +136,20 @@ export const WorkOrderManager: React.FC = () => {
                                 <button 
                                     onClick={() => setViewMode('list')}
                                     className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-slate-100 text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                                    title="List View"
+                                    title="มุมมองรายการ"
                                 >
                                     <ListIcon size={18} />
                                 </button>
                                 <button 
                                     onClick={() => setViewMode('board')}
                                     className={`p-2 rounded-md transition-all ${viewMode === 'board' ? 'bg-slate-100 text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                                    title="Kanban Board"
+                                    title="บอร์ดคัมบัง"
                                 >
                                     <LayoutGrid size={18} />
                                 </button>
                             </div>
                             <button className="bg-nt-dark text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-slate-800 transition-all shadow-md">
-                                <Plus size={16} /> Create Ticket
+                                <Plus size={16} /> สร้างใบงาน
                             </button>
                         </div>
                     </div>
@@ -226,7 +159,7 @@ export const WorkOrderManager: React.FC = () => {
                         <Card className="p-4 relative overflow-hidden bg-white border-slate-200 group hover:border-blue-300 transition-all">
                             <div className="flex justify-between items-start z-10 relative">
                                 <div>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Active Work Orders</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">ใบงานที่กำลังทำ</p>
                                     <p className="text-2xl font-black text-slate-800">{stats.active}</p>
                                 </div>
                                 <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
@@ -235,16 +168,16 @@ export const WorkOrderManager: React.FC = () => {
                             </div>
                             <div className="mt-3 flex items-center gap-2 text-[10px]">
                                 <span className="text-blue-600 font-bold bg-blue-50 px-1.5 py-0.5 rounded flex items-center gap-1">
-                                    <Activity size={10} /> +2 New
+                                    <Activity size={10} /> +2 ใหม่
                                 </span>
-                                <span className="text-slate-400">since yesterday</span>
+                                <span className="text-slate-400">จากเมื่อวาน</span>
                             </div>
                         </Card>
 
                         <Card className={`p-4 relative overflow-hidden bg-white border-slate-200 group hover:border-red-300 transition-all ${stats.critical > 0 ? 'border-red-200 bg-red-50/10' : ''}`}>
                             <div className="flex justify-between items-start z-10 relative">
                                 <div>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Critical Issues</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">ปัญหาวิกฤต</p>
                                     <p className={`text-2xl font-black ${stats.critical > 0 ? 'text-red-600' : 'text-slate-800'}`}>{stats.critical}</p>
                                 </div>
                                 <div className={`p-2 rounded-lg transition-colors ${stats.critical > 0 ? 'bg-red-100 text-red-600 group-hover:bg-red-600 group-hover:text-white' : 'bg-slate-50 text-slate-400'}`}>
@@ -254,7 +187,7 @@ export const WorkOrderManager: React.FC = () => {
                             <div className="mt-3 flex items-center gap-2 text-[10px]">
                                 <span className={`${stats.critical > 0 ? 'text-red-600 bg-red-50' : 'text-green-600 bg-green-50'} font-bold px-1.5 py-0.5 rounded flex items-center gap-1`}>
                                     {stats.critical > 0 ? <TrendingUp size={10} /> : <CheckCircle2 size={10} />}
-                                    {stats.critical > 0 ? 'Action Required' : 'All Clear'}
+                                    {stats.critical > 0 ? 'ต้องแก้ไขทันที' : 'ปกติ'}
                                 </span>
                             </div>
                         </Card>
@@ -262,7 +195,7 @@ export const WorkOrderManager: React.FC = () => {
                         <Card className="p-4 relative overflow-hidden bg-white border-slate-200 group hover:border-emerald-300 transition-all">
                             <div className="flex justify-between items-start z-10 relative">
                                 <div>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Completion Rate</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">อัตรางานเสร็จสิ้น</p>
                                     <p className="text-2xl font-black text-slate-800">{stats.completionRate}%</p>
                                 </div>
                                 <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg group-hover:bg-emerald-600 group-hover:text-white transition-colors">
@@ -277,7 +210,7 @@ export const WorkOrderManager: React.FC = () => {
                         <Card className="p-4 relative overflow-hidden bg-white border-slate-200 group hover:border-indigo-300 transition-all">
                             <div className="flex justify-between items-start z-10 relative">
                                 <div>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Cost Exposure</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">ค่าใช้จ่ายสะสม</p>
                                     <p className="text-2xl font-black text-slate-800 font-mono">฿{stats.totalCost.toLocaleString()}</p>
                                 </div>
                                 <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg group-hover:bg-indigo-600 group-hover:text-white transition-colors">
@@ -286,9 +219,9 @@ export const WorkOrderManager: React.FC = () => {
                             </div>
                             <div className="mt-3 flex items-center gap-2 text-[10px]">
                                 <span className="text-indigo-600 font-bold bg-indigo-50 px-1.5 py-0.5 rounded">
-                                    May 2025
+                                    พ.ค. 2568
                                 </span>
-                                <span className="text-slate-400">Budget: ฿150k</span>
+                                <span className="text-slate-400">งบประมาณ: ฿150k</span>
                             </div>
                         </Card>
                     </div>
@@ -300,7 +233,7 @@ export const WorkOrderManager: React.FC = () => {
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                 <input 
                                     type="text"
-                                    placeholder="Search tickets..."
+                                    placeholder="ค้นหาใบงาน..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-1 focus:ring-blue-500 outline-none w-64 transition-all"
@@ -317,7 +250,7 @@ export const WorkOrderManager: React.FC = () => {
                                                 onClick={() => setStatusFilter(status as any)}
                                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${statusFilter === status ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
                                             >
-                                                {status.replace('_', ' ')}
+                                                {status === 'All' ? 'ทั้งหมด' : status === 'Open' ? 'เปิดงาน' : status === 'In_Progress' ? 'กำลังทำ' : 'เสร็จสิ้น'}
                                             </button>
                                         ))}
                                     </div>
@@ -391,7 +324,7 @@ export const WorkOrderManager: React.FC = () => {
                                                             new Date(ticket.dueDate) < new Date() && ticket.status !== 'Completed' ? 'text-red-500' : 'text-slate-400'
                                                         }`}>
                                                             <Clock size={12} />
-                                                            {new Date(ticket.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                            {new Date(ticket.dueDate).toLocaleDateString('th-TH', { month: 'short', day: 'numeric' })}
                                                         </div>
                                                     </div>
                                                     
@@ -403,7 +336,7 @@ export const WorkOrderManager: React.FC = () => {
                                             ))}
                                             {columnTickets.length === 0 && (
                                                 <div className="h-24 border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center text-slate-400 text-xs">
-                                                    Drop items here
+                                                    ลากรายการมาวางที่นี่
                                                 </div>
                                             )}
                                         </div>
@@ -421,12 +354,12 @@ export const WorkOrderManager: React.FC = () => {
                             <table className="w-full text-left text-sm">
                                 <thead className="bg-slate-50 border-b border-slate-200">
                                     <tr>
-                                        <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider">Ticket ID</th>
-                                        <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider">Subject</th>
-                                        <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider">Priority</th>
-                                        <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider">Assignee</th>
-                                        <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider">Due Date</th>
-                                        <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider">Status</th>
+                                        <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider">รหัสใบงาน</th>
+                                        <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider">หัวข้อ</th>
+                                        <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider">ความสำคัญ</th>
+                                        <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider">ผู้รับผิดชอบ</th>
+                                        <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider">กำหนดส่ง</th>
+                                        <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider">สถานะ</th>
                                         <th className="px-6 py-4 text-right"></th>
                                     </tr>
                                 </thead>
@@ -452,7 +385,7 @@ export const WorkOrderManager: React.FC = () => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-slate-500 text-xs">
-                                                {ticket.dueDate.toLocaleDateString()}
+                                                {ticket.dueDate.toLocaleDateString('th-TH')}
                                             </td>
                                             <td className="px-6 py-4"><StatusBadge status={ticket.status} /></td>
                                             <td className="px-6 py-4 text-right text-slate-400">
@@ -487,17 +420,17 @@ export const WorkOrderManager: React.FC = () => {
                         <div className="flex-1 overflow-y-auto p-6 space-y-6">
                             {/* Status Bar */}
                             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Current Status</span>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">สถานะปัจจุบัน</span>
                                 <div className="flex justify-between items-center">
                                     <StatusBadge status={selectedTicket.status} />
-                                    <span className="text-xs font-mono text-slate-500">Due: {selectedTicket.dueDate.toLocaleDateString()}</span>
+                                    <span className="text-xs font-mono text-slate-500">ครบกำหนด: {selectedTicket.dueDate.toLocaleDateString('th-TH')}</span>
                                 </div>
                             </div>
 
                             {/* Details */}
                             <div>
                                 <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                    <Hammer size={14} /> Description
+                                    <Hammer size={14} /> รายละเอียด
                                 </h3>
                                 <p className="text-sm text-slate-600 leading-relaxed bg-white border border-slate-100 p-3 rounded-lg">
                                     {selectedTicket.description}
@@ -510,15 +443,15 @@ export const WorkOrderManager: React.FC = () => {
                                     <p className="text-sm font-bold text-blue-600 font-mono mt-1">{selectedTicket.assetId || 'N/A'}</p>
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase">Branch</label>
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase">สาขา</label>
                                     <p className="text-sm font-bold text-slate-800 mt-1">{selectedTicket.branchId}</p>
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase">Est. Cost</label>
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase">ค่าใช้จ่ายประเมิน</label>
                                     <p className="text-sm font-bold text-slate-800 mt-1">฿{selectedTicket.estimatedCost.toLocaleString()}</p>
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase">Reported By</label>
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase">ผู้รายงาน</label>
                                     <p className="text-sm font-bold text-slate-800 mt-1">{selectedTicket.reportedBy}</p>
                                 </div>
                             </div>
@@ -526,7 +459,7 @@ export const WorkOrderManager: React.FC = () => {
                             {/* Checklist */}
                             <div>
                                 <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                    <ClipboardCheck size={14} /> Task Checklist
+                                    <ClipboardCheck size={14} /> รายการตรวจสอบ
                                 </h3>
                                 <div className="space-y-2">
                                     {selectedTicket.checklist.map((item, idx) => (
@@ -546,7 +479,7 @@ export const WorkOrderManager: React.FC = () => {
                                     {selectedTicket.assignedTo.charAt(0)}
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-bold text-indigo-400 uppercase">Assigned Technician</p>
+                                    <p className="text-[10px] font-bold text-indigo-400 uppercase">ช่างเทคนิคผู้รับผิดชอบ</p>
                                     <p className="font-bold text-indigo-900">{selectedTicket.assignedTo}</p>
                                 </div>
                              </div>
@@ -555,10 +488,10 @@ export const WorkOrderManager: React.FC = () => {
                         {/* Actions */}
                         <div className="p-4 border-t border-slate-200 bg-white space-y-2">
                             <button className="w-full py-2 bg-nt-dark text-white rounded-lg text-xs font-bold hover:bg-slate-800 transition-colors">
-                                Update Status
+                                อัปเดตสถานะ
                             </button>
                             <button className="w-full py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-50 transition-colors">
-                                Add Note
+                                เพิ่มบันทึก
                             </button>
                         </div>
                     </>

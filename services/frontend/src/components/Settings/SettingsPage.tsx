@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '../ui/Card';
-import { User, Bell, Lock, Globe, Server, Save, Mail, Smartphone, Shield, Check, RefreshCw, LogOut, Moon, Sun, Trash2, Loader2, MessageSquare } from 'lucide-react';
+import { User, Bell, Lock, Globe, Server, Save, Mail, Smartphone, Shield, Check, RefreshCw, LogOut, Moon, Sun, Trash2, Loader2, MessageSquare, Link, Unlink } from 'lucide-react';
 import { Modal } from '../ui/Modal';
+import { db } from '../../services/database';
 
 export const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'general' | 'notifications' | 'security' | 'system'>('general');
@@ -13,23 +14,32 @@ export const SettingsPage: React.FC = () => {
   const [isClearingCache, setIsClearingCache] = useState(false);
   const [showRevokeModal, setShowRevokeModal] = useState(false);
   
-  // Notification States
-  const [notifSettings, setNotifSettings] = useState({
-    critical: true,
-    daily: false,
-    maintenance: true,
-    email: true,
-    sms: false,
-    line: true
-  });
+  // Settings State initialized from DB
+  const [userSettings, setUserSettings] = useState<any>(null);
+  
+  // Line OA Linking State
+  const [showLineModal, setShowLineModal] = useState(false);
+  const [isLinkingLine, setIsLinkingLine] = useState(false);
+
+  useEffect(() => {
+      db.getSettings().then(settings => {
+        setUserSettings(settings);
+        setTheme((settings.theme as 'light' | 'dark') || 'light');
+      }).catch(console.error);
+  }, []);
 
   const handleSave = () => {
+      if (!userSettings) return;
       setIsSaving(true);
+      
+      // Update DB
+      db.updateSettings({ ...userSettings, theme });
+
       setTimeout(() => {
           setIsSaving(false);
           setSaveSuccess(true);
           setTimeout(() => setSaveSuccess(false), 2000);
-      }, 1500);
+      }, 1000);
   };
 
   const handleClearCache = () => {
@@ -39,8 +49,49 @@ export const SettingsPage: React.FC = () => {
       }, 2000);
   };
 
-  const toggleNotif = (key: keyof typeof notifSettings) => {
-      setNotifSettings(prev => ({ ...prev, [key]: !prev[key] }));
+  const toggleNotif = (key: string) => {
+      if (!userSettings) return;
+      setUserSettings({
+          ...userSettings,
+          notifications: {
+              ...userSettings.notifications,
+              [key]: !userSettings.notifications[key]
+          }
+      });
+  };
+
+  const updateSetting = (section: string, key: string, value: any) => {
+      if (!userSettings) return;
+      if (section === 'root') {
+          setUserSettings({ ...userSettings, [key]: value });
+      }
+  };
+
+  const handleLinkLine = () => {
+      setIsLinkingLine(true);
+      setTimeout(() => {
+          setUserSettings({
+              ...userSettings,
+              notifications: {
+                  ...userSettings.notifications,
+                  line: true,
+                  lineOaName: 'NT Facility Ops'
+              }
+          });
+          setIsLinkingLine(false);
+          setShowLineModal(false);
+      }, 2000);
+  };
+
+  const handleUnlinkLine = () => {
+      setUserSettings({
+          ...userSettings,
+          notifications: {
+              ...userSettings.notifications,
+              lineOaName: null,
+              line: false
+          }
+      });
   };
 
   const tabs = [
@@ -49,6 +100,8 @@ export const SettingsPage: React.FC = () => {
     { id: 'security', label: 'ความปลอดภัย', icon: <Lock size={18} /> },
     { id: 'system', label: 'ระบบ', icon: <Server size={18} /> },
   ];
+
+  if (!userSettings) return <div className="p-8 text-center text-slate-400"><Loader2 className="animate-spin inline-block mr-2" /> Loading settings...</div>;
 
   return (
     <div className="w-full h-full overflow-y-auto p-6 bg-slate-50/50 text-slate-800 animate-fade-in-up">
@@ -86,11 +139,21 @@ export const SettingsPage: React.FC = () => {
                             <div className="grid grid-cols-1 gap-4">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase mb-2">ชื่อผู้ใช้งาน</label>
-                                    <input type="text" defaultValue="Admin User" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none" />
+                                    <input 
+                                        type="text" 
+                                        value={userSettings.username}
+                                        onChange={(e) => updateSetting('root', 'username', e.target.value)} 
+                                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none" 
+                                    />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase mb-2">อีเมลองค์กร</label>
-                                    <input type="email" defaultValue="admin@ntplc.co.th" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none" />
+                                    <input 
+                                        type="email" 
+                                        value={userSettings.email}
+                                        onChange={(e) => updateSetting('root', 'email', e.target.value)} 
+                                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none" 
+                                    />
                                 </div>
                             </div>
                             
@@ -120,18 +183,45 @@ export const SettingsPage: React.FC = () => {
                     <Card title="ตั้งค่าการแจ้งเตือน">
                         <div className="space-y-4 p-2">
                             {/* LINE Integration */}
-                            <div className="flex items-center justify-between p-3 bg-green-50/50 rounded-lg border border-green-100">
+                            <div className="flex items-center justify-between p-4 bg-green-50/50 rounded-xl border border-green-100">
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-white rounded-lg text-green-600 shadow-sm"><MessageSquare size={20} /></div>
+                                    <div className="p-2 bg-white rounded-lg text-green-600 shadow-sm"><MessageSquare size={24} /></div>
                                     <div>
                                         <p className="text-sm font-bold text-slate-800">LINE Notify Integration</p>
                                         <p className="text-xs text-slate-500">รับการแจ้งเตือนเหตุขัดข้องผ่าน LINE OA</p>
+                                        {userSettings.notifications.lineOaName ? (
+                                            <div className="flex items-center gap-1 mt-1 text-[10px] font-bold text-green-700">
+                                                <Check size={10} /> เชื่อมต่อกับ: {userSettings.notifications.lineOaName}
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-400">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-slate-300"></div> ยังไม่ได้เชื่อมต่อ
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" checked={notifSettings.line} onChange={() => toggleNotif('line')} className="sr-only peer" />
-                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
-                                </label>
+                                <div className="flex items-center gap-3">
+                                    {!userSettings.notifications.lineOaName && (
+                                        <button 
+                                            onClick={() => setShowLineModal(true)}
+                                            className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-1 transition-colors"
+                                        >
+                                            <Link size={12} /> เชื่อมต่อบัญชี
+                                        </button>
+                                    )}
+                                    {userSettings.notifications.lineOaName && (
+                                        <button 
+                                            onClick={handleUnlinkLine}
+                                            className="px-3 py-1.5 bg-white border border-slate-200 text-slate-500 text-xs font-bold rounded-lg hover:bg-slate-50 hover:text-red-500 transition-colors"
+                                        >
+                                            <Unlink size={14} />
+                                        </button>
+                                    )}
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" checked={userSettings.notifications.line} onChange={() => toggleNotif('line')} className="sr-only peer" />
+                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                                    </label>
+                                </div>
                             </div>
 
                             <div className="flex items-center justify-between p-3 bg-red-50/50 rounded-lg border border-red-100">
@@ -143,7 +233,7 @@ export const SettingsPage: React.FC = () => {
                                     </div>
                                 </div>
                                 <label className="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" checked={notifSettings.critical} onChange={() => toggleNotif('critical')} className="sr-only peer" />
+                                    <input type="checkbox" checked={userSettings.notifications.critical} onChange={() => toggleNotif('critical')} className="sr-only peer" />
                                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
                                 </label>
                             </div>
@@ -157,7 +247,7 @@ export const SettingsPage: React.FC = () => {
                                     </div>
                                 </div>
                                 <label className="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" checked={notifSettings.daily} onChange={() => toggleNotif('daily')} className="sr-only peer" />
+                                    <input type="checkbox" checked={userSettings.notifications.daily} onChange={() => toggleNotif('daily')} className="sr-only peer" />
                                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                                 </label>
                             </div>
@@ -171,7 +261,7 @@ export const SettingsPage: React.FC = () => {
                                     </div>
                                 </div>
                                 <label className="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" checked={notifSettings.sms} onChange={() => toggleNotif('sms')} className="sr-only peer" />
+                                    <input type="checkbox" checked={userSettings.notifications.sms} onChange={() => toggleNotif('sms')} className="sr-only peer" />
                                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-600"></div>
                                 </label>
                             </div>
@@ -285,6 +375,44 @@ export const SettingsPage: React.FC = () => {
               <div className="flex justify-end gap-3">
                   <button onClick={() => setShowRevokeModal(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-bold">ยกเลิก</button>
                   <button onClick={() => setShowRevokeModal(false)} className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg text-sm font-bold">ระงับการเข้าถึง</button>
+              </div>
+          </div>
+      </Modal>
+
+      <Modal isOpen={showLineModal} onClose={() => setShowLineModal(false)} title="เชื่อมต่อ LINE Official Account">
+          <div className="p-6 flex flex-col items-center">
+              <div className="w-16 h-16 bg-[#06C755] rounded-2xl flex items-center justify-center text-white mb-4 shadow-lg">
+                  <MessageSquare size={32} fill="currentColor" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800 mb-2">ยืนยันการเชื่อมต่อ</h3>
+              <p className="text-sm text-slate-500 text-center mb-6 max-w-sm">
+                  ระบบจะทำการเชื่อมต่อกับ <strong>NT Facility Ops</strong> เพื่อส่งการแจ้งเตือนระดับวิกฤต (Critical Alerts) ไปยังกลุ่มไลน์ของคุณ
+              </p>
+              
+              <div className="w-full bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6">
+                  <div className="flex justify-between text-xs text-slate-500 mb-1">
+                      <span>Permissions requested:</span>
+                  </div>
+                  <ul className="space-y-2">
+                      <li className="flex items-center gap-2 text-xs font-bold text-slate-700"><Check size={12} className="text-green-500" /> Send messages to chat</li>
+                      <li className="flex items-center gap-2 text-xs font-bold text-slate-700"><Check size={12} className="text-green-500" /> Access group info</li>
+                  </ul>
+              </div>
+
+              <div className="flex gap-3 w-full">
+                  <button 
+                    onClick={() => setShowLineModal(false)} 
+                    className="flex-1 py-3 text-slate-600 hover:bg-slate-100 rounded-xl text-sm font-bold"
+                  >
+                      ยกเลิก
+                  </button>
+                  <button 
+                    onClick={handleLinkLine}
+                    disabled={isLinkingLine}
+                    className="flex-1 py-3 bg-[#06C755] hover:bg-[#05b64d] text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2"
+                  >
+                      {isLinkingLine ? <Loader2 size={16} className="animate-spin" /> : 'อนุญาต (Authorize)'}
+                  </button>
               </div>
           </div>
       </Modal>

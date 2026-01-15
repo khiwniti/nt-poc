@@ -1,123 +1,15 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { LeaseContract, LeaseStatus } from '../../types';
 import { Card } from '../ui/Card';
 import { Search, Filter, Plus, FileText, Calendar, DollarSign, Users, MoreHorizontal, ChevronRight, Download, CheckCircle2, AlertTriangle, X, Building2, Phone, Briefcase, LayoutGrid, List as ListIcon, GripVertical, Clock, TrendingUp } from 'lucide-react';
-
-// Mock Data
-const INITIAL_LEASES: LeaseContract[] = [
-    {
-        id: 'L-2024-001',
-        tenantName: 'AIS Shop Experience',
-        branchId: 'Bangrak',
-        unitNumber: 'G-01',
-        areaSqm: 120,
-        startDate: '2023-01-01',
-        endDate: '2026-01-01',
-        monthlyRent: 85000,
-        status: 'Active',
-        contactPerson: 'K. Somchai',
-        contactPhone: '081-234-5678',
-        depositAmount: 255000,
-        documents: [{ name: 'Lease_Agreement_Signed.pdf', date: '2023-01-01', type: 'Contract' }]
-    },
-    {
-        id: 'L-2024-002',
-        tenantName: 'Coffee World',
-        branchId: 'Nonthaburi',
-        unitNumber: 'L1-05',
-        areaSqm: 45,
-        startDate: '2023-03-15',
-        endDate: '2024-03-15',
-        monthlyRent: 35000,
-        status: 'Expiring',
-        contactPerson: 'K. Wirat',
-        contactPhone: '089-987-6543',
-        depositAmount: 105000,
-        documents: [{ name: 'Renewal_Notice.pdf', date: '2024-01-15', type: 'Notice' }]
-    },
-    {
-        id: 'L-2023-089',
-        tenantName: 'Government Saving Bank',
-        branchId: 'Chiang Mai',
-        unitNumber: 'B-02',
-        areaSqm: 200,
-        startDate: '2020-05-01',
-        endDate: '2025-05-01',
-        monthlyRent: 150000,
-        status: 'Active',
-        contactPerson: 'Manager Nipa',
-        contactPhone: '053-112-233',
-        depositAmount: 450000,
-        documents: []
-    },
-    {
-        id: 'L-2022-012',
-        tenantName: 'Cyber Safe Solutions',
-        branchId: 'Bangrak',
-        unitNumber: 'F4-12',
-        areaSqm: 80,
-        startDate: '2022-06-01',
-        endDate: '2023-06-01',
-        monthlyRent: 60000,
-        status: 'Expired',
-        contactPerson: 'John Doe',
-        contactPhone: '02-123-4567',
-        depositAmount: 180000,
-        documents: [{ name: 'Termination_Letter.pdf', date: '2023-06-01', type: 'Legal' }]
-    },
-    {
-        id: 'L-2024-005',
-        tenantName: 'Kerry Express',
-        branchId: 'Phuket',
-        unitNumber: 'G-03',
-        areaSqm: 30,
-        startDate: '2024-01-01',
-        endDate: '2025-01-01',
-        monthlyRent: 25000,
-        status: 'Active',
-        contactPerson: 'K. Chai',
-        contactPhone: '076-123-456',
-        depositAmount: 75000,
-        documents: []
-    },
-    {
-        id: 'L-2024-008',
-        tenantName: '7-Eleven',
-        branchId: 'Khon Kaen',
-        unitNumber: 'G-Corner',
-        areaSqm: 90,
-        startDate: '2023-08-01',
-        endDate: '2028-08-01',
-        monthlyRent: 72000,
-        status: 'Active',
-        contactPerson: 'Area Mgr. Suda',
-        contactPhone: '043-998-877',
-        depositAmount: 216000,
-        documents: []
-    },
-    {
-        id: 'L-2024-099',
-        tenantName: 'StartUp Hub Co.',
-        branchId: 'Sriracha',
-        unitNumber: 'F2-10',
-        areaSqm: 150,
-        startDate: '2024-06-01',
-        endDate: '2025-06-01',
-        monthlyRent: 55000,
-        status: 'Pending',
-        contactPerson: 'CEO Mark',
-        contactPhone: '090-999-8888',
-        depositAmount: 165000,
-        documents: []
-    }
-];
+import { db } from '../../services/database';
 
 const LIFECYCLE_COLUMNS: { id: LeaseStatus; label: string; color: string }[] = [
-    { id: 'Pending', label: 'Draft / Negotiation', color: 'border-blue-500' },
-    { id: 'Active', label: 'Active Leases', color: 'border-emerald-500' },
-    { id: 'Expiring', label: 'Renewal / Expiring', color: 'border-amber-500' },
-    { id: 'Expired', label: 'Terminated / Closed', color: 'border-slate-500' }
+    { id: 'Pending', label: 'ร่างสัญญา / เจรจา (Draft/Negotiation)', color: 'border-blue-500' },
+    { id: 'Active', label: 'สัญญาปัจจุบัน (Active Colo)', color: 'border-emerald-500' },
+    { id: 'Expiring', label: 'ใกล้หมดอายุ (Renewals)', color: 'border-amber-500' },
+    { id: 'Expired', label: 'สิ้นสุดสัญญา (Terminated)', color: 'border-slate-500' }
 ];
 
 const StatusBadge: React.FC<{ status: LeaseStatus }> = ({ status }) => {
@@ -127,6 +19,12 @@ const StatusBadge: React.FC<{ status: LeaseStatus }> = ({ status }) => {
         Expired: 'bg-slate-100 text-slate-500 border-slate-200',
         Pending: 'bg-blue-50 text-blue-700 border-blue-200',
     };
+    const labels = {
+        Active: 'ใช้งาน (Active)',
+        Expiring: 'ใกล้หมดอายุ (Expiring)',
+        Expired: 'หมดอายุ (Expired)',
+        Pending: 'รอดำเนินการ (Pending)'
+    }
     const icons = {
         Active: <CheckCircle2 size={10} />,
         Expiring: <AlertTriangle size={10} />,
@@ -137,7 +35,7 @@ const StatusBadge: React.FC<{ status: LeaseStatus }> = ({ status }) => {
     return (
         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${styles[status]}`}>
             {icons[status]}
-            {status}
+            {labels[status]}
         </span>
     );
 };
@@ -155,8 +53,8 @@ const TimelineBar: React.FC<{ start: string; end: string }> = ({ start, end }) =
     return (
         <div className="w-full">
             <div className="flex justify-between text-[9px] text-slate-400 font-mono mb-1">
-                <span>{new Date(start).toLocaleDateString(undefined, {month:'short', year:'2-digit'})}</span>
-                <span className={isExpiringSoon ? 'text-amber-600 font-bold' : ''}>{new Date(end).toLocaleDateString(undefined, {month:'short', year:'2-digit'})}</span>
+                <span>{new Date(start).toLocaleDateString('th-TH', {month:'short', year:'2-digit'})}</span>
+                <span className={isExpiringSoon ? 'text-amber-600 font-bold' : ''}>{new Date(end).toLocaleDateString('th-TH', {month:'short', year:'2-digit'})}</span>
             </div>
             <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                 <div 
@@ -169,7 +67,7 @@ const TimelineBar: React.FC<{ start: string; end: string }> = ({ start, end }) =
 };
 
 export const LeaseManager: React.FC = () => {
-    const [leases, setLeases] = useState<LeaseContract[]>(INITIAL_LEASES);
+    const [leases, setLeases] = useState<LeaseContract[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedLease, setSelectedLease] = useState<LeaseContract | null>(null);
     const [viewMode, setViewMode] = useState<'list' | 'board'>('board');
@@ -178,6 +76,10 @@ export const LeaseManager: React.FC = () => {
     // Drag & Drop State
     const [draggedLeaseId, setDraggedLeaseId] = useState<string | null>(null);
     const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+
+    useEffect(() => {
+        db.getLeases().then(setLeases).catch(console.error);
+    }, []);
 
     const filteredLeases = useMemo(() => {
         return leases.filter(lease => {
@@ -211,7 +113,9 @@ export const LeaseManager: React.FC = () => {
         e.preventDefault();
         const id = e.dataTransfer.getData("text/plain");
         if (id) {
-            setLeases(prev => prev.map(l => l.id === id ? { ...l, status } : l));
+            db.updateLease(id, { status }).then(() => {
+              return db.getLeases();
+            }).then(setLeases).catch(console.error);
         }
         setDraggedLeaseId(null);
         setDragOverColumn(null);
@@ -226,39 +130,39 @@ export const LeaseManager: React.FC = () => {
                     <div className="flex justify-between items-end mb-6">
                         <div>
                             <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
-                                <Briefcase className="text-slate-400" /> Commercial Asset Management
+                                <Briefcase className="text-slate-400" /> การบริหารสัญญาเช่าพื้นที่ (Colocation Management)
                             </h1>
-                            <p className="text-sm text-slate-500 mt-1 font-mono">/commercial/contracts-lifecycle</p>
+                            <p className="text-sm text-slate-500 mt-1 font-mono">/colocation/contracts-lifecycle</p>
                         </div>
                         <div className="flex gap-3">
                             <div className="bg-white p-1 rounded-lg border border-slate-200 flex items-center shadow-sm">
                                 <button 
                                     onClick={() => setViewMode('list')}
                                     className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-slate-100 text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                                    title="List View"
+                                    title="มุมมองรายการ"
                                 >
                                     <ListIcon size={18} />
                                 </button>
                                 <button 
                                     onClick={() => setViewMode('board')}
                                     className={`p-2 rounded-md transition-all ${viewMode === 'board' ? 'bg-slate-100 text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                                    title="Kanban Board"
+                                    title="บอร์ดคัมบัง"
                                 >
                                     <LayoutGrid size={18} />
                                 </button>
                             </div>
                             <button className="bg-nt-dark text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-slate-800 transition-all shadow-md">
-                                <Plus size={16} /> New Contract
+                                <Plus size={16} /> สร้างสัญญาใหม่
                             </button>
                         </div>
                     </div>
 
-                    {/* KPI Metrics - Matching WorkOrderManager Style */}
+                    {/* KPI Metrics */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                         <Card className="p-4 relative overflow-hidden bg-white border-slate-200 group hover:border-blue-300 transition-all">
                             <div className="flex justify-between items-start z-10 relative">
                                 <div>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Monthly Recurring (ARR)</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">รายได้ต่อเดือน (MRR)</p>
                                     <p className="text-2xl font-black text-slate-800 font-mono">฿{(totalRevenue/1000).toFixed(1)}k</p>
                                 </div>
                                 <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors"><DollarSign size={20} /></div>
@@ -267,46 +171,46 @@ export const LeaseManager: React.FC = () => {
                                 <span className="text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded flex items-center gap-1">
                                     <TrendingUp size={10} /> +5.2%
                                 </span>
-                                <span className="text-slate-400">vs last month</span>
+                                <span className="text-slate-400">เทียบเดือนก่อน</span>
                             </div>
                         </Card>
 
                         <Card className={`p-4 relative overflow-hidden bg-white border-slate-200 group hover:border-amber-300 transition-all ${expiringCount > 0 ? 'border-amber-200 bg-amber-50/20' : ''}`}>
                             <div className="flex justify-between items-start z-10 relative">
                                 <div>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Expiring Soon</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">ใกล้หมดสัญญา</p>
                                     <p className={`text-2xl font-black ${expiringCount > 0 ? 'text-amber-600' : 'text-slate-800'}`}>{expiringCount}</p>
                                 </div>
                                 <div className="p-2 bg-amber-50 text-amber-600 rounded-lg group-hover:bg-amber-600 group-hover:text-white transition-colors"><Clock size={20} /></div>
                             </div>
                             <div className="mt-3 flex items-center gap-2 text-[10px]">
-                                <span className="text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Action Required</span>
+                                <span className="text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded">ต้องดำเนินการ</span>
                             </div>
                         </Card>
 
                         <Card className="p-4 relative overflow-hidden bg-white border-slate-200 group hover:border-emerald-300 transition-all">
                             <div className="flex justify-between items-start z-10 relative">
                                 <div>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Active Tenants</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">ลูกค้า (Colocation)</p>
                                     <p className="text-2xl font-black text-slate-800">{activeContracts}</p>
                                 </div>
                                 <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg group-hover:bg-emerald-600 group-hover:text-white transition-colors"><Users size={20} /></div>
                             </div>
                             <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-4">
-                                <div className="h-full bg-emerald-500 transition-all duration-1000" style={{ width: `${(activeContracts/leases.length)*100}%` }}></div>
+                                <div className="h-full bg-emerald-500 transition-all duration-1000" style={{ width: `${leases.length > 0 ? (activeContracts/leases.length)*100 : 0}%` }}></div>
                             </div>
                         </Card>
 
                         <Card className="p-4 relative overflow-hidden bg-white border-slate-200 group hover:border-indigo-300 transition-all">
                             <div className="flex justify-between items-start z-10 relative">
                                 <div>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Occupancy Rate</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">อัตราการใช้ Rack</p>
                                     <p className="text-2xl font-black text-slate-800">{occupancyRate}%</p>
                                 </div>
                                 <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg group-hover:bg-indigo-600 group-hover:text-white transition-colors"><Building2 size={20} /></div>
                             </div>
                             <div className="mt-3 flex items-center gap-2 text-[10px]">
-                                <span className="text-slate-400">Target: 90%</span>
+                                <span className="text-slate-400">เป้าหมาย: 90%</span>
                             </div>
                         </Card>
                     </div>
@@ -318,7 +222,7 @@ export const LeaseManager: React.FC = () => {
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                 <input 
                                     type="text"
-                                    placeholder="Search tenants..."
+                                    placeholder="ค้นหาผู้เช่า, Rack Unit..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-1 focus:ring-blue-500 outline-none w-64 transition-all"
@@ -335,7 +239,7 @@ export const LeaseManager: React.FC = () => {
                                                 onClick={() => setStatusFilter(status as any)}
                                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${statusFilter === status ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
                                             >
-                                                {status}
+                                                {status === 'All' ? 'ทั้งหมด' : status === 'Active' ? 'ใช้งาน' : status === 'Expiring' ? 'ใกล้หมด' : 'หมดอายุ'}
                                             </button>
                                         ))}
                                     </div>
@@ -423,7 +327,7 @@ export const LeaseManager: React.FC = () => {
                                             ))}
                                             {columnLeases.length === 0 && (
                                                 <div className="h-24 border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center text-slate-400 text-xs">
-                                                    Drop items here
+                                                    ลากรายการมาวางที่นี่
                                                 </div>
                                             )}
                                         </div>
@@ -441,12 +345,12 @@ export const LeaseManager: React.FC = () => {
                             <table className="w-full text-left text-sm">
                                 <thead className="bg-slate-50 border-b border-slate-200">
                                     <tr>
-                                        <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider">Tenant</th>
-                                        <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider">Location</th>
-                                        <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider">Lease Term</th>
-                                        <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider text-right">Rent (THB)</th>
-                                        <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider">Status</th>
-                                        <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider text-right">Actions</th>
+                                        <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider">ลูกค้า</th>
+                                        <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider">สถานที่ (Rack/Zone)</th>
+                                        <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider">ระยะสัญญา</th>
+                                        <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider text-right">ค่าบริการ (บาท)</th>
+                                        <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider">สถานะ</th>
+                                        <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider text-right">การกระทำ</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
@@ -462,7 +366,7 @@ export const LeaseManager: React.FC = () => {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="text-slate-700">{lease.branchId}</div>
-                                                <div className="text-xs text-slate-500 font-mono">Unit {lease.unitNumber} • {lease.areaSqm} sqm</div>
+                                                <div className="text-xs text-slate-500 font-mono">Unit {lease.unitNumber} • {lease.areaSqm} Rack Units</div>
                                             </td>
                                             <td className="px-6 py-4 w-48">
                                                 <TimelineBar start={lease.startDate} end={lease.endDate} />
@@ -508,32 +412,32 @@ export const LeaseManager: React.FC = () => {
                             {/* Key Details */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Branch</span>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">สาขา (Site)</span>
                                     <span className="font-bold text-slate-800 text-sm">{selectedLease.branchId}</span>
                                 </div>
                                 <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Unit Area</span>
-                                    <span className="font-bold text-slate-800 text-sm">{selectedLease.areaSqm} sqm</span>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">พื้นที่ (Space)</span>
+                                    <span className="font-bold text-slate-800 text-sm">{selectedLease.areaSqm} Racks/Units</span>
                                 </div>
                             </div>
 
                             {/* Financials */}
                             <div>
                                 <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                    <DollarSign size={14} /> Financials
+                                    <DollarSign size={14} /> การเงิน (Financials)
                                 </h3>
                                 <div className="space-y-3">
                                     <div className="flex justify-between items-center text-sm border-b border-slate-100 pb-2">
-                                        <span className="text-slate-500">Monthly Rent</span>
+                                        <span className="text-slate-500">ค่าเช่ารายเดือน</span>
                                         <span className="font-mono font-bold text-slate-800">฿{selectedLease.monthlyRent.toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between items-center text-sm border-b border-slate-100 pb-2">
-                                        <span className="text-slate-500">Deposit</span>
+                                        <span className="text-slate-500">เงินประกัน</span>
                                         <span className="font-mono font-bold text-slate-800">฿{selectedLease.depositAmount.toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between items-center text-sm pb-2">
-                                        <span className="text-slate-500">Payment Status</span>
-                                        <span className="text-emerald-600 font-bold text-xs bg-emerald-50 px-2 py-0.5 rounded">Paid (May)</span>
+                                        <span className="text-slate-500">สถานะการชำระ</span>
+                                        <span className="text-emerald-600 font-bold text-xs bg-emerald-50 px-2 py-0.5 rounded">ชำระแล้ว (Paid)</span>
                                     </div>
                                 </div>
                             </div>
@@ -541,7 +445,7 @@ export const LeaseManager: React.FC = () => {
                             {/* Contact Info */}
                             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
                                 <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                    <Phone size={14} /> Contact
+                                    <Phone size={14} /> ผู้ติดต่อ (Contact)
                                 </h3>
                                 <p className="text-sm font-bold text-slate-800">{selectedLease.contactPerson}</p>
                                 <p className="text-xs text-slate-500 mt-1 font-mono">{selectedLease.contactPhone}</p>
@@ -550,7 +454,7 @@ export const LeaseManager: React.FC = () => {
                             {/* Documents */}
                             <div>
                                 <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                    <FileText size={14} /> Documents
+                                    <FileText size={14} /> เอกสารแนบ
                                 </h3>
                                 {selectedLease.documents.length > 0 ? (
                                     <div className="space-y-2">
@@ -570,7 +474,7 @@ export const LeaseManager: React.FC = () => {
                                         ))}
                                     </div>
                                 ) : (
-                                    <p className="text-xs text-slate-400 italic">No documents uploaded.</p>
+                                    <p className="text-xs text-slate-400 italic">ไม่มีเอกสารแนบ</p>
                                 )}
                             </div>
                         </div>
@@ -578,11 +482,11 @@ export const LeaseManager: React.FC = () => {
                         {/* Actions Footer */}
                         <div className="p-4 border-t border-slate-200 bg-white space-y-2">
                             <button className="w-full py-2 bg-nt-dark text-white rounded-lg text-xs font-bold hover:bg-slate-800 transition-colors">
-                                Edit Contract Details
+                                แก้ไขรายละเอียดสัญญา
                             </button>
                             {selectedLease.status === 'Expiring' && (
                                 <button className="w-full py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-xs font-bold hover:bg-amber-100 transition-colors">
-                                    Initiate Renewal Process
+                                    เริ่มกระบวนการต่อสัญญา
                                 </button>
                             )}
                         </div>

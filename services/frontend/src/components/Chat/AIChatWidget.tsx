@@ -9,9 +9,9 @@ interface AIChatWidgetProps {
     branches: Branch[];
     alerts: Alert[];
     currentBranchId: string | null;
-    activeView: 'map' | 'utility' | 'intelligence' | 'settings' | 'reports';
+    activeView: 'map' | 'utility' | 'intelligence' | 'settings' | 'reports' | 'leases' | 'maintenance' | 'assets' | 'predictive' | 'inventory';
     onNavigateBranch: (branchId: string) => void;
-    onChangeView: (view: 'map' | 'utility' | 'intelligence' | 'settings' | 'reports') => void;
+    onChangeView: (view: 'map' | 'utility' | 'intelligence' | 'settings' | 'reports' | 'leases' | 'maintenance' | 'assets' | 'predictive' | 'inventory') => void;
     onOpen3D: (branch: Branch) => void;
 }
 

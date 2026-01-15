@@ -145,6 +145,10 @@ class AlertRealtimeService {
       conn.res.write(toSseEvent('alert.created', alert));
     }
   }
+
+  clearAlerts(): void {
+    this.recentAlerts = [];
+  }
 }
 
 export default new AlertRealtimeService();

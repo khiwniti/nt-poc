@@ -28,16 +28,16 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
 
   // Filter items
   const views = [
-      { id: 'map', label: 'Overview Map', icon: MapPin, group: 'Navigation' },
-      { id: 'utility', label: 'Utility Center', icon: LayoutDashboard, group: 'Navigation' },
-      { id: 'intelligence', label: 'Intelligence Hub', icon: BrainCircuit, group: 'Navigation' },
-      { id: 'maintenance', label: 'Work Orders', icon: Wrench, group: 'Operations' },
-      { id: 'predictive', label: 'Predictive Maintenance', icon: Activity, group: 'Operations' },
-      { id: 'assets', label: 'Asset Lifecycle', icon: BarChart3, group: 'Operations' },
-      { id: 'inventory', label: 'Spare Parts Inventory', icon: Package, group: 'Logistics' },
-      { id: 'leases', label: 'Lease Contracts', icon: Briefcase, group: 'Commercial' },
-      { id: 'reports', label: 'Document Center', icon: FileText, group: 'Compliance' },
-      { id: 'settings', label: 'System Settings', icon: Settings, group: 'System' },
+      { id: 'map', label: 'ภาพรวมแผนที่', icon: MapPin, group: 'Navigation' },
+      { id: 'utility', label: 'ศูนย์จัดการสาธารณูปโภค', icon: LayoutDashboard, group: 'Navigation' },
+      { id: 'intelligence', label: 'ศูนย์ข้อมูลอัจฉริยะ (AI)', icon: BrainCircuit, group: 'Navigation' },
+      { id: 'maintenance', label: 'ใบงานซ่อมบำรุง', icon: Wrench, group: 'Operations' },
+      { id: 'predictive', label: 'การบำรุงรักษาเชิงพยากรณ์', icon: Activity, group: 'Operations' },
+      { id: 'assets', label: 'วงจรชีวิตทรัพย์สิน', icon: BarChart3, group: 'Operations' },
+      { id: 'inventory', label: 'คลังอะไหล่', icon: Package, group: 'Logistics' },
+      { id: 'leases', label: 'สัญญาเช่า', icon: Briefcase, group: 'Commercial' },
+      { id: 'reports', label: 'เอกสารรายงาน', icon: FileText, group: 'Compliance' },
+      { id: 'settings', label: 'ตั้งค่าระบบ', icon: Settings, group: 'System' },
   ];
 
   const filteredBranches = branches.filter(b => b.name.toLowerCase().includes(search.toLowerCase()) || b.region.toLowerCase().includes(search.toLowerCase()));
@@ -46,7 +46,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
   const allItems = [
       ...filteredBranches.map(b => ({ type: 'branch', data: b })),
       ...filteredViews.map(v => ({ type: 'view', data: v })),
-      { type: 'action', data: { label: 'Log Out', icon: LogOut, action: onLogout } }
+      { type: 'action', data: { label: 'ออกจากระบบ', icon: LogOut, action: onLogout } }
   ];
 
   // Keyboard Navigation
@@ -99,7 +99,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
                     ref={inputRef}
                     type="text" 
                     className="flex-1 bg-transparent border-none focus:ring-0 text-slate-800 placeholder-slate-400 text-sm font-medium h-10"
-                    placeholder="Search branches, views, or commands..."
+                    placeholder="ค้นหาสาขา, มุมมอง หรือคำสั่ง..."
                     value={search}
                     onChange={(e) => { setSearch(e.target.value); setSelectedIndex(0); }}
                 />
@@ -111,13 +111,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
             <div className="max-h-[60vh] overflow-y-auto py-2">
                 {allItems.length === 0 ? (
                     <div className="px-6 py-8 text-center text-slate-500 text-sm">
-                        No results found.
+                        ไม่พบผลลัพธ์
                     </div>
                 ) : (
                     <>
                         {filteredBranches.length > 0 && (
                             <div className="mb-2">
-                                <div className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Branches</div>
+                                <div className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">สาขา (Branches)</div>
                                 {filteredBranches.map((branch, idx) => {
                                     // Calculate global index for selection highlight
                                     const globalIdx = idx;
@@ -142,7 +142,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
 
                         {filteredViews.length > 0 && (
                             <div className="mb-2">
-                                <div className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">Views & Modules</div>
+                                <div className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">เมนูและโมดูล</div>
                                 {filteredViews.map((view, idx) => {
                                     const globalIdx = filteredBranches.length + idx;
                                     const isSelected = selectedIndex === globalIdx;
@@ -169,7 +169,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
                                 className={`px-4 py-3 mx-2 rounded-lg flex items-center gap-3 cursor-pointer transition-colors ${selectedIndex === allItems.length - 1 ? 'bg-red-50 text-red-700' : 'text-slate-600 hover:bg-slate-50'}`}
                             >
                                 <LogOut size={16} className={selectedIndex === allItems.length - 1 ? 'text-red-500' : 'text-slate-400'} />
-                                <span className="font-bold text-sm">Log Out</span>
+                                <span className="font-bold text-sm">ออกจากระบบ</span>
                             </div>
                         </div>
                     </>
@@ -178,8 +178,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
             
             <div className="bg-slate-50 px-4 py-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
                 <div className="flex gap-3">
-                    <span className="flex items-center gap-1"><kbd className="bg-white border border-slate-200 rounded px-1 shadow-sm font-sans">↑↓</kbd> to navigate</span>
-                    <span className="flex items-center gap-1"><kbd className="bg-white border border-slate-200 rounded px-1 shadow-sm font-sans">Enter</kbd> to select</span>
+                    <span className="flex items-center gap-1"><kbd className="bg-white border border-slate-200 rounded px-1 shadow-sm font-sans">↑↓</kbd> เพื่อเลือก</span>
+                    <span className="flex items-center gap-1"><kbd className="bg-white border border-slate-200 rounded px-1 shadow-sm font-sans">Enter</kbd> เพื่อตกลง</span>
                 </div>
                 <span>NT Facility Manager v2.4</span>
             </div>

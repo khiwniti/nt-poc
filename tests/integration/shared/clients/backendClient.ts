@@ -145,4 +145,71 @@ export class BackendClient {
       clear();
     }
   }
+
+  async getFacilities(): Promise<any> {
+    const { request, clear } = this.withTimeout({ headers: this.defaultHeaders });
+
+    try {
+      const response = await fetch(`${this.baseUrl}/api/v1/facilities`, request);
+      if (!response.ok) {
+        throw new Error(`facilities endpoint returned ${response.status}`);
+      }
+      return await response.json();
+    } finally {
+      clear();
+    }
+  }
+
+  async getBatterySystems(): Promise<any> {
+    const { request, clear } = this.withTimeout({ headers: this.defaultHeaders });
+
+    try {
+      const response = await fetch(`${this.baseUrl}/api/v1/battery-systems`, request);
+      if (!response.ok) {
+        throw new Error(`battery-systems endpoint returned ${response.status}`);
+      }
+      return await response.json();
+    } finally {
+      clear();
+    }
+  }
+
+  async getRulPrediction(payload: RulPredictionRequest): Promise<RulPredictionResponse> {
+    return this.requestRulPrediction(payload);
+  }
+
+  async ingestSensorData(payload: SensorIngestionPayload): Promise<any> {
+    const { request, clear } = this.withTimeout({
+      method: 'POST',
+      headers: {
+        ...this.defaultHeaders,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    try {
+      const response = await fetch(`${this.baseUrl}/api/v1/sensor-readings/ingest`, request);
+      if (!response.ok) {
+        throw new Error(`sensor ingestion failed with ${response.status}`);
+      }
+      return await response.json();
+    } finally {
+      clear();
+    }
+  }
+
+  async getAlerts(): Promise<any> {
+    const { request, clear } = this.withTimeout({ headers: this.defaultHeaders });
+
+    try {
+      const response = await fetch(`${this.baseUrl}/api/v1/alerts`, request);
+      if (!response.ok) {
+        throw new Error(`alerts endpoint returned ${response.status}`);
+      }
+      return await response.json();
+    } finally {
+      clear();
+    }
+  }
 }

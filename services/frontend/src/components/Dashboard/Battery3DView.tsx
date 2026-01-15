@@ -1,3 +1,4 @@
+
 // @ts-nocheck
 import React, { useState, useMemo, useRef, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
@@ -40,7 +41,7 @@ const generateUnitData = (branch: Branch): BatteryUnitDetails[] => {
   if (branch.status === 'warning') warningString = Math.floor(Math.random() * (RACKS_COUNT * SHELVES_PER_RACK));
 
   for (let r = 0; r < RACKS_COUNT; r++) {
-      const bankType = r < 2 ? 'Rectifier' : 'UPS';
+      const bankType = r < 2 ? 'Rectifier' : 'UPS'; // Rack 1-2: Telecom DC (2V Cells), Rack 3-4: UPS AC (12V Blocks)
       const rackX = (r - 1.5) * 3; // Spacing racks along X axis
 
       for (let s = 0; s < SHELVES_PER_RACK; s++) {
@@ -59,6 +60,24 @@ const generateUnitData = (branch: Branch): BatteryUnitDetails[] => {
               else if (stringId === warningString) status = Math.random() > 0.8 ? 'warning' : 'operational';
               if (status === 'operational' && Math.random() > 0.995) status = 'warning';
 
+              // Determine Voltage and Impedance based on battery type
+              // Rectifier (Telecom): 2V Cells (Float ~2.25V)
+              // UPS: 12V Blocks (Float ~13.5V)
+              const is2VCell = bankType === 'Rectifier';
+              const baseVoltage = is2VCell ? 2.25 : 13.5;
+              const voltageJitter = (Math.random() * 0.04) - 0.02; // Small fluctuation
+              
+              // Degraded batteries have lower voltage
+              const healthFactor = status === 'critical' ? 0.85 : status === 'warning' ? 0.95 : 1.0;
+              const finalVoltage = (baseVoltage * healthFactor) + voltageJitter;
+
+              // Impedance: 2V cells ~0.2-0.5mOhm, 12V blocks ~2.5-5.0mOhm
+              const baseImpedance = is2VCell ? 0.35 : 3.5;
+              const impedanceJitter = (Math.random() * (is2VCell ? 0.1 : 0.5));
+              // Degraded batteries have higher impedance
+              const impFactor = status === 'critical' ? 2.5 : status === 'warning' ? 1.5 : 1.0;
+              const finalImpedance = (baseImpedance + impedanceJitter) * impFactor;
+
               allUnits.push({
                   type: 'BATTERY',
                   id: `${bankType === 'Rectifier' ? 'REC' : 'UPS'}-R${r+1}-S${s+1}-B${b+1}`,
@@ -67,10 +86,10 @@ const generateUnitData = (branch: Branch): BatteryUnitDetails[] => {
                   stringId: stringId + 1,
                   unitId: b + 1,
                   status,
-                  rul: status === 'critical' ? Math.floor(Math.random() * 30) : Math.floor(150 + Math.random() * 500),
-                  voltage: 13.5 + (Math.random() * 0.2),
-                  temperature: 24 + (Math.random() * 2),
-                  impedance: 2.8 + (Math.random() * 0.5),
+                  rul: status === 'critical' ? Math.floor(Math.random() * 30) : Math.floor(700 + Math.random() * 500),
+                  voltage: finalVoltage,
+                  temperature: 24 + (Math.random() * 2) + (status === 'critical' ? 15 : 0), // Hotter if critical
+                  impedance: finalImpedance,
                   location: [unitX, shelfY, unitZ],
                   historyLog: []
               });
@@ -90,12 +109,19 @@ const BatteryCell: React.FC<{ data: BatteryUnitDetails; onClick: (data: BatteryU
     const emissive = isSelected ? '#3b82f6' : (data.status === 'critical' ? '#ef4444' : '#000000');
     const intensity = isSelected ? 2 : (data.status === 'critical' ? 0.8 : 0);
 
+    // Visual difference for 2V vs 12V? 
+    // 2V cells often taller/thinner, 12V blocks boxier. 
+    // For simplicity, keeping same geometry but could adjust scale if needed.
+    const is2V = data.bankType === 'Rectifier';
+    const scaleY = is2V ? 1.2 : 1.0;
+
     return (
         <group position={data.location}>
             <mesh 
                 onClick={(e) => { e.stopPropagation(); onClick(data); }}
                 onPointerOver={() => setHover(true)}
                 onPointerOut={() => setHover(false)}
+                scale={[1, scaleY, 1]}
             >
                 <boxGeometry args={[0.2, 0.3, 0.35]} />
                 <meshStandardMaterial 
@@ -107,11 +133,11 @@ const BatteryCell: React.FC<{ data: BatteryUnitDetails; onClick: (data: BatteryU
                 />
             </mesh>
             {/* Terminals */}
-            <mesh position={[-0.06, 0.16, 0.1]}>
+            <mesh position={[-0.06, 0.16 * scaleY, 0.1]}>
                 <cylinderGeometry args={[0.03, 0.03, 0.05]} />
                 <meshStandardMaterial color="#ef4444" />
             </mesh>
-            <mesh position={[0.06, 0.16, 0.1]}>
+            <mesh position={[0.06, 0.16 * scaleY, 0.1]}>
                 <cylinderGeometry args={[0.03, 0.03, 0.05]} />
                 <meshStandardMaterial color="#1e293b" />
             </mesh>
@@ -119,7 +145,7 @@ const BatteryCell: React.FC<{ data: BatteryUnitDetails; onClick: (data: BatteryU
             {/* Status Indicator for Critical */}
             {data.status === 'critical' && (
                 <Float speed={5} rotationIntensity={0} floatIntensity={0.5}>
-                    <mesh position={[0, 0.4, 0]}>
+                    <mesh position={[0, 0.4 * scaleY, 0]}>
                         <sphereGeometry args={[0.05]} />
                         <meshBasicMaterial color="#ef4444" toneMapped={false} />
                     </mesh>
@@ -129,7 +155,7 @@ const BatteryCell: React.FC<{ data: BatteryUnitDetails; onClick: (data: BatteryU
     );
 };
 
-const RackFrame: React.FC<{ position: [number, number, number] }> = ({ position }) => {
+const RackFrame: React.FC<{ position: [number, number, number]; label: string }> = ({ position, label }) => {
     return (
         <group position={position}>
             {/* Frame Pillars */}
@@ -142,6 +168,11 @@ const RackFrame: React.FC<{ position: [number, number, number] }> = ({ position 
             <mesh position={[0, 0.6, 0]}><boxGeometry args={[2.3, 0.05, 1.7]} /><meshStandardMaterial color="#94a3b8" /></mesh>
             <mesh position={[0, 1.8, 0]}><boxGeometry args={[2.3, 0.05, 1.7]} /><meshStandardMaterial color="#94a3b8" /></mesh>
             <mesh position={[0, 2.55, 0]}><boxGeometry args={[2.3, 0.05, 1.7]} /><meshStandardMaterial color="#64748b" /></mesh>
+
+            {/* Label */}
+            <Text position={[0, 2.7, 0.9]} fontSize={0.2} color="#1e293b" anchorX="center" anchorY="bottom">
+                {label}
+            </Text>
         </group>
     );
 };
@@ -224,7 +255,7 @@ export const Battery3DView: React.FC<{ branch: Branch; onClose: () => void }> = 
                     <div className="grid grid-cols-2 gap-3 mb-4">
                         <div className="p-2 bg-slate-50 rounded border border-slate-100">
                             <span className="text-[10px] text-gray-400 block">แรงดัน (V)</span>
-                            <span className="text-lg font-mono font-bold text-blue-600">{selectedUnit.voltage.toFixed(2)}</span>
+                            <span className="text-lg font-mono font-bold text-blue-600">{selectedUnit.voltage.toFixed(3)}</span>
                         </div>
                         <div className="p-2 bg-slate-50 rounded border border-slate-100">
                             <span className="text-[10px] text-gray-400 block">อุณหภูมิ (°C)</span>
@@ -237,7 +268,7 @@ export const Battery3DView: React.FC<{ branch: Branch; onClose: () => void }> = 
                             <span className="font-bold text-slate-700">{selectedUnit.rul} วัน</span>
                         </div>
                         <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                            <div className={`h-full ${selectedUnit.rul < 90 ? 'bg-red-500' : 'bg-emerald-500'}`} style={{ width: `${Math.min(100, (selectedUnit.rul / 500) * 100)}%` }}></div>
+                            <div className={`h-full ${selectedUnit.rul < 90 ? 'bg-red-500' : 'bg-emerald-500'}`} style={{ width: `${Math.min(100, (selectedUnit.rul / 1000) * 100)}%` }}></div>
                         </div>
                     </div>
                     <button 
@@ -269,7 +300,11 @@ export const Battery3DView: React.FC<{ branch: Branch; onClose: () => void }> = 
                         
                         {/* Render Racks & Batteries */}
                         {[-1.5, -0.5, 0.5, 1.5].map((off, i) => (
-                            <RackFrame key={i} position={[off * 3, 0, 0]} />
+                            <RackFrame 
+                                key={i} 
+                                position={[off * 3, 0, 0]} 
+                                label={i < 2 ? "RECTIFIER DC" : "UPS AC"} 
+                            />
                         ))}
 
                         {units.map((unit) => (

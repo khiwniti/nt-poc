@@ -35,7 +35,9 @@ const Chart: React.FC<{ data: number[]; color: string; label: string; unit: stri
     
     const points = data.map((val, i) => {
         const x = padding + i * xStep;
-        const normalized = (val - min) / (range || 1);
+        // Clamp value for rendering within bounds
+        const safeVal = Math.min(max, Math.max(min, val));
+        const normalized = (safeVal - min) / (range || 1);
         const y = (height - padding) - (normalized * (height - padding * 2));
         return `${x},${y}`;
     }).join(' ');
@@ -77,6 +79,12 @@ export const BatteryDetailModal: React.FC<BatteryDetailModalProps> = ({ data, on
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
+  // Determine standard values based on bank type
+  const is2V = data.bankType === 'Rectifier';
+  const targetVoltage = is2V ? 2.25 : 13.5;
+  const voltageMin = is2V ? 2.15 : 12.5;
+  const voltageMax = is2V ? 2.35 : 14.5;
+  
   useEffect(() => {
     let mounted = true;
     const fetchAnalysis = async () => {
@@ -84,7 +92,7 @@ export const BatteryDetailModal: React.FC<BatteryDetailModalProps> = ({ data, on
         const analysisData = {
             ...data,
             history: {
-                voltageTrend: data.voltage < 13.0 ? 'declining' : 'stable',
+                voltageTrend: data.voltage < targetVoltage * 0.95 ? 'declining' : 'stable',
                 tempTrend: data.temperature > 28 ? 'increasing' : 'stable'
             }
         };
@@ -104,7 +112,7 @@ export const BatteryDetailModal: React.FC<BatteryDetailModalProps> = ({ data, on
       setTimeout(() => setIsExporting(false), 2000);
   };
 
-  const voltageHistory = Array(20).fill(0).map((_, i) => data.voltage + (Math.sin(i) * 0.1) + (Math.random() * 0.05 - 0.025));
+  const voltageHistory = Array(20).fill(0).map((_, i) => data.voltage + (Math.sin(i) * 0.02 * (is2V ? 1 : 5)) + (Math.random() * 0.01 * (is2V ? 1 : 5) - 0.005));
   const tempHistory = Array(20).fill(0).map((_, i) => data.temperature + (Math.cos(i) * 0.5) + (Math.random() * 0.1 - 0.05));
 
   const ModalHeader = (
@@ -118,7 +126,7 @@ export const BatteryDetailModal: React.FC<BatteryDetailModalProps> = ({ data, on
             <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
                 ยูนิต {data.id}
                 <span className="px-2 py-0.5 rounded text-xs font-mono bg-gray-100 text-gray-600 border border-gray-200">
-                    {data.bankType}
+                    {data.bankType} ({is2V ? '2V Cell' : '12V Block'})
                 </span>
             </h2>
             <p className="text-gray-500 text-xs uppercase tracking-widest mt-0.5">
@@ -168,14 +176,14 @@ export const BatteryDetailModal: React.FC<BatteryDetailModalProps> = ({ data, on
                         <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-xs font-bold uppercase text-blue-500 flex items-center gap-2"><Zap size={14}/> แรงดันไฟฟ้า</span>
-                                <span className="text-xs text-gray-400">เป้าหมาย: 13.5V</span>
+                                <span className="text-xs text-gray-400">Target: {targetVoltage}V</span>
                             </div>
-                            <div className="text-3xl font-mono font-bold text-slate-800">{data.voltage.toFixed(2)} <span className="text-lg text-gray-400">V</span></div>
+                            <div className="text-3xl font-mono font-bold text-slate-800">{data.voltage.toFixed(3)} <span className="text-lg text-gray-400">V</span></div>
                         </div>
                         <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-xs font-bold uppercase text-red-500 flex items-center gap-2"><Thermometer size={14}/> อุณหภูมิ</span>
-                                <span className="text-xs text-gray-400">ค่าเหมาะสม: 25°C</span>
+                                <span className="text-xs text-gray-400">Limit: 30°C</span>
                             </div>
                             <div className="text-3xl font-mono font-bold text-slate-800">{data.temperature.toFixed(1)} <span className="text-lg text-gray-400">°C</span></div>
                         </div>
@@ -190,12 +198,12 @@ export const BatteryDetailModal: React.FC<BatteryDetailModalProps> = ({ data, on
                             <div className="relative z-10">
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-xs font-bold uppercase text-emerald-500 flex items-center gap-2"><ClipboardList size={14}/> อายุการใช้งานที่เหลือ (RUL)</span>
-                                    <span className="text-xs text-gray-400">ค่าประมาณการ</span>
+                                    <span className="text-xs text-gray-400">AI Estimate</span>
                                 </div>
                                 <div className="text-3xl font-mono font-bold text-slate-800">{data.rul} <span className="text-lg text-gray-400">วัน</span></div>
                             </div>
                              <div className="absolute bottom-0 left-0 w-full h-1 bg-gray-100">
-                                <div className="h-full bg-emerald-500" style={{ width: `${Math.min(100, (data.rul / 500) * 100)}%` }}></div>
+                                <div className="h-full bg-emerald-500" style={{ width: `${Math.min(100, (data.rul / 1000) * 100)}%` }}></div>
                             </div>
                         </div>
                      </div>
@@ -206,8 +214,8 @@ export const BatteryDetailModal: React.FC<BatteryDetailModalProps> = ({ data, on
                             color="#3b82f6" 
                             label="ประวัติแรงดันไฟฟ้า" 
                             unit="V" 
-                            min={11.5} 
-                            max={14.5} 
+                            min={voltageMin} 
+                            max={voltageMax} 
                         />
                         <Chart 
                             data={tempHistory} 

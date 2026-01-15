@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React from 'react';
 import { AlertTriangle, Info, ShieldAlert, X, Bell, ArrowRight, FileText, Plus } from 'lucide-react';
@@ -37,7 +36,7 @@ export const AlertDropdown: React.FC<AlertDropdownProps> = ({ alerts, onMarkRead
             >
               <div className="flex gap-3 items-start">
                   <div className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${
-                    alert.severity === 'critical' ? 'bg-red-500' : alert.severity === 'warning' ? 'bg-orange-500' : 'bg-blue-500'
+                    alert.severity === 'critical' ? 'bg-red-500' : alert.severity === 'high' ? 'bg-orange-500' : alert.severity === 'medium' ? 'bg-yellow-500' : 'bg-blue-500'
                   }`} />
                   <div className="flex-1">
                     <div className="flex justify-between items-start">

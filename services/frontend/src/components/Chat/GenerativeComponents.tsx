@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useState } from 'react';
 import { Branch, Alert, GenerativeUIPayload } from '../../types';
@@ -128,7 +127,7 @@ export const GenUIForecast: React.FC<{ data: any }> = ({ data }) => (
 // 5. Generated Report Widget
 export const GenUIReport: React.FC<{ 
     data: any; 
-    onChangeView: (view: 'map' | 'utility' | 'intelligence' | 'settings' | 'reports') => void 
+    onChangeView: (view: 'map' | 'utility' | 'intelligence' | 'settings' | 'reports' | 'leases' | 'maintenance' | 'assets' | 'predictive' | 'inventory') => void 
 }> = ({ data, onChangeView }) => {
     const [isDownloading, setIsDownloading] = useState(false);
 
@@ -174,7 +173,7 @@ export const GenUIReport: React.FC<{
 export const GenerativeUIRenderer: React.FC<{ 
     payload: GenerativeUIPayload; 
     onNavigate: (id: string) => void;
-    onChangeView: (view: 'map' | 'utility' | 'intelligence' | 'settings' | 'reports') => void;
+    onChangeView: (view: 'map' | 'utility' | 'intelligence' | 'settings' | 'reports' | 'leases' | 'maintenance' | 'assets' | 'predictive' | 'inventory') => void;
 }> = ({ payload, onNavigate, onChangeView }) => {
     switch (payload.type) {
         case 'BRANCH_CARD':

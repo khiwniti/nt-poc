@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ShieldCheck, Lock, User, AlertCircle, ArrowRight, Check } from 'lucide-react';
+import { ShieldCheck, Lock, User, AlertCircle, ArrowRight, Eye, EyeOff, Server, Globe } from 'lucide-react';
 
 interface LoginPageProps {
   onLogin: () => void;
@@ -9,130 +9,151 @@ interface LoginPageProps {
 export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [forgotSent, setForgotSent] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 800));
+    // Simulate API Auth
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
-    if (email === 'admin@ntplc.co.th' && password === 'Admin123!') {
+    if (email && password) {
       onLogin();
     } else {
-      setError('Invalid credentials. Please contact IT Support.');
+      setError('กรุณากรอกข้อมูลให้ครบถ้วน');
       setIsLoading(false);
     }
   };
 
-  const handleForgotPassword = (e: React.MouseEvent) => {
-      e.preventDefault();
-      setForgotSent(true);
-      setTimeout(() => setForgotSent(false), 3000);
-  };
-
   return (
-    <div className="min-h-screen w-full bg-slate-900 flex items-center justify-center relative overflow-hidden">
-      {/* Background Decor */}
-      <div className="absolute inset-0 z-0 opacity-20">
-        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(255,215,0,0.1),transparent_70%)]"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] border border-white/5 rounded-full"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] border border-white/5 rounded-full"></div>
-      </div>
+    <div className="min-h-screen w-full bg-slate-900 flex items-center justify-center relative overflow-hidden text-slate-800">
+      
+      {/* Background Image */}
+      <div className="absolute inset-0 z-0 opacity-30 bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop')] bg-cover bg-center"></div>
 
-      <div className="w-full max-w-md z-10 px-6">
-        <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden border border-white/10 relative">
+      {/* Overlay Gradient */}
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/80 to-slate-900/40 pointer-events-none z-0"></div>
+
+      {/* Grid Pattern Overlay */}
+      <div className="absolute inset-0 bg-grid-slate opacity-10 pointer-events-none z-0" style={{ backgroundSize: '40px 40px', backgroundImage: 'linear-gradient(to right, rgba(255, 255, 255, 0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 1px, transparent 1px)' }}></div>
+
+      {/* Login Card */}
+      <div className="w-full max-w-md z-10 px-6 animate-fade-in-up">
+        <div className="bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl overflow-hidden relative">
           
           {/* Header */}
-          <div className="bg-nt-dark p-8 text-center relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-nt-yellow"></div>
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-nt-yellow rounded-xl mb-4 shadow-lg text-nt-dark">
-               <ShieldCheck size={32} strokeWidth={2.5} />
+          <div className="p-8 pb-6 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-nt-yellow to-yellow-600 rounded-2xl mb-6 shadow-lg shadow-yellow-500/20 transform rotate-3 hover:rotate-6 transition-transform duration-300">
+               <ShieldCheck size={32} className="text-nt-dark" strokeWidth={2.5} />
             </div>
-            <h1 className="text-2xl font-bold text-white mb-1">Facility Manager 3D</h1>
-            <p className="text-gray-400 text-sm">National Telecom Public Company Ltd.</p>
+            <h1 className="text-2xl font-black text-white mb-2 tracking-tight">NT Facility 3D</h1>
+            <p className="text-slate-400 text-xs uppercase tracking-widest font-bold">
+                Nationwide Infrastructure Command
+            </p>
           </div>
 
-          {/* Forgot Password Toast */}
-          {forgotSent && (
-             <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-xs font-bold animate-fade-in-up z-20">
-                <Check size={14} /> Reset link sent to email!
-             </div>
-          )}
-
-          {/* Form */}
-          <div className="p-8">
+          {/* Form Area */}
+          <div className="px-8 pb-8">
             <form onSubmit={handleSubmit} className="space-y-5">
               
               {error && (
-                <div className="bg-red-50 border-l-4 border-red-500 p-3 rounded flex items-start gap-3 animate-fade-in-up">
-                  <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
-                  <p className="text-sm text-red-700">{error}</p>
+                <div className="bg-red-500/10 border border-red-500/50 p-3 rounded-lg flex items-start gap-3 animate-pulse">
+                  <AlertCircle className="w-5 h-5 text-red-400 mt-0.5" />
+                  <p className="text-sm text-red-200 font-medium">{error}</p>
                 </div>
               )}
 
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Corporate ID</label>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Corporate Identity</label>
                 <div className="relative group">
-                  <User className="absolute left-3 top-3 w-5 h-5 text-gray-400 group-focus-within:text-nt-dark transition-colors" />
+                  <User className="absolute left-4 top-3.5 w-5 h-5 text-slate-500 group-focus-within:text-nt-yellow transition-colors" />
                   <input 
                     type="email" 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2.5 pl-10 pr-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-nt-yellow focus:border-transparent transition-all"
+                    className="w-full bg-slate-900/50 border border-slate-700 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-nt-yellow/50 focus:border-nt-yellow/50 transition-all font-medium"
                     placeholder="admin@ntplc.co.th"
                   />
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Password</label>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Secure Password</label>
                 <div className="relative group">
-                  <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400 group-focus-within:text-nt-dark transition-colors" />
+                  <Lock className="absolute left-4 top-3.5 w-5 h-5 text-slate-500 group-focus-within:text-nt-yellow transition-colors" />
                   <input 
-                    type="password" 
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2.5 pl-10 pr-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-nt-yellow focus:border-transparent transition-all"
+                    className="w-full bg-slate-900/50 border border-slate-700 rounded-xl py-3 pl-12 pr-12 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-nt-yellow/50 focus:border-nt-yellow/50 transition-all font-medium"
                     placeholder="••••••••"
                   />
+                  <button 
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-3.5 text-slate-500 hover:text-white transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between text-xs pt-1">
-                <label className="flex items-center gap-2 text-gray-600 cursor-pointer">
-                  <input type="checkbox" className="rounded border-gray-300 text-nt-dark focus:ring-nt-yellow" />
-                  Remember device
+              <div className="flex items-center justify-between text-xs pt-2">
+                <label className="flex items-center gap-2 text-slate-400 cursor-pointer hover:text-slate-300 transition-colors">
+                  <input type="checkbox" className="rounded border-slate-600 bg-slate-800 text-nt-yellow focus:ring-offset-0 focus:ring-nt-yellow" />
+                  <span>Remember device</span>
                 </label>
-                <button onClick={handleForgotPassword} className="text-blue-600 hover:underline">Forgot password?</button>
+                <button 
+                    type="button"
+                    onClick={() => setIsForgotPassword(!isForgotPassword)}
+                    className="text-nt-yellow/80 hover:text-nt-yellow font-bold hover:underline transition-colors"
+                >
+                    Forgot password?
+                </button>
               </div>
 
               <button 
                 type="submit" 
                 disabled={isLoading}
-                className="w-full bg-nt-dark hover:bg-slate-800 text-white font-bold py-3 rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed group"
+                className="w-full bg-nt-yellow hover:bg-yellow-400 text-nt-dark font-black py-3.5 rounded-xl shadow-lg shadow-yellow-500/20 hover:shadow-yellow-500/40 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2 group mt-4"
               >
                 {isLoading ? (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <>
+                    <div className="w-5 h-5 border-3 border-nt-dark/30 border-t-nt-dark rounded-full animate-spin" />
+                    <span>AUTHENTICATING...</span>
+                  </>
                 ) : (
                   <>
-                    Sign In <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                    ACCESS SYSTEM <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                   </>
                 )}
               </button>
             </form>
           </div>
           
-          <div className="bg-gray-50 px-8 py-4 border-t border-gray-100 text-center">
-            <p className="text-xs text-gray-400">
-              Restricted Access System. Monitoring active. <br/>
-              Server: <span className="font-mono text-gray-500">NT-HQ-SEC-01</span>
-            </p>
+          {/* Footer Info */}
+          <div className="bg-slate-950/50 px-8 py-4 border-t border-white/5 flex justify-between items-center text-[10px] text-slate-500 font-mono">
+            <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                SYSTEM ONLINE
+            </div>
+            <div>v2.4.0-ENT</div>
           </div>
+        </div>
+
+        {/* Floating Badges */}
+        <div className="flex justify-center gap-4 mt-8 opacity-60">
+            <div className="flex items-center gap-2 text-white/40 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+                <Globe size={14} /> <span className="text-[10px] font-bold">ISO 27001</span>
+            </div>
+            <div className="flex items-center gap-2 text-white/40 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+                <Server size={14} /> <span className="text-[10px] font-bold">Encrypted</span>
+            </div>
         </div>
       </div>
     </div>

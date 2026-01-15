@@ -5,6 +5,31 @@ docker-compose.override.yml
 # Dependencies
 node_modules/
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# ML Models
+*.h5
+*.pkl
+*.joblib
+*.model
+*.weights
+models/
+*.ckpt
+*.pb
+*.pth
+*.onnx
+
 # Environment variables
 .env.local
 .env.*.local
@@ -39,5 +64,10 @@ coverage/
 .DS_Store
 *.pem
 
+# Backup directories
+src-backup-*/
+*-backup-*/
+
 # Dependency analysis reports
 *-depcheck.json
+opc-ua-sensor-simulator/

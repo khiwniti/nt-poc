@@ -7,7 +7,8 @@ export class AIResponseService {
 
     constructor() {
         this.openai = new OpenAI({
-            apiKey: process.env.OPENAI_API_KEY,
+            apiKey: process.env.OPENAI_API_KEY || 'sk-dummy-for-local',
+            baseURL: process.env.AI_BASE_URL || undefined,
         });
         this.systemPrompt = `You are a helpful assistant for the Ottawa monitoring system. 
     You have access to the current status of the battery systems and alerts. 
@@ -29,7 +30,7 @@ export class AIResponseService {
                     { role: 'system', content: runContext },
                     { role: 'user', content: userMessage },
                 ],
-                model: 'gpt-3.5-turbo',
+                model: process.env.AI_MODEL || process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
             });
 
             return completion.choices[0]?.message?.content || 'I apologize, but I could not generate a response at this time.';

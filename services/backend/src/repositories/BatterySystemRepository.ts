@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 import { pool } from '../config/database';
-import { BatterySystem } from '../models/BatterySystem';
+import type { BatterySystem } from '../models/BatterySystem.js';
 
 export class BatterySystemRepository {
   private pool: Pool;

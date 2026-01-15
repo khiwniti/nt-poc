@@ -1,12 +1,22 @@
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+
+// Get the directory of the current module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load environment variables FIRST, before any other imports
+// Path is relative to this file: src/index.ts -> ../.env
+const envPath = resolve(__dirname, '../.env');
+dotenv.config({ path: envPath });
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import dotenv from 'dotenv';
 import webhookRouter from './routes/webhook.js';
 import notifyRouter from './routes/notify.js';
 import logger from './config/logger.js';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3002;
