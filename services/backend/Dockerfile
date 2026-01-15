@@ -11,7 +11,8 @@ WORKDIR /app
 COPY services/backend/package*.json ./
 
 # Install all dependencies (including dev for TypeScript compilation)
-RUN npm install && \
+# Skip prepare script (husky) which isn't needed in Docker builds
+RUN npm install --ignore-scripts && \
     npm cache clean --force
 
 # Copy source code and config from backend service directory
@@ -30,8 +31,9 @@ WORKDIR /app
 # Copy package files
 COPY services/backend/package*.json ./
 
-# Install only production dependencies
-RUN npm install --omit=dev && \
+# Install only production dependencies  
+# Skip lifecycle scripts (husky, postinstall)
+RUN npm install --omit=dev --ignore-scripts && \
     npm cache clean --force
 
 # Copy built code from builder
