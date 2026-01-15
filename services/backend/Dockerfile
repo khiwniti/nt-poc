@@ -1,4 +1,5 @@
 # Backend Service Dockerfile
+# Built from repository root with service-specific paths
 # Multi-stage build for optimized production image
 
 # Stage 1: Build
@@ -6,17 +7,17 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package files from backend service directory
+COPY services/backend/package*.json ./
 
 # Install all dependencies (including dev for TypeScript compilation)
 RUN npm install && \
     npm cache clean --force
 
-# Copy source code and config
-COPY tsconfig.json ./
-COPY knexfile.ts ./
-COPY src/ ./src/
+# Copy source code and config from backend service directory
+COPY services/backend/tsconfig.json ./
+COPY services/backend/knexfile.ts ./
+COPY services/backend/src/ ./src/
 
 # Build TypeScript
 RUN npm run build
@@ -27,7 +28,7 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY services/backend/package*.json ./
 
 # Install only production dependencies
 RUN npm install --omit=dev && \

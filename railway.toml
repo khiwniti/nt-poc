@@ -26,8 +26,8 @@ name = "backend"
 
 [services.build]
 builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile.backend"
-watchPatterns = ["services/backend/**", "Dockerfile.backend"]
+dockerfilePath = "services/backend/Dockerfile"
+watchPatterns = ["services/backend/**"]
 
 [services.deploy]
 healthcheckPath = "/api/v1/health"
@@ -84,11 +84,11 @@ restartPolicyMaxRetries = 10
 
 [[services]]
 name = "frontend"
-source = "services/frontend"
 
 [services.build]
 builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
+dockerfilePath = "services/frontend/Dockerfile"
+watchPatterns = ["services/frontend/**"]
 
 [services.deploy]
 healthcheckPath = "/"
