@@ -2,10 +2,14 @@
 nixPkgs = ["nodejs_22", "npm-9_x", "postgresql"]
 
 [phases.install]
-cmds = ["npm ci"]
+cmds = ["npm ci --cache=/tmp/.npm --prefer-offline=false"]
 
 [phases.build]
 cmds = ["npm run build"]
 
 [start]
 cmd = "npm start"
+
+[build]
+# Disable problematic cache mounts
+cacheDirectories = []
