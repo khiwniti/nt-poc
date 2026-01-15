@@ -1,0 +1,12 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "services/frontend/Dockerfile"
+  },
+  "deploy": {
+    "startCommand": "sh -c 'cd services/frontend && serve -s dist -l $PORT'",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  }
+}
