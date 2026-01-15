@@ -8,8 +8,4 @@ cmds = ["npm ci --cache=/tmp/.npm --prefer-offline=false"]
 cmds = ["npm run build"]
 
 [start]
-cmd = "npx serve -s dist -l 5173"
-
-[build]
-# Disable problematic cache mounts
-cacheDirectories = []
+cmd = "npx serve -s dist -p $PORT"

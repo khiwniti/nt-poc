@@ -8,8 +8,4 @@ cmds = ["npm ci --cache=/tmp/.npm --prefer-offline=false"]
 cmds = ["npm run build"]
 
 [start]
-cmd = "npm start"
-
-[build]
-# Disable problematic cache mounts
-cacheDirectories = []
+cmd = "node dist/index.js"
