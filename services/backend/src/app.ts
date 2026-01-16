@@ -22,6 +22,7 @@ import reportAnalyticsRouter from './routes/reportAnalytics.js';
 import weatherRouter from './routes/weather.js';
 import batteryHealthRouter from './routes/batteryHealth.js';
 import settingsRouter from './routes/settings.js';
+import chatbotRouter from './routes/chatbot.js';
 
 export const app = express();
 
@@ -70,6 +71,7 @@ app.use('/api/v1/report-analytics', reportAnalyticsRouter);
 app.use('/api/v1/weather', weatherRouter);
 app.use('/api/v1/battery-health', batteryHealthRouter);
 app.use('/api/v1/settings', settingsRouter);
+app.use('/api/v1/chatbot', chatbotRouter);
 
 // Centralized error handler (logs + Sentry + metrics)
 app.use(errorHandler);

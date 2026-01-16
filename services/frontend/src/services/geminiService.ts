@@ -1,31 +1,170 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 import { ChatMessage, AIResponse, Branch, Alert, ReportDocument, ReportBlock, ISOStandard } from "../types";
+import axios from 'axios';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY || process.env.API_KEY });
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+
+// Fetch RAG context from backend
+const fetchChatbotContext = async (token: string, facilityId?: string, batterySystemId?: string) => {
+  try {
+    const params = new URLSearchParams();
+    if (facilityId) params.append('facilityId', facilityId);
+    if (batterySystemId) params.append('batterySystemId', batterySystemId);
+
+    const response = await axios.get(`${API_BASE_URL}/api/v1/chatbot/context?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error('Failed to fetch chatbot context:', error);
+    return null;
+  }
+};
+
+// Fetch quick summary
+const fetchSystemSummary = async (token: string) => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/api/v1/chatbot/summary`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error('Failed to fetch system summary:', error);
+    return null;
+  }
+};
+
+// Search backend data
+const searchBackendData = async (token: string, query: string, type?: string) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/api/v1/chatbot/search`,
+      { query, type },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error('Failed to search backend data:', error);
+    return null;
+  }
+};
 
 export const sendChatMessage = async (
   message: string,
   history: ChatMessage[],
-  context: any
+  context: any,
+  token?: string
 ): Promise<AIResponse> => {
+  let ragContext = null;
+  let summary = null;
+
+  // Fetch RAG context from backend if token is provided
+  if (token) {
+    const facilityId = context?.currentFacilityId;
+    const batterySystemId = context?.currentBatteryId;
+
+    // Fetch comprehensive context
+    ragContext = await fetchChatbotContext(token, facilityId, batterySystemId);
+
+    // Fetch system summary
+    summary = await fetchSystemSummary(token);
+
+    // If user is asking about specific things, search for them
+    if (message.includes('ค้นหา') || message.includes('search') || message.includes('หา')) {
+      const searchResults = await searchBackendData(token, message);
+      if (searchResults) {
+        ragContext = { ...ragContext, searchResults };
+      }
+    }
+  }
+
+  // Build enhanced prompt with RAG context
+  let enhancedPrompt = `You are NT AIOps Assistant - an advanced AI agent for Battery Management and Facility Operations.
+
+**Your Capabilities:**
+1. Monitor and analyze battery systems, alerts, and sensor data
+2. Generate ISO-compliant reports (ISO 27001, ISO 22301, ISO 50001)
+3. Provide predictive maintenance insights from RUL predictions
+4. Search and summarize facility data
+5. Answer questions using real-time system data
+
+**User Message:** ${message}
+
+**Current Context from Branches/Alerts passed by UI:**
+${JSON.stringify(context, null, 2)}
+`;
+
+  if (summary) {
+    enhancedPrompt += `\n**System Summary:**
+- Active Facilities: ${summary.activeFacilities}
+- Active Batteries: ${summary.activeBatteries}
+- Critical Alerts: ${summary.criticalAlerts}
+- Warning Alerts: ${summary.warningAlerts}
+- Average Battery Health: ${summary.averageBatteryHealth}%
+- Recent Predictions (24h): ${summary.recentPredictions}
+`;
+  }
+
+  if (ragContext) {
+    enhancedPrompt += `\n**Real-Time Data from Database (RAG Context):**
+
+**Recent Alerts:**
+${JSON.stringify(ragContext.alerts?.slice(0, 5) || [], null, 2)}
+
+**Battery Systems Status:**
+${JSON.stringify(ragContext.batteries?.slice(0, 5) || [], null, 2)}
+
+**Recent RUL Predictions:**
+${JSON.stringify(ragContext.predictions?.slice(0, 5) || [], null, 2)}
+
+**Statistics:**
+${JSON.stringify(ragContext.statistics || {}, null, 2)}
+
+**Search Results (if applicable):**
+${JSON.stringify(ragContext.searchResults || {}, null, 2)}
+`;
+  }
+
+  enhancedPrompt += `\n**Instructions:**
+- Respond professionally in Thai language
+- Use the RAG context above to provide accurate, data-driven answers
+- If asked about alerts, reference specific alert IDs and details
+- If asked about battery health, cite actual SoH values and sensor readings
+- If asked about predictions, mention RUL values and confidence scores
+- For reports, structure your response clearly with ISO standard references
+- Suggest actions when appropriate (view changes, 3D visualization, etc.)
+- Always be concise but informative
+
+Respond now:`;
+
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: [
-        { role: 'user', parts: [{ text: `You are an NT AIOps Assistant for a 3D Facility Management Platform.
-            User Message: ${message}.
-            Standard focus: ISO 27001 (Security), ISO 22301 (Business Continuity), ISO 50001 (Energy Management).
-            Respond professionally in Thai.` }] }
+        { role: 'user', parts: [{ text: enhancedPrompt }] }
     ],
     config: { temperature: 0.7 }
   });
 
-  const text = response.text || "ขออภัยครับ";
+  const text = response.text || "ขออภัยครับ ไม่สามารถประมวลผลคำขอได้ในขณะนี้";
   const lower = message.toLowerCase();
   const actions: any[] = [];
-  
+
+  // Intelligent action detection
   if (lower.includes('รายงาน') || lower.includes('report')) {
       actions.push({ type: 'CHANGE_VIEW', payload: 'reports' });
+  }
+  if (lower.includes('แผนที่') || lower.includes('map')) {
+      actions.push({ type: 'CHANGE_VIEW', payload: 'map' });
+  }
+  if (lower.includes('3d') || lower.includes('สามมิติ')) {
+      actions.push({ type: 'OPEN_3D_MODE', payload: context?.branches?.[0] });
+  }
+  if (lower.includes('การบำรุงรักษา') || lower.includes('maintenance')) {
+      actions.push({ type: 'CHANGE_VIEW', payload: 'maintenance' });
+  }
+  if (lower.includes('แจ้งเตือน') || lower.includes('alert')) {
+      actions.push({ type: 'CHANGE_VIEW', payload: 'intelligence' });
   }
 
   return { text, actions };
