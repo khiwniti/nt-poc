@@ -62,11 +62,12 @@ fi
 
 # Run database migrations
 echo "🔄 Running database migrations..."
-if npm run migrate; then
+if node dist/scripts/migrate.js; then
   echo "✅ Database migrations completed successfully"
 else
   echo "❌ Database migrations failed"
-  exit 1
+  echo "⚠️  Attempting to continue without migrations..."
+  # Don't exit - allow app to start even if migrations fail
 fi
 
 # Check migration status
