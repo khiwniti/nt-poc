@@ -3,12 +3,12 @@
  * Starts the Express server and scheduled jobs
  */
 
-import Sentry, { initializeSentry } from './config/sentry';
-import logger from './config/logger';
-import app from './app';
-import { startScheduledJob } from './services/scheduledPredictionJob';
-import { startEscalationJob } from './services/alertEscalationJob';
-import sensorIngestionService from './services/sensorIngestionService';
+import Sentry, { initializeSentry } from './config/sentry.js';
+import logger from './config/logger.js';
+import app from './app.js';
+import { startScheduledJob } from './services/scheduledPredictionJob.js';
+import { startEscalationJob } from './services/alertEscalationJob.js';
+import sensorIngestionService from './services/sensorIngestionService.js';
 
 // Initialize Sentry first
 initializeSentry();
@@ -68,4 +68,3 @@ process.on('uncaughtException', (error) => {
 });
 
 startServer();
-
