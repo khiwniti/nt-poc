@@ -10,8 +10,8 @@ WORKDIR /app
 # Copy package files from frontend service directory
 COPY services/frontend/package*.json ./
 
-# Install dependencies
-RUN npm ci && \
+# Install dependencies (use npm install since package-lock.json may not exist)
+RUN npm install && \
     npm cache clean --force
 
 # Copy source code from frontend service directory

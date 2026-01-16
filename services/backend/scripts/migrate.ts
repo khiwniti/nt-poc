@@ -9,7 +9,7 @@ const __dirname = dirname(__filename);
 // Determine if we're in production by checking NODE_ENV or if dist exists
 const isProduction = process.env.NODE_ENV === 'production' || __dirname.includes('/dist/');
 const knexConfigPath = isProduction
-  ? join(__dirname, '../dist/config/knex.js')
+  ? join(__dirname, '../src/config/knex.js')
   : join(__dirname, '../src/config/knex.js');
 
 async function runMigrations() {

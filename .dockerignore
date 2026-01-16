@@ -52,7 +52,7 @@ env/
 ENV/
 *.egg-info/
 
-# ML Models
+# ML Models (binary files only, not TypeScript model directories)
 *.h5
 *.pkl
 *.joblib
@@ -62,7 +62,9 @@ ENV/
 *.pb
 *.pth
 *.onnx
-models/
+# Exclude only ML model directories at specific paths
+services/ml/models/
+services/mlops/models/
 
 # Documentation
 *.md

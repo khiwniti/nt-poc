@@ -52,12 +52,12 @@ USER python
 ENV PYTHONPATH=/app
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Expose service port
-EXPOSE 8001
+# Expose service port (Railway will set PORT env var)
+EXPOSE 8000
 
-# Health check
+# Health check (uses PORT env var)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8001/health || exit 1
+    CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
 
-# Run application
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8001"]
+# Run application (uses PORT env var from Railway)
+CMD uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8000}
