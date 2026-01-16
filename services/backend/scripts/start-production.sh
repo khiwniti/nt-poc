@@ -60,9 +60,9 @@ if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
   exit 1
 fi
 
-# Run database migrations using tsx (since we don't compile scripts anymore)
+# Run database migrations from compiled dist directory
 echo "🔄 Running database migrations..."
-if npx tsx scripts/migrate.ts; then
+if node dist/scripts/migrate.js; then
   echo "✅ Database migrations completed successfully"
 else
   echo "❌ Database migrations failed"
@@ -72,8 +72,8 @@ fi
 
 # Check migration status
 echo "📊 Checking migration status..."
-npx tsx scripts/migrate-status.ts || true
+node dist/scripts/migrate-status.js || true
 
 # Start the application
 echo "🚀 Starting application server..."
-exec node dist/index.js
+exec node dist/src/index.js

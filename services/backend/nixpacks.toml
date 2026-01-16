@@ -8,4 +8,4 @@ cmds = ["npm ci --cache=/tmp/.npm --prefer-offline=false"]
 cmds = ["npm run build"]
 
 [start]
-cmd = "node dist/index.js"
+cmd = "bash scripts/start-production.sh"

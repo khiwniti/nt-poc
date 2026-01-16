@@ -1,7 +1,7 @@
 /**
  * Scheduled ML Prediction Job
  * T143: Create scheduled job to run ML predictions every 1 hour for all active batteries
- * 
+ *
  * Features:
  * - Runs every 1 hour (configurable)
  * - Batch processes all active batteries
@@ -11,10 +11,10 @@
  */
 
 import * as cron from 'node-cron';
-import { pool } from '../config/database';
-import { getModel, initializeModel } from '../ml/predictiveMaintenanceModel';
+import { pool } from '../config/database.js';
+import { getModel, initializeModel } from '../ml/predictiveMaintenanceModel.js';
 import type { MaintenanceFeatures } from '../types/predictiveMaintenance';
-import { logger } from '../observability/logger';
+import { logger } from '../observability/logger.js';
 
 interface JobMetrics {
   startTime: Date;
@@ -49,10 +49,11 @@ export class ScheduledPredictionJob {
     retryDelayMs: number = 5000
   ) {
     // Convert minutes to cron expression (runs at minute 0 of every Nth hour)
-    this.cronExpression = intervalMinutes >= 60
-      ? `0 */${Math.floor(intervalMinutes / 60)} * * *`
-      : `*/${intervalMinutes} * * * *`;
-    
+    this.cronExpression =
+      intervalMinutes >= 60
+        ? `0 */${Math.floor(intervalMinutes / 60)} * * *`
+        : `*/${intervalMinutes} * * * *`;
+
     this.retryAttempts = retryAttempts;
     this.retryDelayMs = retryDelayMs;
   }
@@ -70,7 +71,7 @@ export class ScheduledPredictionJob {
     await this.initializeMLModel();
 
     logger.info('scheduled_prediction_job_starting', { cronExpression: this.cronExpression });
-    
+
     this.task = cron.schedule(this.cronExpression, async () => {
       await this.runJob();
     });
@@ -121,7 +122,9 @@ export class ScheduledPredictionJob {
     };
 
     try {
-      logger.info('scheduled_prediction_job_run_started', { startTime: metrics.startTime.toISOString() });
+      logger.info('scheduled_prediction_job_run_started', {
+        startTime: metrics.startTime.toISOString(),
+      });
 
       // Fetch all active batteries
       const batteries = await this.fetchActiveBatteries();
@@ -151,12 +154,11 @@ export class ScheduledPredictionJob {
         predictionsCreated: metrics.predictionsCreated,
         errors: metrics.errors,
       });
-
     } catch (error) {
       metrics.endTime = new Date();
       metrics.lastError = error instanceof Error ? error.message : 'Unknown error';
       this.lastMetrics = metrics;
-      
+
       logger.error('scheduled_prediction_job_critical_error', { error });
     } finally {
       this.isRunning = false;
@@ -214,10 +216,7 @@ export class ScheduledPredictionJob {
   /**
    * Process a single battery with retry logic
    */
-  private async processBatteryWithRetry(
-    battery: BatteryData,
-    metrics: JobMetrics
-  ): Promise<void> {
+  private async processBatteryWithRetry(battery: BatteryData, metrics: JobMetrics): Promise<void> {
     let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= this.retryAttempts; attempt++) {
@@ -226,7 +225,7 @@ export class ScheduledPredictionJob {
         return; // Success
       } catch (error) {
         lastError = error instanceof Error ? error : new Error('Unknown error');
-        
+
         if (attempt < this.retryAttempts) {
           console.warn(
             `Retry ${attempt}/${this.retryAttempts} for battery ${battery.id}:`,
@@ -243,10 +242,7 @@ export class ScheduledPredictionJob {
   /**
    * Process a single battery system
    */
-  private async processBattery(
-    battery: BatteryData,
-    metrics: JobMetrics
-  ): Promise<void> {
+  private async processBattery(battery: BatteryData, metrics: JobMetrics): Promise<void> {
     // Extract features from battery data
     const features: MaintenanceFeatures = {
       sohDelta: battery.last_soh_delta,
@@ -264,7 +260,7 @@ export class ScheduledPredictionJob {
       '7d': 7,
       '14d': 14,
       '30d': 30,
-      'safe': 365, // 1 year for safe batteries
+      safe: 365, // 1 year for safe batteries
     };
     const predictedRUL = rulMap[prediction.riskLevel] || 365;
 
@@ -340,7 +336,7 @@ export class ScheduledPredictionJob {
    * Delay utility for retry logic
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**

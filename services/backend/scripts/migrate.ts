@@ -1,20 +1,22 @@
 #!/usr/bin/env node
-// Import from dist in production, src in development
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Determine if we're in production by checking NODE_ENV or if dist exists
+// In production dist/ structure: scripts/ and src/ are siblings under dist/
+// In development: scripts/ and src/ are siblings at repo root
 const isProduction = process.env.NODE_ENV === 'production' || __dirname.includes('/dist/');
 const knexConfigPath = isProduction
   ? join(__dirname, '../src/config/knex.js')
-  : join(__dirname, '../src/config/knex.js');
+  : join(__dirname, '../src/config/knex.ts');
 
 async function runMigrations() {
   try {
     console.log('🔄 Running database migrations...');
+    console.log(`📦 Environment: ${isProduction ? 'production' : 'development'}`);
+    console.log(`📦 Current directory: ${__dirname}`);
     console.log(`📦 Using config from: ${knexConfigPath}`);
 
     const { default: knex } = await import(knexConfigPath);
