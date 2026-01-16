@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
-import { pool } from '../config/database.js';
-import { getModel, initializeModel } from '../ml/predictiveMaintenanceModel.js';
-import type { MaintenanceFeatures, MaintenancePrediction } from '../types/predictiveMaintenance.js';
+import { pool } from '../config/database';
+import { getModel, initializeModel } from '../ml/predictiveMaintenanceModel';
+import type { MaintenanceFeatures, MaintenancePrediction } from '../types/predictiveMaintenance';
 
 export const MAX_BATTERIES_PER_REQUEST = 100;
 export const DEFAULT_PREDICT_BATCH_CONCURRENCY = 8;

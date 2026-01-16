@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import request from 'supertest';
-import { app } from '../../app.js';
-import knex from '../../config/knex.js';
+import { app } from '../../app';
+import knex from '../../config/knex';
 
 describe('Report Analytics Routes', () => {
   const validToken = 'Bearer valid-test-token';

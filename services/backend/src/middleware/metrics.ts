@@ -4,7 +4,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { httpRequestDuration, httpRequestTotal } from '../config/metrics.js';
+import { httpRequestDuration, httpRequestTotal } from '../config/metrics';
 
 export function metricsMiddleware(req: Request, res: Response, next: NextFunction) {
   const startTime = Date.now();

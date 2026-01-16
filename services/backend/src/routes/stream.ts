@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import alertRealtimeService from '../services/alertRealtimeService.js';
+import alertRealtimeService from '../services/alertRealtimeService';
 
 const router = express.Router();
 

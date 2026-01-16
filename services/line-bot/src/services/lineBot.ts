@@ -97,7 +97,7 @@ export class LineBotService {
         case 'greeting': {
           messages.push({
             type: 'text',
-            text: '👋 Hello! I\'m your Battery Management System assistant.\n\nI can help you:\n• Monitor facilities\n• Check alerts\n• View predictions\n• Get system status\n\nWhat would you like to know?',
+            text: '👋 สวัสดีครับ/ค่ะ! ฉันคือผู้ช่วยระบบจัดการแบตเตอรี่\n\nฉันสามารถช่วยคุณ:\n• ติดตามสถานะโรงงาน\n• ตรวจสอบการแจ้งเตือน\n• ดูการคาดการณ์\n• ตรวจสอบสถานะระบบ\n\nคุณต้องการทราบอะไรครับ/คะ?\n\n---\n\n👋 Hello! I\'m your Battery Management System assistant.\n\nI can help you:\n• Monitor facilities\n• Check alerts\n• View predictions\n• Get system status\n\nWhat would you like to know?',
             quickReply: richMessages.createQuickReply('main'),
           });
           break;
@@ -106,7 +106,7 @@ export class LineBotService {
         case 'help': {
           messages.push({
             type: 'text',
-            text: '🤖 Available Commands:\n\n📋 Facilities\n• "Show facilities" - List all facilities\n• "Search [name]" - Find specific facility\n\n🚨 Alerts\n• "Show alerts" - Alert summary\n• "Critical alerts" - Critical alerts only\n• "Acknowledge alert [id]" - Mark alert as seen\n\n📊 Status\n• "System status" - Overall health\n• "Battery prediction [id]" - RUL forecast\n\n💬 Natural Language\nYou can also just ask me questions naturally!\n\nExamples:\n• "How many critical alerts do we have?"\n• "What\'s the health of facility X?"\n• "Show me battery predictions"',
+            text: '🤖 คำสั่งที่ใช้ได้:\n\n📋 โรงงาน\n• "แสดงโรงงาน" - รายการโรงงานทั้งหมด\n• "ค้นหา [ชื่อ]" - ค้นหาโรงงาน\n\n🚨 การแจ้งเตือน\n• "แสดงการแจ้งเตือน" - สรุปการแจ้งเตือน\n• "แจ้งเตือนวิกฤติ" - แจ้งเตือนวิกฤติเท่านั้น\n• "รับทราบการแจ้งเตือน [id]" - ทำเครื่องหมายว่าอ่านแล้ว\n\n📊 สถานะ\n• "สถานะระบบ" - สุขภาพโดยรวม\n• "การคาดการณ์แบตเตอรี่ [id]" - คาดการณ์ RUL\n\n💬 ภาษาธรรมชาติ\nคุณสามารถถามคำถามได้ตามปกติ!\n\n---\n\n🤖 Available Commands:\n\n📋 Facilities\n• "Show facilities" - List all\n• "Search [name]" - Find specific\n\n🚨 Alerts\n• "Show alerts" - Summary\n• "Critical alerts" - Critical only\n• "Acknowledge alert [id]" - Mark as seen\n\n📊 Status\n• "System status" - Overall health\n• "Battery prediction [id]" - RUL forecast\n\n💬 Natural Language\nJust ask me questions naturally!\n\nExamples:\n• "How many critical alerts?"\n• "What\'s the health of facility X?"\n• "Show battery predictions"',
             quickReply: richMessages.createQuickReply('main'),
           });
           break;
@@ -115,7 +115,7 @@ export class LineBotService {
         case 'main_menu': {
           messages.push({
             type: 'text',
-            text: '🏠 Main Menu\n\nWhat would you like to do?',
+            text: '🏠 เมนูหลัก / Main Menu\n\nคุณต้องการทำอะไรครับ/คะ?\nWhat would you like to do?',
             quickReply: richMessages.createQuickReply('main'),
           });
           break;

@@ -1,12 +1,12 @@
 import crypto from 'node:crypto';
-import { getRedisClient } from '../config/redis.js';
+import { getRedisClient } from '../config/redis';
 import {
   reportCacheErrorsTotal,
   reportCacheHitsTotal,
   reportCacheHitRate,
   reportCacheMissesTotal,
   reportCacheSetsTotal,
-} from '../config/metrics.js';
+} from '../config/metrics';
 
 type CacheBackend = 'redis' | 'disabled';
 

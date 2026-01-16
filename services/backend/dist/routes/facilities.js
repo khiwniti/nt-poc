@@ -1,9 +1,9 @@
 import express from 'express';
-import { pool } from '../config/database.js';
-import { authenticate } from '../middleware/auth.js';
-import { facilityHealthService } from '../services/facilityHealthService.js';
-import alertRealtimeService from '../services/alertRealtimeService.js';
-import { geocodingService } from '../services/geocodingService.js';
+import { pool } from '../config/database';
+import { authenticate } from '../middleware/auth';
+import { facilityHealthService } from '../services/facilityHealthService';
+import alertRealtimeService from '../services/alertRealtimeService';
+import { geocodingService } from '../services/geocodingService';
 const router = express.Router();
 router.use(authenticate);
 // GET /map - Optimized endpoint for map view with health status

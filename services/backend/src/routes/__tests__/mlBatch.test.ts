@@ -26,8 +26,8 @@ vi.mock('../../config/database.js', () => {
   };
 });
 
-import { app } from '../../app.js';
-import { initializeModel } from '../../ml/predictiveMaintenanceModel.js';
+import { app } from '../../app';
+import { initializeModel } from '../../ml/predictiveMaintenanceModel';
 
 const generateToken = () => {
   return jwt.sign({ userId: 'user-123', role: 'admin' }, process.env.JWT_SECRET || 'test-secret');

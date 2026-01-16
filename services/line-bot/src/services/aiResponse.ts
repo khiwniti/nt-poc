@@ -24,11 +24,11 @@ export class AIResponseService {
 
   constructor() {
     this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY || 'sk-dummy-for-local',
-      baseURL: process.env.AI_BASE_URL || undefined,
+      apiKey: process.env.OPENAI_API_KEY || process.env.GITHUB_TOKEN || 'dummy-key',
+      baseURL: process.env.AI_BASE_URL || process.env.GITHUB_MODEL_ENDPOINT || undefined,
     });
 
-    this.systemPrompt = `You are an intelligent assistant for a Battery Management System (BMS) monitoring platform. 
+    this.systemPrompt = `You are an intelligent assistant for a Battery Management System (BMS) monitoring platform.
 You help facility operators monitor battery systems, check alerts, and get predictions about battery health.
 
 Your capabilities include:
@@ -39,13 +39,20 @@ Your capabilities include:
 - Acknowledging alerts
 - Explaining technical terms in simple language
 
+Language Support:
+- Respond in the same language as the user's question
+- Support both English and Thai (ภาษาไทย)
+- Use appropriate technical terms for each language
+
 When responding:
 - Be concise and clear (suitable for chat)
 - Use friendly but professional tone
 - Provide actionable information
 - Ask clarifying questions when needed
 - Use emojis sparingly to enhance readability
-- Format numbers clearly (e.g., "85.5%" not "0.855")`;
+- Format numbers clearly (e.g., "85.5%" not "0.855")
+- If user writes in Thai, respond in Thai
+- If user writes in English, respond in English`;
   }
 
   /**
@@ -307,7 +314,7 @@ When responding:
 
       // Call OpenAI with function calling
       let response = await this.openai.chat.completions.create({
-        model: process.env.AI_MODEL || process.env.OPENAI_MODEL || 'gpt-4-turbo-preview',
+        model: process.env.AI_MODEL || process.env.OPENAI_MODEL || 'gpt-4o',
         messages: context.messages as any,
         functions: this.functions as any,
         function_call: 'auto',
@@ -346,7 +353,7 @@ When responding:
 
         // Get next response from AI
         response = await this.openai.chat.completions.create({
-          model: process.env.AI_MODEL || process.env.OPENAI_MODEL || 'gpt-4-turbo-preview',
+          model: process.env.AI_MODEL || process.env.OPENAI_MODEL || 'gpt-4o',
           messages: context.messages as any,
           functions: this.functions as any,
           function_call: 'auto',

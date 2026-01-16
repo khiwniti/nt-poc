@@ -4,8 +4,8 @@
  */
 
 import { Router, type Request, type Response } from 'express';
-import { register } from '../config/metrics.js';
-import db from '../config/knex.js';
+import { register } from '../config/metrics';
+import db from '../config/knex';
 
 const router = Router();
 

@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { buildCacheKey, getCachedData, setCachedData } from './mapCache.js';
-import logger from '../config/logger.js';
+import { buildCacheKey, getCachedData, setCachedData } from './mapCache';
+import logger from '../config/logger';
 
 const WEATHER_API_BASE = process.env.WEATHER_API_URL || 'https://api.openweathermap.org/data/2.5';
 const WEATHER_API_KEY = process.env.WEATHER_API_KEY;

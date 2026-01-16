@@ -3,8 +3,8 @@
  * Fetches data from simulator service and stores in TimescaleDB
  */
 
-import { pool } from '../config/database.js';
-import { logger } from '../observability/logger.js';
+import { pool } from '../config/database';
+import { logger } from '../observability/logger';
 import axios from 'axios';
 
 const SIMULATOR_URL = process.env.SIMULATOR_URL || 'http://localhost:8001';

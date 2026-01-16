@@ -4,9 +4,9 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { pool } from '../../config/database.js';
-import alertEscalationService from '../alertEscalationService.js';
-import type { Alert, AlertSeverity } from '../../types/alertEscalation.js';
+import { pool } from '../../config/database';
+import alertEscalationService from '../alertEscalationService';
+import type { Alert, AlertSeverity } from '../../types/alertEscalation';
 
 describe('AlertEscalationService', () => {
   beforeEach(async () => {

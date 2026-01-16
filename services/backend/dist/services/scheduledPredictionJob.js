@@ -10,9 +10,9 @@
  * - Job execution logging and metrics
  */
 import * as cron from 'node-cron';
-import { pool } from '../config/database.js';
-import { getModel, initializeModel } from '../ml/predictiveMaintenanceModel.js';
-import { logger } from '../observability/logger.js';
+import { pool } from '../config/database';
+import { getModel, initializeModel } from '../ml/predictiveMaintenanceModel';
+import { logger } from '../observability/logger';
 export class ScheduledPredictionJob {
     task = null;
     isRunning = false;

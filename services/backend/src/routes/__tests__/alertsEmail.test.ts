@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
-import { app } from '../../app.js';
-import emailNotificationService from '../../services/emailNotificationService.js';
+import { app } from '../../app';
+import emailNotificationService from '../../services/emailNotificationService';
 
 // Mock authentication middleware
 vi.mock('../../middleware/auth.js', () => ({

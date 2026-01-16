@@ -11,9 +11,9 @@
  */
 
 import * as cron from 'node-cron';
-import alertEscalationService from './alertEscalationService.js';
-import type { EscalationJobMetrics } from '../types/alertEscalation.js';
-import { logger } from '../observability/logger.js';
+import alertEscalationService from './alertEscalationService';
+import type { EscalationJobMetrics } from '../types/alertEscalation';
+import { logger } from '../observability/logger';
 
 export class AlertEscalationJob {
   private task: cron.ScheduledTask | null = null;

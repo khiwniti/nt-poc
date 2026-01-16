@@ -1,4 +1,4 @@
-import knex from '../config/knex.js';
+import knex from '../config/knex';
 import {
   ReportAnalyticsEvent,
   ReportAnalyticsSummary,
@@ -6,8 +6,8 @@ import {
   AnalyticsQueryParams,
   PopularReportStats,
   AnalyticsDashboardData,
-} from '../types/reportAnalytics.js';
-import { logger } from '../observability/logger.js';
+} from '../types/reportAnalytics';
+import { logger } from '../observability/logger';
 
 export class ReportAnalyticsService {
   /**

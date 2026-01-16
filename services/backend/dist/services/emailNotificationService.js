@@ -1,4 +1,4 @@
-import { logger } from '../observability/logger.js';
+import { logger } from '../observability/logger';
 /**
  * Email Notification Service for Critical Alerts
  * Integrates with SendGrid to send email notifications

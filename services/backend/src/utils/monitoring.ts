@@ -3,8 +3,8 @@
  * Helper functions for tracking application metrics and performance
  */
 
-import Sentry from '../config/sentry.js';
-import logger from '../config/logger.js';
+import Sentry from '../config/sentry';
+import logger from '../config/logger';
 import {
   predictionDuration,
   predictionTotal,
@@ -12,7 +12,7 @@ import {
   dbQueryDuration,
   jobExecutionDuration,
   jobExecutionTotal,
-} from '../config/metrics.js';
+} from '../config/metrics';
 
 /**
  * Track prediction performance

@@ -11,17 +11,17 @@
  * - Logs all escalation events
  */
 
-import { pool } from '../config/database.js';
-import emailNotificationService from './emailNotificationService.js';
-import { logger } from '../observability/logger.js';
+import { pool } from '../config/database';
+import emailNotificationService from './emailNotificationService';
+import { logger } from '../observability/logger';
 import {
   AlertSeverity,
   type Alert,
   type EscalationEvent,
   type EscalationRule,
   type EscalationCandidate,
-} from '../types/alertEscalation.js';
-import type { AlertEmailData } from '../types/emailNotification.js';
+} from '../types/alertEscalation';
+import type { AlertEmailData } from '../types/emailNotification';
 
 export class AlertEscalationService {
   private static instance: AlertEscalationService;

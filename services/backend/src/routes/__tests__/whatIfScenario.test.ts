@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
-import { app } from '../../app.js';
-import { pool } from '../../config/database.js';
+import { app } from '../../app';
+import { pool } from '../../config/database';
 
 vi.mock('../../config/database.js');
 vi.mock('../../middleware/auth.js', () => ({

@@ -1,9 +1,9 @@
 import express from 'express';
-import { authenticate } from '../middleware/auth.js';
-import emailNotificationService from '../services/emailNotificationService.js';
-import alertEscalationService from '../services/alertEscalationService.js';
-import { getEscalationJob } from '../services/alertEscalationJob.js';
-import alertRealtimeService from '../services/alertRealtimeService.js';
+import { authenticate } from '../middleware/auth';
+import emailNotificationService from '../services/emailNotificationService';
+import alertEscalationService from '../services/alertEscalationService';
+import { getEscalationJob } from '../services/alertEscalationJob';
+import alertRealtimeService from '../services/alertRealtimeService';
 const router = express.Router();
 router.use(authenticate);
 // Mock data generator for alerts

@@ -5,7 +5,7 @@ import AlertRepository, {
   CreateAlertInput,
   UpdateAlertInput,
   AlertFilters,
-} from '../AlertRepository.js';
+} from '../AlertRepository';
 
 describe('AlertRepository', () => {
   let mockPool: any;

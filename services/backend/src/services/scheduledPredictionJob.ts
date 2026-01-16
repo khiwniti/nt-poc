@@ -11,10 +11,10 @@
  */
 
 import * as cron from 'node-cron';
-import { pool } from '../config/database.js';
-import { getModel, initializeModel } from '../ml/predictiveMaintenanceModel.js';
-import type { MaintenanceFeatures } from '../types/predictiveMaintenance.js';
-import { logger } from '../observability/logger.js';
+import { pool } from '../config/database';
+import { getModel, initializeModel } from '../ml/predictiveMaintenanceModel';
+import type { MaintenanceFeatures } from '../types/predictiveMaintenance';
+import { logger } from '../observability/logger';
 
 interface JobMetrics {
   startTime: Date;

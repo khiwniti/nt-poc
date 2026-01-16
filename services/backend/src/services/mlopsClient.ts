@@ -8,7 +8,7 @@
  */
 
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import { logger } from '../observability/logger.js';
+import { logger } from '../observability/logger';
 
 const MLOPS_SERVICE_URL = process.env.MLOPS_SERVICE_URL || 'http://localhost:8001';
 const REQUEST_TIMEOUT_MS = parseInt(process.env.MLOPS_TIMEOUT_MS || '30000'); // 30s

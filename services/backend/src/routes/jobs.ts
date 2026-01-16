@@ -4,8 +4,8 @@
  */
 
 import express, { Response } from 'express';
-import { authenticate, AuthRequest } from '../middleware/auth.js';
-import { getScheduledJob } from '../services/scheduledPredictionJob.js';
+import { authenticate, AuthRequest } from '../middleware/auth';
+import { getScheduledJob } from '../services/scheduledPredictionJob';
 
 const router = express.Router();
 

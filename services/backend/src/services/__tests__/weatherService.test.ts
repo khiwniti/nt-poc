@@ -4,8 +4,8 @@ import {
   getCurrentWeather,
   getWeatherForecast,
   getHistoricalWeather,
-} from '../weatherService.js';
-import * as mapCache from '../mapCache.js';
+} from '../weatherService';
+import * as mapCache from '../mapCache';
 
 vi.mock('axios');
 vi.mock('../mapCache.js');

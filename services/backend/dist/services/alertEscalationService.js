@@ -10,10 +10,10 @@
  * - Sends notifications on escalation
  * - Logs all escalation events
  */
-import { pool } from '../config/database.js';
-import emailNotificationService from './emailNotificationService.js';
-import { logger } from '../observability/logger.js';
-import { AlertSeverity, } from '../types/alertEscalation.js';
+import { pool } from '../config/database';
+import emailNotificationService from './emailNotificationService';
+import { logger } from '../observability/logger';
+import { AlertSeverity, } from '../types/alertEscalation';
 export class AlertEscalationService {
     static instance;
     constructor() { }

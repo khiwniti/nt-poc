@@ -10,8 +10,8 @@
  * - Tracks job execution metrics
  */
 import * as cron from 'node-cron';
-import alertEscalationService from './alertEscalationService.js';
-import { logger } from '../observability/logger.js';
+import alertEscalationService from './alertEscalationService';
+import { logger } from '../observability/logger';
 export class AlertEscalationJob {
     task = null;
     isRunning = false;

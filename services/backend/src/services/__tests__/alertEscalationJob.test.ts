@@ -4,8 +4,8 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { AlertEscalationJob } from '../alertEscalationJob.js';
-import { pool } from '../../config/database.js';
+import { AlertEscalationJob } from '../alertEscalationJob';
+import { pool } from '../../config/database';
 
 describe('AlertEscalationJob', () => {
   let job: AlertEscalationJob;

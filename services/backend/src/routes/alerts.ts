@@ -1,10 +1,10 @@
 import express, { Response } from 'express';
-import { authenticate, AuthRequest } from '../middleware/auth.js';
-import emailNotificationService from '../services/emailNotificationService.js';
-import { EmailNotificationConfig } from '../types/emailNotification.js';
-import alertEscalationService from '../services/alertEscalationService.js';
-import { getEscalationJob } from '../services/alertEscalationJob.js';
-import alertRealtimeService, { AlertSeverity } from '../services/alertRealtimeService.js';
+import { authenticate, AuthRequest } from '../middleware/auth';
+import emailNotificationService from '../services/emailNotificationService';
+import { EmailNotificationConfig } from '../types/emailNotification';
+import alertEscalationService from '../services/alertEscalationService';
+import { getEscalationJob } from '../services/alertEscalationJob';
+import alertRealtimeService, { AlertSeverity } from '../services/alertRealtimeService';
 
 const router = express.Router();
 

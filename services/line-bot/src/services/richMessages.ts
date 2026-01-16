@@ -501,7 +501,7 @@ export class RichMessageService {
             type: 'action',
             action: {
               type: 'message',
-              label: '🏢 Facilities',
+              label: '🏢 โรงงาน',
               text: 'Show all facilities',
             },
           },
@@ -509,7 +509,7 @@ export class RichMessageService {
             type: 'action',
             action: {
               type: 'message',
-              label: '🚨 Alerts',
+              label: '🚨 แจ้งเตือน',
               text: 'Show alert summary',
             },
           },
@@ -517,7 +517,7 @@ export class RichMessageService {
             type: 'action',
             action: {
               type: 'message',
-              label: '📊 Status',
+              label: '📊 สถานะ',
               text: 'Show system status',
             },
           },
@@ -525,7 +525,7 @@ export class RichMessageService {
             type: 'action',
             action: {
               type: 'message',
-              label: '❓ Help',
+              label: '❓ ช่วยเหลือ',
               text: 'Help',
             },
           }
@@ -538,7 +538,7 @@ export class RichMessageService {
             type: 'action',
             action: {
               type: 'message',
-              label: '🔍 Search',
+              label: '🔍 ค้นหา',
               text: 'Search facilities',
             },
           },
@@ -546,7 +546,7 @@ export class RichMessageService {
             type: 'action',
             action: {
               type: 'message',
-              label: '📋 List All',
+              label: '📋 ทั้งหมด',
               text: 'Show all facilities',
             },
           },
@@ -554,7 +554,7 @@ export class RichMessageService {
             type: 'action',
             action: {
               type: 'message',
-              label: '🏠 Main Menu',
+              label: '🏠 เมนูหลัก',
               text: 'Main menu',
             },
           }
@@ -567,7 +567,7 @@ export class RichMessageService {
             type: 'action',
             action: {
               type: 'message',
-              label: '🔴 Critical',
+              label: '🔴 วิกฤติ',
               text: 'Show critical alerts',
             },
           },
@@ -575,7 +575,7 @@ export class RichMessageService {
             type: 'action',
             action: {
               type: 'message',
-              label: '🟡 Warning',
+              label: '🟡 คำเตือน',
               text: 'Show warning alerts',
             },
           },
@@ -583,7 +583,7 @@ export class RichMessageService {
             type: 'action',
             action: {
               type: 'message',
-              label: '📊 Summary',
+              label: '📊 สรุป',
               text: 'Show alert summary',
             },
           },
@@ -591,7 +591,7 @@ export class RichMessageService {
             type: 'action',
             action: {
               type: 'message',
-              label: '🏠 Main Menu',
+              label: '🏠 เมนูหลัก',
               text: 'Main menu',
             },
           }
@@ -604,7 +604,7 @@ export class RichMessageService {
             type: 'action',
             action: {
               type: 'message',
-              label: '📖 Commands',
+              label: '📖 คำสั่ง',
               text: 'Show available commands',
             },
           },
@@ -612,7 +612,7 @@ export class RichMessageService {
             type: 'action',
             action: {
               type: 'message',
-              label: '🤖 About AI',
+              label: '🤖 เกี่ยวกับ AI',
               text: 'Tell me about your capabilities',
             },
           },
@@ -620,7 +620,7 @@ export class RichMessageService {
             type: 'action',
             action: {
               type: 'message',
-              label: '🏠 Main Menu',
+              label: '🏠 เมนูหลัก',
               text: 'Main menu',
             },
           }

@@ -4,9 +4,9 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import Sentry from '../config/sentry.js';
-import logger from '../config/logger.js';
-import { errorRate } from '../config/metrics.js';
+import Sentry from '../config/sentry';
+import logger from '../config/logger';
+import { errorRate } from '../config/metrics';
 
 export function errorHandler(err: Error, req: Request, res: Response, next: NextFunction) {
   // Log error

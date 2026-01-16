@@ -4,9 +4,9 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ScheduledPredictionJob } from '../scheduledPredictionJob.js';
-import { pool } from '../../config/database.js';
-import * as mlModel from '../../ml/predictiveMaintenanceModel.js';
+import { ScheduledPredictionJob } from '../scheduledPredictionJob';
+import { pool } from '../../config/database';
+import * as mlModel from '../../ml/predictiveMaintenanceModel';
 
 // Mock dependencies
 vi.mock('../../config/database.js', () => ({

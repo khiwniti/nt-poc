@@ -1,7 +1,7 @@
 import express, { Response } from 'express';
-import { authenticate, AuthRequest } from '../middleware/auth.js';
-import reportAnalyticsService from '../services/reportAnalyticsService.js';
-import { TrackEventPayload, AnalyticsQueryParams } from '../types/reportAnalytics.js';
+import { authenticate, AuthRequest } from '../middleware/auth';
+import reportAnalyticsService from '../services/reportAnalyticsService';
+import { TrackEventPayload, AnalyticsQueryParams } from '../types/reportAnalytics';
 
 const router = express.Router();
 router.use(authenticate);

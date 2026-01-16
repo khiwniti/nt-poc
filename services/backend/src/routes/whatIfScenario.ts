@@ -1,12 +1,12 @@
 import express, { Response } from 'express';
-import { pool } from '../config/database.js';
-import { authenticate, AuthRequest } from '../middleware/auth.js';
+import { pool } from '../config/database';
+import { authenticate, AuthRequest } from '../middleware/auth';
 import type {
   ScenarioParameters,
   ScenarioPrediction,
   SavedScenario,
   SavedScenarioRow,
-} from '../types/whatIfScenario.js';
+} from '../types/whatIfScenario';
 
 const router = express.Router();
 

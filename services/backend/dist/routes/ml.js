@@ -8,9 +8,9 @@
  * - POST /api/v1/ml/train - Train/retrain the model
  */
 import express from 'express';
-import { authenticate } from '../middleware/auth.js';
-import { getModel, initializeModel } from '../ml/predictiveMaintenanceModel.js';
-import { createBatchPredictionJob, DEFAULT_ASYNC_THRESHOLD, getBatchPredictionJob, getFacilityBatterySystemIds, MAX_BATTERIES_PER_REQUEST, normalizeBatterySystemIds, runBatchPrediction, startBatchPredictionJob, } from '../services/batchPredictionService.js';
+import { authenticate } from '../middleware/auth';
+import { getModel, initializeModel } from '../ml/predictiveMaintenanceModel';
+import { createBatchPredictionJob, DEFAULT_ASYNC_THRESHOLD, getBatchPredictionJob, getFacilityBatterySystemIds, MAX_BATTERIES_PER_REQUEST, normalizeBatterySystemIds, runBatchPrediction, startBatchPredictionJob, } from '../services/batchPredictionService';
 const router = express.Router();
 router.use(authenticate);
 /**

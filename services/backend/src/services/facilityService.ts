@@ -1,4 +1,4 @@
-import db from '../config/knex.js';
+import db from '../config/knex';
 
 export interface Facility {
   id: string;

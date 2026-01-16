@@ -1,5 +1,5 @@
 import express, { Response } from 'express';
-import { authenticate, AuthRequest } from '../middleware/auth.js';
+import { authenticate, AuthRequest } from '../middleware/auth';
 import axios from 'axios';
 
 const router = express.Router();

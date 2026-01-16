@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
-import { app } from '../../app.js';
+import { app } from '../../app';
 
 // Mock authentication middleware
 vi.mock('../../middleware/auth.js', () => ({

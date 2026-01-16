@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import type { RequestHandler } from 'express';
-import { sentrySetRequestId } from './sentry.js';
+import { sentrySetRequestId } from './sentry';
 
 export const requestIdMiddleware = (): RequestHandler => {
   return (req, res, next) => {
