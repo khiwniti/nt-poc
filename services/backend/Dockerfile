@@ -17,8 +17,13 @@ RUN npm install --ignore-scripts && \
 
 # Copy source code and config from backend service directory
 COPY services/backend/tsconfig.json ./
-COPY services/backend/knexfile.ts ./
+COPY services/backend/knexfile.js ./
+# Copy source code - must explicitly copy models directory due to root .dockerignore
 COPY services/backend/src/ ./src/
+# Ensure models directory is copied (workaround for .dockerignore models/ exclusion)
+COPY services/backend/src/models/ ./src/models/
+# Copy scripts directory for build
+COPY services/backend/scripts/ ./scripts/
 
 # Build TypeScript
 RUN npm run build
@@ -39,13 +44,13 @@ COPY services/backend/package*.json ./
 RUN npm install --omit=dev --ignore-scripts && \
     npm cache clean --force
 
-# Copy built code from builder
+# Copy built code from builder (includes compiled scripts)
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/knexfile.ts ./
+COPY --from=builder /app/knexfile.js ./knexfile.js
 
-# Copy migration scripts and startup script
-COPY services/backend/scripts/ ./scripts/
+# Copy migration files and startup script
 COPY services/backend/migrations/ ./migrations/
+COPY services/backend/scripts/start-production.sh ./scripts/start-production.sh
 
 # Make startup script executable
 RUN chmod +x scripts/start-production.sh

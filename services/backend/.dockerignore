@@ -1,3 +1,6 @@
+# Backend-specific Docker ignore
+# This file ensures models/ is NOT ignored (unlike root .dockerignore)
+
 # Dependencies
 node_modules
 
@@ -40,3 +43,5 @@ dist
 # Database
 *.sqlite
 *.db
+
+# DO NOT exclude models/ - we need src/models/ for TypeScript types
