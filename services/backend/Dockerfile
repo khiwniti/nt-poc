@@ -26,12 +26,15 @@ RUN npm run build
 # Stage 2: Production
 FROM node:20-alpine
 
+# Install bash and wget for startup script and health checks
+RUN apk add --no-cache bash wget
+
 WORKDIR /app
 
 # Copy package files
 COPY services/backend/package*.json ./
 
-# Install only production dependencies  
+# Install only production dependencies
 # Skip lifecycle scripts (husky, postinstall)
 RUN npm install --omit=dev --ignore-scripts && \
     npm cache clean --force
@@ -39,6 +42,13 @@ RUN npm install --omit=dev --ignore-scripts && \
 # Copy built code from builder
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/knexfile.ts ./
+
+# Copy migration scripts and startup script
+COPY services/backend/scripts/ ./scripts/
+COPY services/backend/migrations/ ./migrations/
+
+# Make startup script executable
+RUN chmod +x scripts/start-production.sh
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
@@ -53,9 +63,9 @@ USER nodejs
 # Expose port
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
+# Health check - uses /api/v1/health endpoint
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/v1/health || exit 1
 
-# Start application
-CMD ["node", "dist/index.js"]
+# Start application with migration script
+CMD ["bash", "scripts/start-production.sh"]

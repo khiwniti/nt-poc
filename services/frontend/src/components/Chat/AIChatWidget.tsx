@@ -13,16 +13,18 @@ interface AIChatWidgetProps {
     onNavigateBranch: (branchId: string) => void;
     onChangeView: (view: 'map' | 'utility' | 'intelligence' | 'settings' | 'reports' | 'leases' | 'maintenance' | 'assets' | 'predictive' | 'inventory') => void;
     onOpen3D: (branch: Branch) => void;
+    token?: string; // Authentication token for RAG context
 }
 
-export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ 
-    branches, 
-    alerts, 
-    currentBranchId, 
+export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
+    branches,
+    alerts,
+    currentBranchId,
     activeView,
-    onNavigateBranch, 
-    onChangeView, 
-    onOpen3D 
+    onNavigateBranch,
+    onChangeView,
+    onOpen3D,
+    token
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
@@ -127,9 +129,9 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
     setIsLoading(true);
 
     try {
-      // 2. Call Service with Context
+      // 2. Call Service with Context (including RAG context via token)
       const context = { branches, alerts, currentBranchId, currentView: activeView };
-      const response = await sendChatMessage(userMsg.text, messages, context);
+      const response = await sendChatMessage(userMsg.text, messages, context, token);
       
       // 3. Process Actions
       if (response.actions) {
