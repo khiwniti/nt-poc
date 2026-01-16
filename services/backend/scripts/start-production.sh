@@ -62,7 +62,7 @@ fi
 
 # Run database migrations
 echo "🔄 Running database migrations..."
-if node dist/scripts/migrate.js; then
+if node --no-warnings dist/scripts/migrate.js; then
   echo "✅ Database migrations completed successfully"
 else
   echo "❌ Database migrations failed"
@@ -76,4 +76,4 @@ npm run migrate:status || true
 
 # Start the application
 echo "🚀 Starting application server..."
-exec node dist/index.js
+exec node dist/src/index.js
