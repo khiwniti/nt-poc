@@ -8,14 +8,14 @@ RUN apt-get update && apt-get install -y \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements
-COPY requirements.txt .
+# Copy requirements from services/simulator
+COPY services/simulator/requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY app ./app
+# Copy application code from services/simulator
+COPY services/simulator/app ./app
 
 # Expose port
 EXPOSE 8001
