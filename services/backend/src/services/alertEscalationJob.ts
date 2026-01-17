@@ -1,7 +1,7 @@
 /**
  * Alert Escalation Scheduled Job
  * T131: US3 - Background job that checks and escalates unacknowledged alerts
- * 
+ *
  * Features:
  * - Runs every 5 minutes (configurable)
  * - Checks all unacknowledged active alerts
@@ -11,9 +11,9 @@
  */
 
 import * as cron from 'node-cron';
-import alertEscalationService from './alertEscalationService';
+import alertEscalationService from './alertEscalationService.js';
 import type { EscalationJobMetrics } from '../types/alertEscalation';
-import { logger } from '../observability/logger';
+import { logger } from '../observability/logger.js';
 
 export class AlertEscalationJob {
   private task: cron.ScheduledTask | null = null;
@@ -75,7 +75,9 @@ export class AlertEscalationJob {
     };
 
     try {
-      logger.info('alert_escalation_job_run_started', { startTime: metrics.startTime.toISOString() });
+      logger.info('alert_escalation_job_run_started', {
+        startTime: metrics.startTime.toISOString(),
+      });
 
       const result = await alertEscalationService.processEscalations();
 
@@ -96,8 +98,7 @@ export class AlertEscalationJob {
       });
     } catch (error) {
       metrics.errors = 1;
-      metrics.lastError =
-        error instanceof Error ? error.message : 'Unknown error';
+      metrics.lastError = error instanceof Error ? error.message : 'Unknown error';
       logger.error('alert_escalation_job_failed', { error });
     } finally {
       metrics.endTime = new Date();

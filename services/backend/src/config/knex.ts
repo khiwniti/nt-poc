@@ -6,7 +6,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const environment = process.env.NODE_ENV || 'development';
-const dbSslEnabled = (process.env.DB_SSL || '').toLowerCase() === 'true' || environment === 'production';
+const dbSslEnabled =
+  (process.env.DB_SSL || '').toLowerCase() === 'true' || environment === 'production';
+const isProduction = environment === 'production' || __dirname.includes('/dist/');
+
+// In production (dist/src/config/): migrations are at ../../migrations (repo root)
+// In development (src/config/): migrations are at ../../migrations (repo root)
+const migrationsDir = isProduction
+  ? path.join(__dirname, '../../../migrations')
+  : path.join(__dirname, '../../migrations');
 
 const db = knex({
   client: 'pg',
@@ -19,9 +27,9 @@ const db = knex({
     ssl: dbSslEnabled ? { rejectUnauthorized: false } : undefined,
   },
   migrations: {
-    directory: path.join(__dirname, '../../migrations'),
-    extension: 'ts',
-    loadExtensions: ['.ts'],
+    directory: migrationsDir,
+    extension: isProduction ? 'js' : 'ts',
+    loadExtensions: isProduction ? ['.js'] : ['.ts'],
   },
 });
 
