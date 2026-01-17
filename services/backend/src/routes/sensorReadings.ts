@@ -15,7 +15,7 @@ router.get('/latest', async (req: AuthRequest, res: Response) => {
     }
 
     const result = await pool.query(
-      `SELECT 
+      `SELECT
         battery_system_id as "batterySystemId",
         time,
         voltage,
@@ -42,21 +42,61 @@ router.get('/latest', async (req: AuthRequest, res: Response) => {
   }
 });
 
+router.get('/battery/:id/history', async (req: AuthRequest, res: Response) => {
+  try {
+    const { id: batterySystemId } = req.params;
+    const hours = parseInt(req.query.hours as string) || 24;
+    const limit = parseInt(req.query.limit as string) || 50;
+
+    // Calculate start time based on hours parameter
+    const startTime = new Date();
+    startTime.setHours(startTime.getHours() - hours);
+
+    const result = await pool.query(
+      `SELECT
+        time,
+        battery_system_id,
+        voltage,
+        current,
+        temperature,
+        soc,
+        soh,
+        power
+       FROM sensor_readings
+       WHERE battery_system_id = $1
+         AND time >= $2::timestamptz
+       ORDER BY time ASC
+       LIMIT $3`,
+      [batterySystemId, startTime.toISOString(), limit]
+    );
+
+    res.json({
+      data: result.rows,
+      total: result.rowCount || 0,
+      hours: hours,
+      limit: limit,
+    });
+  } catch (error) {
+    console.error('Error fetching sensor history:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 router.get('/timeseries', async (req: AuthRequest, res: Response) => {
   try {
     const { batterySystemId, startTime, endTime, interval = 'raw' } = req.query;
 
     if (!batterySystemId || !startTime || !endTime) {
-      return res.status(400).json({ 
-        error: 'batterySystemId, startTime, and endTime parameters are required' 
+      return res.status(400).json({
+        error: 'batterySystemId, startTime, and endTime parameters are required',
       });
     }
 
     let query: string;
-    
+
     if (interval === 'hourly') {
       query = `
-        SELECT 
+        SELECT
           time_bucket('1 hour', time) as time,
           AVG(voltage) as avg_voltage,
           AVG(current) as avg_current,
@@ -65,15 +105,15 @@ router.get('/timeseries', async (req: AuthRequest, res: Response) => {
           AVG(soh) as avg_soh,
           AVG(power) as avg_power
         FROM sensor_readings
-        WHERE battery_system_id = $1 
-          AND time >= $2::timestamptz 
+        WHERE battery_system_id = $1
+          AND time >= $2::timestamptz
           AND time <= $3::timestamptz
         GROUP BY time_bucket('1 hour', time)
         ORDER BY time DESC
       `;
     } else {
       query = `
-        SELECT 
+        SELECT
           time,
           voltage,
           current,
@@ -82,8 +122,8 @@ router.get('/timeseries', async (req: AuthRequest, res: Response) => {
           soh,
           power
         FROM sensor_readings
-        WHERE battery_system_id = $1 
-          AND time >= $2::timestamptz 
+        WHERE battery_system_id = $1
+          AND time >= $2::timestamptz
           AND time <= $3::timestamptz
         ORDER BY time DESC
       `;
