@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { pool } from '../config/database';
+import { pool } from '../config/database.js';
 import { getModel, initializeModel } from '../ml/predictiveMaintenanceModel';
 import type { MaintenanceFeatures, MaintenancePrediction } from '../types/predictiveMaintenance';
 

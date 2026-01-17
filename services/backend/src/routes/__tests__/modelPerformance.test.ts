@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import { app } from '../../app';
-import { pool } from '../../config/database';
+import { pool } from '../../config/database.js';
 
 vi.mock('../../config/database', () => ({
   pool: {

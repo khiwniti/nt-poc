@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import request from 'supertest';
 import app from '../../app';
-import { pool } from '../../config/database';
+import { pool } from '../../config/database.js';
 
 const authToken = 'test-token';
 

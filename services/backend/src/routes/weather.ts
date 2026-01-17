@@ -1,6 +1,6 @@
 import express, { Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
-import { pool } from '../config/database';
+import { pool } from '../config/database.js';
 import {
   getCurrentWeather,
   getWeatherForecast,

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import { app } from '../../app';
-import { pool } from '../../config/database';
+import { pool } from '../../config/database.js';
 import jwt from 'jsonwebtoken';
 import { geocodingService } from '../../services/geocodingService';
 

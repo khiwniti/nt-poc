@@ -1,5 +1,5 @@
 import express, { Response } from 'express';
-import { pool } from '../config/database';
+import { pool } from '../config/database.js';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { ModelPerformanceService } from '../services/modelPerformance';
 

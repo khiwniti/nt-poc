@@ -1,5 +1,5 @@
 import { Pool, PoolClient } from 'pg';
-import { pool } from '../config/database';
+import { pool } from '../config/database.js';
 
 export interface Alert {
   id: string;

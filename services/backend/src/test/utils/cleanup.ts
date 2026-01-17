@@ -1,4 +1,4 @@
-import { pool } from '../../config/database';
+import { pool } from '../../config/database.js';
 
 export async function cleanupTestData(): Promise<void> {
   console.log('Cleaning up test data...');

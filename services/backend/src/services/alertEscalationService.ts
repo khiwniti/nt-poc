@@ -11,7 +11,7 @@
  * - Logs all escalation events
  */
 
-import { pool } from '../config/database';
+import { pool } from '../config/database.js';
 import emailNotificationService from './emailNotificationService';
 import { logger } from '../observability/logger';
 import {

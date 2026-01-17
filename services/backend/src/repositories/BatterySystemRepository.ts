@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { pool } from '../config/database';
+import { pool } from '../config/database.js';
 import type { BatterySystem } from '../models/BatterySystem';
 
 export class BatterySystemRepository {

@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { pool } from '../../config/database';
+import { pool } from '../../config/database.js';
 import alertEscalationService from '../alertEscalationService';
 import type { Alert, AlertSeverity } from '../../types/alertEscalation';
 

@@ -1,4 +1,4 @@
-import { pool } from '../../config/database';
+import { pool } from '../../config/database.js';
 import { createCompleteSystemFixture } from '../fixtures/completeSystemFixture';
 import { createDegradedBatteryFixture } from '../fixtures/degradedBatteryFixture';
 import { createAlertScenarioFixture } from '../fixtures/alertScenarioFixture';

@@ -6,7 +6,7 @@ import {
   mapCacheSetsTotal,
   mapCacheErrorsTotal,
   mapCacheHitRate,
-} from '../config/metrics';
+} from '../config/metrics.js';
 
 type CacheBackend = 'redis' | 'disabled';
 

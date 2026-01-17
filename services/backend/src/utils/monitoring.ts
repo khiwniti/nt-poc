@@ -12,7 +12,7 @@ import {
   dbQueryDuration,
   jobExecutionDuration,
   jobExecutionTotal,
-} from '../config/metrics';
+} from '../config/metrics.js';
 
 /**
  * Track prediction performance

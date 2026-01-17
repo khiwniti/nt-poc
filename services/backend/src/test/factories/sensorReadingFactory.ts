@@ -1,5 +1,5 @@
 import { faker } from '@faker-js/faker';
-import { pool } from '../../config/database';
+import { pool } from '../../config/database.js';
 
 export interface SensorReadingData {
   id?: number;

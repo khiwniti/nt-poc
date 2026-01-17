@@ -1,5 +1,5 @@
 import { beforeEach, afterEach, afterAll } from 'vitest';
-import { pool } from '../../config/database';
+import { pool } from '../../config/database.js';
 import { cleanupTestData } from './cleanup';
 
 export async function setupTestEnvironment(): Promise<void> {
