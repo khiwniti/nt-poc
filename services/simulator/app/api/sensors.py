@@ -204,17 +204,21 @@ async def get_sensor_status(request: Request):
         "health": health,
         "configuration": {
             "backend_type": settings.SENSOR_BACKEND.value,
-            "simulator_config": {
-                "noise_level": settings.SIMULATOR_NOISE_LEVEL,
-                "drift_enabled": settings.SIMULATOR_DRIFT_ENABLED,
-            }
-            if settings.is_simulator()
-            else None,
-            "hardware_config": {
-                "connection_configured": bool(settings.HARDWARE_CONNECTION_STRING),
-                "timeout_ms": settings.HARDWARE_TIMEOUT_MS,
-            }
-            if settings.is_hardware()
-            else None,
+            "simulator_config": (
+                {
+                    "noise_level": settings.SIMULATOR_NOISE_LEVEL,
+                    "drift_enabled": settings.SIMULATOR_DRIFT_ENABLED,
+                }
+                if settings.is_simulator()
+                else None
+            ),
+            "hardware_config": (
+                {
+                    "connection_configured": bool(settings.HARDWARE_CONNECTION_STRING),
+                    "timeout_ms": settings.HARDWARE_TIMEOUT_MS,
+                }
+                if settings.is_hardware()
+                else None
+            ),
         },
     }
