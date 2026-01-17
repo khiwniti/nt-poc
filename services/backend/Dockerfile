@@ -1,48 +1,70 @@
 # Backend Service Dockerfile
-FROM node:18-alpine AS builder
+# Multi-stage build for optimized production image
+
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
-COPY tsconfig.json ./
+COPY services/backend/package*.json ./
+COPY services/backend/tsconfig.json ./
+COPY services/backend/knexfile.js ./
 
-# Install dependencies
-RUN npm ci
+# Install ALL dependencies (including devDependencies for build)
+RUN npm install --ignore-scripts && npm cache clean --force
 
 # Copy source code
-COPY src ./src
-COPY migrations ./migrations
-COPY seeds ./seeds
-COPY knexfile.ts ./
+COPY services/backend/src ./src
+COPY services/backend/scripts ./scripts
+COPY services/backend/migrations ./migrations
+COPY services/backend/seeds ./seeds
 
 # Build TypeScript
 RUN npm run build
 
+# ============================================================================
 # Production image
-FROM node:18-alpine
+# ============================================================================
+FROM node:20-alpine
 
 WORKDIR /app
 
+# Install bash and wget for healthchecks and startup script
+RUN apk add --no-cache bash wget
+
+# Copy package files
+COPY services/backend/package*.json ./
+
 # Install production dependencies only
-COPY package*.json ./
-RUN npm ci --production
+RUN npm install --omit=dev --ignore-scripts && npm cache clean --force
 
-# Copy built files from builder
+# Copy built files from builder stage
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/migrations ./migrations
-COPY --from=builder /app/seeds ./seeds
-COPY --from=builder /app/knexfile.ts ./
+COPY --from=builder /app/knexfile.js ./knexfile.js
 
-# Install knex CLI globally
-RUN npm install -g knex
+# Copy runtime files
+COPY services/backend/migrations/ ./migrations/
+COPY services/backend/scripts/start-production.sh ./scripts/start-production.sh
+
+# Make start script executable
+RUN chmod +x scripts/start-production.sh
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Set ownership
+RUN chown -R nodejs:nodejs /app
+
+# Switch to non-root user
+USER nodejs
 
 # Expose port
 EXPOSE 3000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/api/v1/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/v1/health || exit 1
 
-# Start command (runs migrations then starts server)
-CMD ["sh", "-c", "npx knex migrate:latest && node dist/index.js"]
+# Start command (runs migrations via start-production.sh then starts server)
+CMD ["bash", "scripts/start-production.sh"]
