@@ -179,6 +179,7 @@ name = "simulator"
 [services.build]
 builder = "DOCKERFILE"
 dockerfilePath = "services/simulator/Dockerfile"
+dockerfileContext = "."
 watchPatterns = ["services/simulator/**"]
 
 [services.deploy]
