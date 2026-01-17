@@ -263,7 +263,6 @@ class SimulatorSensor(SensorInterface):
         # Heat generation proportional to current squared
         heat_factor = 0.05  # Calibration factor
         heat = heat_factor * (current**2)
-        heat = heat_factor * (current ** 2)
 
         # Ambient cooling
         ambient_temp = 25.0
