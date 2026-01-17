@@ -17,9 +17,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code from services/simulator
 COPY services/simulator/app ./app
 
-# Explicitly ensure models directory is copied (in case .dockerignore interferes)
-COPY services/simulator/app/models ./app/models
-
 # Expose port
 EXPOSE 8001
 
