@@ -1,279 +1,245 @@
 #!/bin/bash
-# Railway Deployment Script for NT-POC Battery Management System
-# Deploys all services to Railway with proper configuration
-
 set -e
+
+# NT-POC Production Fleet - Railway Deployment Script
+# Deploys all services: Backend, Simulator, MLOps, Frontend
+# Fleet: 1,944 batteries across 9 data centers
 
 # Colors for output
 GREEN='\033[0;32m'
+BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
-BLUE='\033[0;34m'
 
-echo "========================================="
-echo "  NT-POC Railway Deployment Script"
-echo "========================================="
+echo ""
+echo "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
+echo "${BLUE}║   NT-POC Production Fleet - Railway Deployment            ║${NC}"
+echo "${BLUE}║   1,944 Batteries | 9 Data Centers | 4 Services           ║${NC}"
+echo "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
-# Check if Railway CLI is installed
+# Check Railway CLI
 if ! command -v railway &> /dev/null; then
-    echo -e "${RED}✗${NC} Railway CLI not found. Please install it:"
-    echo "  npm install -g @railway/cli"
-    echo "  Or visit: https://docs.railway.app/develop/cli"
+    echo "${RED}❌ Railway CLI not found${NC}"
+    echo "Install: npm install -g @railway/cli"
     exit 1
 fi
 
-echo -e "${GREEN}✓${NC} Railway CLI found"
-
-# Check if logged in
+# Check authentication
 if ! railway whoami &> /dev/null; then
-    echo -e "${YELLOW}!${NC} Not logged in to Railway"
-    echo "  Running: railway login"
-    railway login
-
-    if ! railway whoami &> /dev/null; then
-        echo -e "${RED}✗${NC} Login failed. Please try again."
-        exit 1
-    fi
+    echo "${RED}❌ Not logged in to Railway${NC}"
+    echo "Run: railway login"
+    exit 1
 fi
 
-RAILWAY_USER=$(railway whoami)
-echo -e "${GREEN}✓${NC} Logged in as: ${RAILWAY_USER}"
+echo "${GREEN}✅ Railway CLI authenticated${NC}"
 echo ""
 
-# Check if project is linked
-if ! railway status &> /dev/null; then
-    echo -e "${YELLOW}!${NC} Project not linked"
-    echo ""
-    echo "Choose an option:"
-    echo "  1) Link to existing project"
-    echo "  2) Create new project"
-    read -p "Enter choice (1 or 2): " choice
-
-    case $choice in
-        1)
-            echo "Linking to existing project..."
-            railway link
-            ;;
-        2)
-            read -p "Enter project name (default: nt-poc-battery-management): " project_name
-            project_name=${project_name:-nt-poc-battery-management}
-            echo "Creating new project: ${project_name}"
-            railway init --name "${project_name}"
-            ;;
-        *)
-            echo -e "${RED}✗${NC} Invalid choice"
-            exit 1
-            ;;
-    esac
-
-    if ! railway status &> /dev/null; then
-        echo -e "${RED}✗${NC} Failed to link/create project"
-        exit 1
-    fi
-fi
-
-PROJECT_INFO=$(railway status 2>&1 | head -5)
-echo -e "${GREEN}✓${NC} Project linked"
-echo "${PROJECT_INFO}"
-echo ""
-
-# Ask about database plugins
-echo "========================================="
-echo "  Database & Cache Setup"
-echo "========================================="
-echo ""
-
-read -p "Have you added PostgreSQL database? (y/n): " has_postgres
-if [[ "$has_postgres" != "y" ]]; then
-    echo -e "${YELLOW}!${NC} Adding PostgreSQL database..."
-    railway add --database postgres
-    echo -e "${GREEN}✓${NC} PostgreSQL added"
-    echo ""
-    echo -e "${YELLOW}⚠️  IMPORTANT:${NC} Enable TimescaleDB extension:"
-    echo "  1. railway connect Postgres"
-    echo "  2. In psql: CREATE EXTENSION IF NOT EXISTS timescaledb;"
-    echo "  3. Verify: \\dx"
-    echo "  4. Exit: \\q"
-    echo ""
-    read -p "Press Enter after enabling TimescaleDB..."
-fi
-
-read -p "Have you added Redis cache? (y/n): " has_redis
-if [[ "$has_redis" != "y" ]]; then
-    echo -e "${YELLOW}!${NC} Adding Redis cache..."
-    railway add --database redis
-    echo -e "${GREEN}✓${NC} Redis added"
-fi
-
-echo ""
-
-# Configure environment variables
-echo "========================================="
-echo "  Environment Variables Configuration"
-echo "========================================="
-echo ""
-
-read -p "Configure environment variables now? (y/n): " configure_vars
-if [[ "$configure_vars" == "y" ]]; then
-    echo ""
-    echo "Generating JWT secret..."
-    JWT_SECRET=$(openssl rand -base64 32)
-
-    echo "Setting backend variables..."
-    railway variables set --service backend \
-      NODE_ENV=production \
-      PORT=3000 \
-      DB_SSL=true \
-      JWT_SECRET="${JWT_SECRET}" \
-      JWT_EXPIRY=24h \
-      PREDICTION_JOB_INTERVAL_MINUTES=60 \
-      ESCALATION_JOB_INTERVAL_MINUTES=5 \
-      SENSOR_INGESTION_ENABLED=true \
-      SENSOR_INGESTION_INTERVAL=10000 \
-      LOG_LEVEL=info
-
-    echo "Linking database variables..."
-    railway variables set --service backend \
-      'DATABASE_URL=${{Postgres.DATABASE_URL}}' \
-      'DB_HOST=${{Postgres.PGHOST}}' \
-      'DB_PORT=${{Postgres.PGPORT}}' \
-      'DB_NAME=${{Postgres.PGDATABASE}}' \
-      'DB_USER=${{Postgres.PGUSER}}' \
-      'DB_PASSWORD=${{Postgres.PGPASSWORD}}' \
-      'REDIS_URL=${{Redis.REDIS_URL}}'
-
-    echo "Setting service URLs..."
-    railway variables set --service backend \
-      MLOPS_SERVICE_URL=http://mlops.railway.internal:8000 \
-      SIMULATOR_URL=http://simulator.railway.internal:8001
-
-    echo "Setting frontend variables..."
-    railway variables set --service frontend \
-      VITE_APP_NAME="Battery Management System" \
-      VITE_ENVIRONMENT=production \
-      NODE_ENV=production \
-      GENERATE_SOURCEMAP=false
-
-    echo "Setting MLOps variables..."
-    railway variables set --service mlops \
-      PORT=8000 \
-      ENVIRONMENT=production \
-      LOG_LEVEL=INFO \
-      MODELS_DIR=/app/models \
-      MODEL_VERSION=v1.0.0
-
-    railway variables set --service mlops \
-      'DATABASE_URL=${{Postgres.DATABASE_URL}}' \
-      'DB_HOST=${{Postgres.PGHOST}}' \
-      'DB_PORT=${{Postgres.PGPORT}}' \
-      'DB_NAME=${{Postgres.PGDATABASE}}' \
-      'DB_USER=${{Postgres.PGUSER}}' \
-      'DB_PASSWORD=${{Postgres.PGPASSWORD}}' \
-      'REDIS_URL=${{Redis.REDIS_URL}}'
-
-    echo "Setting simulator variables..."
-    railway variables set --service simulator \
-      PORT=8001 \
-      SENSOR_BACKEND=simulator \
-      SIMULATOR_NOISE_LEVEL=0.02 \
-      SIMULATOR_DRIFT_ENABLED=true \
-      SIMULATOR_UPDATE_INTERVAL_MS=1000
-
-    echo "Setting LINE Bot variables..."
-    railway variables set --service line-bot \
-      PORT=3002 \
-      NODE_ENV=production
-
-    echo -e "${GREEN}✓${NC} Environment variables configured"
-    echo ""
-    echo -e "${YELLOW}⚠️  Manual Configuration Required:${NC}"
-    echo "  - LINE Bot: Set LINE_CHANNEL_ACCESS_TOKEN and LINE_CHANNEL_SECRET"
-    echo "  - Frontend: Set VITE_API_BASE_URL after backend deployment"
-    echo "  - Optional: Set SENDGRID_API_KEY for email alerts"
-    echo ""
-else
-    echo -e "${YELLOW}!${NC} Skipping environment variables configuration"
-    echo "  Configure manually via: railway variables set KEY=value"
-fi
-
-echo ""
-
-# Deploy services
-echo "========================================="
-echo "  Deploying Services"
-echo "========================================="
-echo ""
-
-read -p "Deploy all services now? (y/n): " deploy_now
-if [[ "$deploy_now" != "y" ]]; then
-    echo -e "${YELLOW}!${NC} Deployment skipped"
-    echo ""
-    echo "To deploy manually:"
-    echo "  railway up --service backend"
-    echo "  railway up --service frontend"
-    echo "  railway up --service mlops"
-    echo "  railway up --service simulator"
-    echo "  railway up --service line-bot"
+# Prompt for confirmation
+read -p "Deploy to Railway? This will create/update all services. (y/N) " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Deployment cancelled"
     exit 0
 fi
 
-# Deploy each service
-services=("backend" "mlops" "simulator" "line-bot" "frontend")
+echo ""
+echo "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo "${BLUE}Step 1: Initializing Railway Project${NC}"
+echo "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
-for service in "${services[@]}"; do
-    echo ""
-    echo -e "${BLUE}→${NC} Deploying ${service}..."
-
-    if railway up --service "${service}"; then
-        echo -e "${GREEN}✓${NC} ${service} deployed successfully"
-    else
-        echo -e "${RED}✗${NC} ${service} deployment failed"
-        echo "  Check logs: railway logs --service ${service}"
-    fi
-done
+railway init --name nt-poc-production 2>/dev/null || echo "${YELLOW}Project already initialized${NC}"
+echo "${GREEN}✅ Railway project ready${NC}"
 
 echo ""
-echo "========================================="
-echo "  Post-Deployment Tasks"
-echo "========================================="
-echo ""
+echo "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo "${BLUE}Step 2: Provisioning PostgreSQL Database${NC}"
+echo "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
-read -p "Run database migrations? (y/n): " run_migrations
-if [[ "$run_migrations" == "y" ]]; then
-    echo "Running migrations..."
-    railway run --service backend npm run migrate
-    echo -e "${GREEN}✓${NC} Migrations complete"
+railway add --plugin postgresql 2>/dev/null || echo "${YELLOW}PostgreSQL already provisioned${NC}"
+echo "${GREEN}✅ PostgreSQL database ready${NC}"
+
+# Wait for database to be fully provisioned
+echo "Waiting for database to be ready..."
+sleep 10
+
+echo ""
+echo "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo "${BLUE}Step 3: Deploying Backend Service${NC}"
+echo "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+
+cd services/backend
+
+# Create service if it doesn't exist
+railway service 2>/dev/null || railway up --service backend
+
+# Set environment variables
+echo "Configuring backend environment..."
+railway variables set \
+  NODE_ENV=production \
+  PORT=3000 \
+  DB_SSL=true \
+  PREDICTION_JOB_INTERVAL_MINUTES=60 \
+  ESCALATION_JOB_INTERVAL_MINUTES=5 \
+  SENSOR_INGESTION_ENABLED=true \
+  SENSOR_INGESTION_INTERVAL=10000
+
+# Deploy backend
+echo "Deploying backend service..."
+railway up --detach
+
+echo "${GREEN}✅ Backend service deployed${NC}"
+BACKEND_URL=$(railway domain 2>/dev/null || echo "pending")
+echo "   URL: ${BACKEND_URL}"
+
+# Wait for backend deployment
+echo "Waiting for backend to be ready..."
+sleep 30
+
+echo ""
+echo "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo "${BLUE}Step 4: Initializing Database${NC}"
+echo "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+
+echo "Running database migrations..."
+railway run npm run migrate || echo "${YELLOW}Migrations may have already run${NC}"
+
+echo "Seeding production data (1,944 batteries)..."
+railway run npm run seed:production || echo "${YELLOW}Data may already be seeded${NC}"
+
+# Verify data
+echo "Verifying database..."
+BATTERY_COUNT=$(railway run bash -c 'psql $DATABASE_URL -t -c "SELECT COUNT(*) FROM battery_systems;"' 2>/dev/null | tr -d ' \n')
+echo "   Batteries in database: ${BATTERY_COUNT}"
+
+if [ "$BATTERY_COUNT" = "1944" ]; then
+    echo "${GREEN}✅ Database initialized successfully${NC}"
+else
+    echo "${YELLOW}⚠️  Expected 1,944 batteries, found ${BATTERY_COUNT}${NC}"
+fi
+
+cd ../..
+
+echo ""
+echo "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo "${BLUE}Step 5: Deploying Simulator Service${NC}"
+echo "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+
+cd services/simulator
+
+# Create service if it doesn't exist
+railway service 2>/dev/null || railway up --service simulator
+
+# Set environment variables
+echo "Configuring simulator environment..."
+railway variables set \
+  ENVIRONMENT=production \
+  PORT=8001 \
+  SIMULATOR_CACHE_SIZE=500 \
+  BATCH_MAX_SIZE=200 \
+  BATCH_PARALLEL_WORKERS=10 \
+  LOG_LEVEL=INFO
+
+# Deploy simulator
+echo "Deploying simulator service..."
+railway up --detach
+
+echo "${GREEN}✅ Simulator service deployed${NC}"
+SIMULATOR_URL=$(railway domain 2>/dev/null || echo "pending")
+echo "   URL: ${SIMULATOR_URL}"
+
+cd ../..
+
+# Update backend with simulator URL
+if [ "$SIMULATOR_URL" != "pending" ]; then
+    cd services/backend
+    echo "Linking simulator to backend..."
+    railway variables set SIMULATOR_URL="https://${SIMULATOR_URL}"
+    cd ../..
 fi
 
 echo ""
-echo "========================================="
-echo "  Deployment Summary"
-echo "========================================="
-echo ""
+echo "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo "${BLUE}Step 6: Deploying MLOps Service${NC}"
+echo "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
-railway status
+cd services/mlops
+
+# Create service if it doesn't exist
+railway service 2>/dev/null || railway up --service mlops
+
+# Set environment variables
+echo "Configuring MLOps environment..."
+railway variables set \
+  ENVIRONMENT=production \
+  PORT=8001 \
+  BATCH_MAX_SIZE=500 \
+  BATCH_PARALLEL_WORKERS=10 \
+  MODEL_CACHE_SIZE=4 \
+  PREDICTION_BATCH_SIZE=50 \
+  FEATURE_WINDOW_SIZE=10 \
+  LOG_LEVEL=INFO
+
+# Deploy MLOps
+echo "Deploying MLOps service..."
+railway up --detach
+
+echo "${GREEN}✅ MLOps service deployed${NC}"
+MLOPS_URL=$(railway domain 2>/dev/null || echo "pending")
+echo "   URL: ${MLOPS_URL}"
+
+cd ../..
 
 echo ""
-echo "View logs:"
-for service in "${services[@]}"; do
-    echo "  railway logs --service ${service}"
-done
+echo "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo "${BLUE}Step 7: Deploying Frontend Service${NC}"
+echo "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+
+cd services/frontend
+
+# Create service if it doesn't exist
+railway service 2>/dev/null || railway up --service frontend
+
+# Set environment variables
+echo "Configuring frontend environment..."
+if [ "$BACKEND_URL" != "pending" ]; then
+    railway variables set VITE_API_URL="https://${BACKEND_URL}"
+else
+    echo "${YELLOW}⚠️  Backend URL not ready, you'll need to set VITE_API_URL manually${NC}"
+fi
+
+# Deploy frontend
+echo "Deploying frontend service..."
+railway up --detach
+
+echo "${GREEN}✅ Frontend service deployed${NC}"
+FRONTEND_URL=$(railway domain 2>/dev/null || echo "pending")
+echo "   URL: ${FRONTEND_URL}"
+
+cd ../..
 
 echo ""
-echo "Get service URLs:"
-echo "  railway domain"
-
+echo "${GREEN}╔════════════════════════════════════════════════════════════╗${NC}"
+echo "${GREEN}║               🎉 Deployment Complete! 🎉                   ║${NC}"
+echo "${GREEN}╚════════════════════════════════════════════════════════════╝${NC}"
 echo ""
-echo -e "${GREEN}✓${NC} Deployment script complete!"
+echo "${BLUE}Service URLs:${NC}"
+echo "  🌐 Frontend:  ${FRONTEND_URL:-pending}"
+echo "  🔧 Backend:   ${BACKEND_URL:-pending}"
+echo "  🤖 Simulator: ${SIMULATOR_URL:-pending}"
+echo "  🧠 MLOps:     ${MLOPS_URL:-pending}"
 echo ""
-echo "Next steps:"
-echo "  1. Check service status: railway status"
-echo "  2. View logs: railway logs"
-echo "  3. Get domains: railway domain"
-echo "  4. Update LINE webhook URL with your Railway domain"
-echo "  5. Update frontend VITE_API_BASE_URL with backend domain"
+echo "${BLUE}Next Steps:${NC}"
+echo "  1. Verify services: ${YELLOW}railway status${NC}"
+echo "  2. Check logs: ${YELLOW}railway logs --service backend${NC}"
+echo "  3. Monitor health: ${YELLOW}curl https://${BACKEND_URL}/api/v1/health${NC}"
+echo "  4. Visit frontend: ${YELLOW}open https://${FRONTEND_URL}${NC}"
 echo ""
-echo "Documentation: RAILWAY_DEPLOYMENT_GUIDE.md"
+echo "${BLUE}Database Status:${NC}"
+echo "  📊 Batteries: ${BATTERY_COUNT}/1944"
+echo "  🏢 Facilities: 9"
+echo "  🔋 Strings: 81"
+echo ""
+echo "${YELLOW}Note: If URLs show 'pending', run 'railway domain' in each service directory${NC}"
 echo ""

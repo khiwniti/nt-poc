@@ -6,7 +6,8 @@ is loaded at runtime (simulator vs hardware).
 """
 
 from enum import Enum
-from typing import Optional, List
+from typing import List, Optional
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -31,10 +32,7 @@ class Settings(BaseSettings):
     """
 
     model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=False,
-        extra="ignore"
+        env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore"
     )
 
     # Application Settings
@@ -51,65 +49,79 @@ class Settings(BaseSettings):
     # CRITICAL: Sensor Backend Selection
     SENSOR_BACKEND: SensorBackend = Field(
         default=SensorBackend.SIMULATOR,
-        description="Which sensor backend to use (simulator or hardware)"
+        description="Which sensor backend to use (simulator or hardware)",
     )
 
     # Simulator Configuration (used when SENSOR_BACKEND=simulator)
     SIMULATOR_SEED: Optional[int] = Field(
         default=None,
-        description="Random seed for deterministic simulation (None = random)"
+        description="Random seed for deterministic simulation (None = random)",
     )
     SIMULATOR_NOISE_LEVEL: float = Field(
         default=0.02,
         ge=0.0,
         le=1.0,
-        description="Noise level for sensor readings (0.0 = no noise, 1.0 = high noise)"
+        description="Noise level for sensor readings (0.0 = no noise, 1.0 = high noise)",
     )
     SIMULATOR_DRIFT_ENABLED: bool = Field(
         default=True,
-        description="Enable temporal drift (SoC decrease, SoH degradation)"
+        description="Enable temporal drift (SoC decrease, SoH degradation)",
     )
     SIMULATOR_UPDATE_INTERVAL_MS: int = Field(
         default=1000,
         ge=100,
         le=60000,
-        description="Minimum interval between state updates in milliseconds"
+        description="Minimum interval between state updates in milliseconds",
     )
     SIMULATOR_SOC_DECAY_RATE: float = Field(
         default=0.1,
         ge=0.0,
         le=10.0,
-        description="SoC decay rate per minute under typical load"
+        description="SoC decay rate per minute under typical load",
     )
     SIMULATOR_SOH_DECAY_RATE: float = Field(
-        default=0.0001,
-        ge=0.0,
-        le=1.0,
-        description="SoH decay rate per cycle"
+        default=0.0001, ge=0.0, le=1.0, description="SoH decay rate per cycle"
+    )
+    SIMULATOR_CACHE_SIZE: int = Field(
+        default=500,
+        ge=100,
+        le=5000,
+        description="LRU cache size for battery state management (production scale)",
+    )
+
+    # Batch Processing Configuration (production scale)
+    BATCH_MAX_SIZE: int = Field(
+        default=200, ge=10, le=500, description="Maximum batteries per batch request"
+    )
+    BATCH_PARALLEL_WORKERS: int = Field(
+        default=10,
+        ge=1,
+        le=50,
+        description="Number of concurrent workers for parallel batch processing",
     )
 
     # Hardware Configuration (used when SENSOR_BACKEND=hardware)
     HARDWARE_CONNECTION_STRING: Optional[str] = Field(
         default=None,
-        description="Connection string for hardware sensors (e.g., tcp://192.168.1.100:5000)"
+        description="Connection string for hardware sensors (e.g., tcp://192.168.1.100:5000)",
     )
     HARDWARE_TIMEOUT_MS: int = Field(
         default=3000,
         ge=100,
         le=30000,
-        description="Timeout for hardware communication in milliseconds"
+        description="Timeout for hardware communication in milliseconds",
     )
     HARDWARE_RETRY_ATTEMPTS: int = Field(
         default=3,
         ge=1,
         le=10,
-        description="Number of retry attempts for failed hardware reads"
+        description="Number of retry attempts for failed hardware reads",
     )
     HARDWARE_RETRY_DELAY_MS: int = Field(
         default=500,
         ge=100,
         le=5000,
-        description="Delay between retry attempts in milliseconds"
+        description="Delay between retry attempts in milliseconds",
     )
 
     def is_simulator(self) -> bool:

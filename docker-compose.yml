@@ -1,13 +1,16 @@
+version: "3.8"
+
 services:
-  database:
-    image: postgres:16-alpine
-    container_name: bms-database-dev
+  # PostgreSQL with TimescaleDB
+  postgres:
+    image: timescale/timescaledb:latest-pg15
+    container_name: nt-postgres
+    environment:
+      POSTGRES_DB: battery_management
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432"
-    environment:
-      - POSTGRES_DB=battery_management
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -16,137 +19,141 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - bms-network
+      - nt-network
 
-  redis:
-    image: redis:7-alpine
-    container_name: bms-redis-dev
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-    networks:
-      - bms-network
-    profiles:
-      - with-redis
-
+  # Backend Service
   backend:
     build:
       context: ./services/backend
-      dockerfile: Dockerfile.dev
-    container_name: bms-backend-dev
+      dockerfile: Dockerfile
+    container_name: nt-backend
     ports:
       - "3000:3000"
-    depends_on:
-      database:
-        condition: service_healthy
     environment:
-      - NODE_ENV=development
-      - PORT=3000
-      - DB_HOST=database
-      - DB_PORT=5432
-      - DB_NAME=battery_management
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_SSL=false
-      - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=dev-secret-change-in-production
-      - MLOPS_SERVICE_URL=http://mlops:8001
-      - LOG_LEVEL=debug
-    volumes:
-      - ./services/backend/src:/app/src
-      - ./services/backend/migrations:/app/migrations
-      - ./services/backend/seeds:/app/seeds
-      - /app/node_modules
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/battery_management
+      NODE_ENV: production
+      PORT: 3000
+      DB_SSL: "false"
+      SIMULATOR_URL: http://simulator:8001
+      PREDICTION_JOB_INTERVAL_MINUTES: 60
+      ESCALATION_JOB_INTERVAL_MINUTES: 5
+      SENSOR_INGESTION_ENABLED: "true"
+      SENSOR_INGESTION_INTERVAL: 10000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      simulator:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000/api/v1/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
     networks:
-      - bms-network
+      - nt-network
+    restart: unless-stopped
 
+  # Simulator Service
+  simulator:
+    build:
+      context: ./services/simulator
+      dockerfile: Dockerfile
+    container_name: nt-simulator
+    ports:
+      - "8001:8001"
+    environment:
+      ENVIRONMENT: production
+      PORT: 8001
+      SIMULATOR_CACHE_SIZE: 500
+      BATCH_MAX_SIZE: 200
+      BATCH_PARALLEL_WORKERS: 10
+      LOG_LEVEL: INFO
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8001/health').read()",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    networks:
+      - nt-network
+    restart: unless-stopped
+
+  # MLOps Service
+  mlops:
+    build:
+      context: ./services/mlops
+      dockerfile: Dockerfile
+    container_name: nt-mlops
+    ports:
+      - "8002:8001"
+    environment:
+      ENVIRONMENT: production
+      PORT: 8001
+      BATCH_MAX_SIZE: 500
+      BATCH_PARALLEL_WORKERS: 10
+      MODEL_CACHE_SIZE: 4
+      PREDICTION_BATCH_SIZE: 50
+      FEATURE_WINDOW_SIZE: 10
+      LOG_LEVEL: INFO
+    volumes:
+      # Mount local models directory (place your model file here)
+      - ./services/mlops/models:/app/models
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8001/health').read()",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - nt-network
+    restart: unless-stopped
+
+  # Frontend Service
   frontend:
     build:
       context: ./services/frontend
-      dockerfile: Dockerfile.dev
-    container_name: bms-frontend-dev
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:3000
+    container_name: nt-frontend
     ports:
-      - "5173:5173"
-    environment:
-      - VITE_API_BASE_URL=http://localhost:3000
-      - VITE_MLOPS_SERVICE_URL=http://localhost:8001
-      - NODE_ENV=development
-    volumes:
-      - ./services/frontend/src:/app/src
-      - ./services/frontend/public:/app/public
-      - ./services/frontend/index.html:/app/index.html
-      - /app/node_modules
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5173"]
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
     networks:
-      - bms-network
-
-  mlops:
-    build:
-      context: ./services/mlops
-      dockerfile: Dockerfile
-    container_name: bms-mlops-dev
-    ports:
-      - "8001:8001"
-    environment:
-      - ENVIRONMENT=development
-      - PORT=8001
-      - CORS_ORIGINS=["http://localhost:5173","http://localhost:3000"]
-      - MODELS_DIR=/app/models
-      - LOG_LEVEL=INFO
-    volumes:
-      - ./services/ml/models:/app/models:ro
-      - ./services/mlops/src:/app/src
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    networks:
-      - bms-network
-
-  simulator:
-    build:
-      context: ./services/ml
-      dockerfile: Dockerfile
-    container_name: bms-simulator-dev
-    ports:
-      - "8002:8002"
-    environment:
-      - PYTHONPATH=/app
-    volumes:
-      - ./services/ml/models:/app/models
-      - ./services/ml/data:/app/data
-      - ./services/ml/src:/app/src
-    command: ["python", "train_example.py"]
-    networks:
-      - bms-network
-    profiles:
-      - ml-training
-
-networks:
-  bms-network:
-    driver: bridge
+      - nt-network
+    restart: unless-stopped
 
 volumes:
   postgres_data:
     driver: local
-  redis_data:
-    driver: local
+
+networks:
+  nt-network:
+    driver: bridge

@@ -17,6 +17,12 @@ const migrationsDir = isProduction
   ? path.join(__dirname, '../../../migrations')
   : path.join(__dirname, '../../migrations');
 
+// In production (dist/src/config/): seeds are at ../../../seeds (repo root)
+// In development (src/config/): seeds are at ../../seeds (repo root)
+const seedsDir = isProduction
+  ? path.join(__dirname, '../../../seeds')
+  : path.join(__dirname, '../../seeds');
+
 const db = knex({
   client: 'pg',
   connection: {
@@ -29,6 +35,11 @@ const db = knex({
   },
   migrations: {
     directory: migrationsDir,
+    extension: isProduction ? 'js' : 'ts',
+    loadExtensions: isProduction ? ['.js'] : ['.ts'],
+  },
+  seeds: {
+    directory: seedsDir,
     extension: isProduction ? 'js' : 'ts',
     loadExtensions: isProduction ? ['.js'] : ['.ts'],
   },

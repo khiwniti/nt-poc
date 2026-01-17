@@ -1,53 +1,35 @@
 # Frontend Service Dockerfile
-# Built from repository root with service-specific paths
-# Multi-stage build for optimized production image
-
-# Stage 1: Build
-FROM node:20-alpine AS builder
+FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files from frontend service directory
-COPY services/frontend/package*.json ./
+# Copy package files
+COPY package*.json ./
 
-# Install dependencies (use npm install since package-lock.json may not exist)
-RUN npm install && \
-    npm cache clean --force
+# Install dependencies
+RUN npm ci
 
-# Copy source code from frontend service directory
-COPY services/frontend/ .
+# Copy source code
+COPY . .
 
 # Build application
 RUN npm run build
 
-# Stage 2: Production
-FROM node:20-alpine
+# Production image with nginx
+FROM nginx:alpine
 
-WORKDIR /app
+# Copy built files to nginx
+COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Install serve for static file serving
-RUN npm install -g serve && \
-    npm cache clean --force
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy built assets from builder
-COPY --from=builder /app/dist ./dist
-
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
-
-# Change ownership
-RUN chown -R nodejs:nodejs /app
-
-# Switch to non-root user
-USER nodejs
-
-# Expose port (Railway will set PORT env var)
-EXPOSE 3000
+# Expose port
+EXPOSE 80
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:$PORT/ || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:80/ || exit 1
 
-# Serve static files on Railway's PORT
-CMD ["sh", "-c", "serve -s dist -l $PORT"]
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]

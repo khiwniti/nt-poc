@@ -1,8 +1,20 @@
 import type { Knex } from 'knex';
 
 export async function up(knex: Knex): Promise<void> {
-  // 1. Ensure TimescaleDB extension is available
+  // 1. Check if TimescaleDB extension is available
+  const timescaleAvailable = await knex.raw(`
+    SELECT COUNT(*) as count FROM pg_available_extensions WHERE name = 'timescaledb'
+  `).then(result => result.rows[0].count > 0).catch(() => false);
+  
+  if (!timescaleAvailable) {
+    console.log('⚠️  TimescaleDB not available - skipping hypertable creation');
+    console.log('   sensor_readings table already exists from core migration');
+    return; // Skip if TimescaleDB is not available
+  }
+  
+  // Enable TimescaleDB
   await knex.raw('CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE');
+  console.log('✅ TimescaleDB extension enabled');
 
   // 2. Create sensors table if it doesn't exist (Dependencies: T010)
   const hasSensors = await knex.schema.hasTable('sensors');
@@ -43,6 +55,7 @@ export async function up(knex: Knex): Promise<void> {
 
   // 5. Convert to hypertable
   await knex.raw("SELECT create_hypertable('sensor_readings', 'timestamp', chunk_time_interval => INTERVAL '1 week')");
+  console.log('✅ Created TimescaleDB hypertable for sensor_readings');
 }
 
 export async function down(knex: Knex): Promise<void> {

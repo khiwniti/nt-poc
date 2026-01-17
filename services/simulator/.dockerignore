@@ -1,39 +1,20 @@
-# Python
 __pycache__
 *.py[cod]
 *$py.class
 *.so
 .Python
-
-# Virtual Environment
-venv/
-env/
-ENV/
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-tests/
-
-# Environment
+venv
+env
 .env
 .env.*
-
-# Development
-.git/
+.git
 .gitignore
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Documentation
 README.md
+.DS_Store
 *.md
-docs/
-
-# Logs
+.vscode
+.idea
+.pytest_cache
+htmlcov
+.coverage
 *.log

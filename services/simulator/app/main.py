@@ -15,16 +15,16 @@ from typing import Optional
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import settings, SensorBackend
-from app.interfaces.sensor_interface import SensorInterface
-from app.implementations.simulator import SimulatorSensor
-from app.implementations.hardware import HardwareSensor
 from app.api import health, sensors
+from app.config import SensorBackend, settings
+from app.implementations.hardware import HardwareSensor
+from app.implementations.simulator import SimulatorSensor
+from app.interfaces.sensor_interface import SensorInterface
 
 # Configure logging
 logging.basicConfig(
     level=getattr(logging, settings.LOG_LEVEL.upper()),
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
 logger = logging.getLogger(__name__)
@@ -57,7 +57,8 @@ def create_sensor_backend() -> SensorInterface:
             drift_enabled=settings.SIMULATOR_DRIFT_ENABLED,
             update_interval_ms=settings.SIMULATOR_UPDATE_INTERVAL_MS,
             soc_decay_rate=settings.SIMULATOR_SOC_DECAY_RATE,
-            soh_decay_rate=settings.SIMULATOR_SOH_DECAY_RATE
+            soh_decay_rate=settings.SIMULATOR_SOH_DECAY_RATE,
+            cache_size=settings.SIMULATOR_CACHE_SIZE,
         )
     elif settings.SENSOR_BACKEND == SensorBackend.HARDWARE:
         logger.info("Initializing hardware backend")
@@ -65,7 +66,7 @@ def create_sensor_backend() -> SensorInterface:
             connection_string=settings.HARDWARE_CONNECTION_STRING,
             timeout_ms=settings.HARDWARE_TIMEOUT_MS,
             retry_attempts=settings.HARDWARE_RETRY_ATTEMPTS,
-            retry_delay_ms=settings.HARDWARE_RETRY_DELAY_MS
+            retry_delay_ms=settings.HARDWARE_RETRY_DELAY_MS,
         )
     else:
         raise ValueError(f"Unknown sensor backend: {settings.SENSOR_BACKEND}")
@@ -113,7 +114,7 @@ app = FastAPI(
     title=settings.APP_NAME,
     description="Battery sensor simulator with pluggable backend (simulator/hardware)",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # CORS middleware
@@ -139,16 +140,17 @@ async def root():
         "backend": settings.SENSOR_BACKEND.value,
         "environment": settings.ENVIRONMENT,
         "docs": "/docs",
-        "health": "/api/health"
+        "health": "/api/health",
     }
 
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
         port=settings.PORT,
         reload=settings.ENVIRONMENT == "development",
-        log_level=settings.LOG_LEVEL.lower()
+        log_level=settings.LOG_LEVEL.lower(),
     )

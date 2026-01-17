@@ -1,24 +1,36 @@
-"""Sensor data endpoints.
+"""Sensor data endpoints with batch optimization for production scale.
 
 This module provides API endpoints for accessing sensor readings and metrics.
+Optimized for handling 1,944+ batteries with parallel processing.
 """
 
+import asyncio
 import logging
 from typing import List
-from fastapi import APIRouter, Request, HTTPException, status
-from pydantic import BaseModel
 
-from app.models.responses import ReadingResponse, MultiReadingResponse, MetricsResponse, ErrorResponse
+from fastapi import APIRouter, HTTPException, Request, status
+from app.config import settings
+
+from pydantic import BaseModel, Field
+from app.models.responses import (
+    ReadingResponse,
+    MultiReadingResponse,
+    MetricsResponse,
+    ErrorResponse,
+)
 from app.models.sensor_data import SensorReading
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/sensors", tags=["Sensors"])
 
+# Batch processing limits for production scale
+
 
 class BatchReadingRequest(BaseModel):
     """Request body for batch readings."""
-    battery_system_ids: List[str]
+
+    battery_system_ids: List[str] = Field(..., max_length=settings.BATCH_MAX_SIZE)
 
 
 @router.get("/reading/{battery_system_id}", response_model=ReadingResponse)
@@ -38,55 +50,103 @@ async def get_sensor_reading(battery_system_id: str, request: Request):
         sensor = request.app.state.sensor
         reading_dict = await sensor.get_reading(battery_system_id)
 
-        return ReadingResponse(
-            success=True,
-            data=SensorReading(**reading_dict)
-        )
+        return ReadingResponse(success=True, data=SensorReading(**reading_dict))
     except ValueError as e:
         logger.warning(f"Invalid battery system ID: {battery_system_id} - {e}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
-        logger.error(f"Failed to get reading for {battery_system_id}: {e}", exc_info=True)
+        logger.error(
+            f"Failed to get reading for {battery_system_id}: {e}", exc_info=True
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get sensor reading: {str(e)}"
+            detail=f"Failed to get sensor reading: {str(e)}",
         )
 
 
 @router.post("/readings/batch", response_model=MultiReadingResponse)
 async def get_multiple_readings(request_body: BatchReadingRequest, request: Request):
-    """Get sensor readings for multiple battery systems.
+    """Get sensor readings for multiple battery systems with parallel processing.
+
+    Optimized for production scale (1,944 batteries):
+    - Enforces batch size limit of 200 batteries
+    - Parallel processing with 10 concurrent workers
+    - Graceful error handling (partial results on individual failures)
 
     Args:
-        request_body: List of battery system IDs
+        request_body: List of battery system IDs (max 200)
 
     Returns:
         MultiReadingResponse with readings for all requested batteries
 
     Raises:
-        HTTPException: If any reading fails
+        HTTPException: If batch size exceeds limit or catastrophic failure
     """
+    battery_ids = request_body.battery_system_ids
+
+    # Validate batch size
+    if len(battery_ids) > settings.BATCH_MAX_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Batch size {len(battery_ids)} exceeds maximum {settings.BATCH_MAX_SIZE}",
+        )
+
+    if not battery_ids:
+        return MultiReadingResponse(success=True, data=[], count=0)
+
     try:
         sensor = request.app.state.sensor
         readings = []
+        failed_ids = []
 
-        for battery_system_id in request_body.battery_system_ids:
-            reading_dict = await sensor.get_reading(battery_system_id)
-            readings.append(SensorReading(**reading_dict))
+        # Process batteries in parallel batches
+        semaphore = asyncio.Semaphore(settings.BATCH_PARALLEL_WORKERS)
+
+        async def fetch_reading(battery_id: str):
+            async with semaphore:
+                try:
+                    reading_dict = await sensor.get_reading(battery_id)
+                    return SensorReading(**reading_dict), None
+                except Exception as e:
+                    logger.warning(f"Failed to get reading for {battery_id}: {e}")
+                    return None, battery_id
+
+        # Execute all readings concurrently
+        results = await asyncio.gather(*[fetch_reading(bid) for bid in battery_ids])
+
+        # Separate successful readings from failures
+        for reading, failed_id in results:
+            if reading:
+                readings.append(reading)
+            if failed_id:
+                failed_ids.append(failed_id)
+
+        # Log batch statistics
+        success_rate = len(readings) / len(battery_ids) * 100
+        logger.info(
+            f"Batch completed: {len(readings)}/{len(battery_ids)} successful "
+            f"({success_rate:.1f}%), {len(failed_ids)} failed"
+        )
+
+        if failed_ids:
+            logger.warning(f"Failed battery IDs: {failed_ids[:10]}...")  # Log first 10
 
         return MultiReadingResponse(
             success=True,
             data=readings,
-            count=len(readings)
+            count=len(readings),
+            metadata={
+                "requested": len(battery_ids),
+                "successful": len(readings),
+                "failed": len(failed_ids),
+                "success_rate": round(success_rate, 2),
+            },
         )
     except Exception as e:
-        logger.error(f"Failed to get batch readings: {e}", exc_info=True)
+        logger.error(f"Catastrophic failure in batch readings: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get batch readings: {str(e)}"
+            detail=f"Failed to get batch readings: {str(e)}",
         )
 
 
@@ -109,23 +169,20 @@ async def get_battery_metrics(battery_system_id: str, request: Request):
 
         # Parse the dict into BatteryMetrics (already validated by sensor backend)
         from app.models.sensor_data import BatteryMetrics
+
         metrics = BatteryMetrics(**metrics_dict)
 
-        return MetricsResponse(
-            success=True,
-            data=metrics
-        )
+        return MetricsResponse(success=True, data=metrics)
     except ValueError as e:
         logger.warning(f"Invalid battery system ID: {battery_system_id} - {e}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
-        logger.error(f"Failed to get metrics for {battery_system_id}: {e}", exc_info=True)
+        logger.error(
+            f"Failed to get metrics for {battery_system_id}: {e}", exc_info=True
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get metrics: {str(e)}"
+            detail=f"Failed to get metrics: {str(e)}",
         )
 
 
@@ -149,7 +206,17 @@ async def get_sensor_status(request: Request):
             "backend_type": settings.SENSOR_BACKEND.value,
             "simulator_config": {
                 "noise_level": settings.SIMULATOR_NOISE_LEVEL,
-                "drift_enabled": settings.SIMULATOR_DRIFT_ENABLED
+                "drift_enabled": settings.SIMULATOR_DRIFT_ENABLED,
+            }
+            if settings.is_simulator()
+            else None,
+            "hardware_config": {
+                "connection_configured": bool(settings.HARDWARE_CONNECTION_STRING),
+                "timeout_ms": settings.HARDWARE_TIMEOUT_MS,
+            }
+            if settings.is_hardware()
+            else None,
+        },
             } if settings.is_simulator() else None,
             "hardware_config": {
                 "connection_configured": bool(settings.HARDWARE_CONNECTION_STRING),

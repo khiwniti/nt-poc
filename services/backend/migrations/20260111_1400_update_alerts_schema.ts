@@ -30,26 +30,36 @@ export async function up(knex: Knex): Promise<void> {
   });
 
   // Update severity enum to match SQL file (info, medium, high, critical)
-  // First, create new enum type
-  await knex.raw(`
-    CREATE TYPE alert_severity_new AS ENUM ('info', 'medium', 'high', 'critical')
-  `);
-
   // Update existing values: 'low' → 'info'
   await knex.raw(`
+    UPDATE alerts
+    SET severity = 'info'
+    WHERE severity = 'low'
+  `);
+  
+  // Drop the enum constraint
+  await knex.raw(`
     ALTER TABLE alerts
-    ALTER COLUMN severity TYPE alert_severity_new
-    USING (CASE severity::text
-      WHEN 'low' THEN 'info'::alert_severity_new
-      ELSE severity::text::alert_severity_new
-    END)
+    DROP CONSTRAINT IF EXISTS alerts_severity_check
+  `);
+  
+  // Change column to text temporarily
+  await knex.raw(`
+    ALTER TABLE alerts
+    ALTER COLUMN severity TYPE text
   `);
 
-  // Drop old enum type
-  await knex.raw(`DROP TYPE IF EXISTS alert_severity CASCADE`);
-
-  // Rename new enum type to original name
-  await knex.raw(`ALTER TYPE alert_severity_new RENAME TO alert_severity`);
+  // Create new enum type
+  await knex.raw(`
+    CREATE TYPE alert_severity AS ENUM ('info', 'medium', 'high', 'critical')
+  `);
+  
+  // Convert column to new enum type
+  await knex.raw(`
+    ALTER TABLE alerts
+    ALTER COLUMN severity TYPE alert_severity
+    USING severity::alert_severity
+  `);
 
   // Add new indexes for performance
   await knex.schema.alterTable('alerts', (table) => {
