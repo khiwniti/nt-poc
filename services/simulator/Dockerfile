@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements from services/simulator
+# Copy requirements from services/simulator (updated for root context 2026-01-17)
 COPY services/simulator/requirements.txt .
 
 # Install Python dependencies
