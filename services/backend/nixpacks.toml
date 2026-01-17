@@ -2,7 +2,7 @@
 nixPkgs = ["nodejs_22", "npm-9_x", "postgresql"]
 
 [phases.install]
-cmds = ["npm ci --cache=/tmp/.npm --prefer-offline=false"]
+cmds = ["npm install --cache=/tmp/.npm --prefer-offline=false"]
 
 [phases.build]
 cmds = ["npm run build"]
