@@ -7,7 +7,7 @@ const __dirname = dirname(__filename);
 
 // Determine if we're running from dist or src
 const isProduction = __dirname.includes('/dist/');
-const knexConfigPath = isProduction ? '../dist/config/knex.js' : '../src/config/knex.js';
+const knexConfigPath = isProduction ? '../src/config/knex.js' : '../src/config/knex.js';
 
 async function checkMigrationStatus() {
   try {

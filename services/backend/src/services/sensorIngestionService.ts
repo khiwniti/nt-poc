@@ -3,7 +3,7 @@
  * Fetches data from simulator service and stores in TimescaleDB
  */
 
-import { pool } from '../config/database';
+import { pool } from '../config/database.js';
 import { logger } from '../observability/logger';
 import axios from 'axios';
 
@@ -55,7 +55,7 @@ class SensorIngestionService {
     }
 
     this.isRunning = true;
-    
+
     // Run immediately on start
     await this.ingestData();
 
@@ -92,7 +92,7 @@ class SensorIngestionService {
         timeout: 3000,
       });
       return response.status === 200;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -121,11 +121,10 @@ class SensorIngestionService {
    */
   private async fetchSensorReading(batterySystemId: string): Promise<SensorReading | null> {
     try {
-      const response = await axios.get(
-        `${SIMULATOR_URL}/api/sensors/reading/${batterySystemId}`,
-        { timeout: 5000 }
-      );
-      
+      const response = await axios.get(`${SIMULATOR_URL}/api/sensors/reading/${batterySystemId}`, {
+        timeout: 5000,
+      });
+
       if (response.data) {
         return {
           battery_system_id: batterySystemId,
@@ -138,7 +137,7 @@ class SensorIngestionService {
           timestamp: response.data.timestamp || new Date().toISOString(),
         };
       }
-      
+
       return null;
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -204,7 +203,7 @@ class SensorIngestionService {
     try {
       // Get all battery systems
       const batterySystems = await this.getBatterySystems();
-      
+
       if (batterySystems.length === 0) {
         logger.debug('sensor_ingestion_no_batteries');
         return;
@@ -215,10 +214,8 @@ class SensorIngestionService {
       });
 
       // Fetch readings for all batteries
-      const readingPromises = batterySystems.map((id) => 
-        this.fetchSensorReading(id)
-      );
-      
+      const readingPromises = batterySystems.map((id) => this.fetchSensorReading(id));
+
       const readings = await Promise.all(readingPromises);
       const validReadings = readings.filter((r): r is SensorReading => r !== null);
 
@@ -228,10 +225,8 @@ class SensorIngestionService {
       }
 
       // Store all readings
-      const storePromises = validReadings.map((reading) =>
-        this.storeSensorReading(reading)
-      );
-      
+      const storePromises = validReadings.map((reading) => this.storeSensorReading(reading));
+
       const results = await Promise.all(storePromises);
       const successCount = results.filter((r) => r).length;
 

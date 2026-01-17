@@ -6,8 +6,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const environment = process.env.NODE_ENV || 'development';
-const dbSslEnabled =
-  (process.env.DB_SSL || '').toLowerCase() === 'true' || environment === 'production';
+// Only enable SSL if explicitly set to 'true' via environment variable
+// Don't auto-enable in production as Railway internal services don't use SSL
+const dbSslEnabled = (process.env.DB_SSL || '').toLowerCase() === 'true';
 const isProduction = environment === 'production' || __dirname.includes('/dist/');
 
 // In production (dist/src/config/): migrations are at ../../migrations (repo root)
