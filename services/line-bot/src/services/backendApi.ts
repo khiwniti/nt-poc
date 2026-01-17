@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
+import jwt from 'jsonwebtoken';
 import logger from '../config/logger.js';
 
 interface FacilityHealth {
@@ -44,9 +45,12 @@ interface Prediction {
 export class BackendApiService {
   private client: AxiosInstance;
   private baseUrl: string;
+  private jwtSecret: string;
 
   constructor() {
     this.baseUrl = process.env.BACKEND_API_URL || 'http://localhost:3000';
+    this.jwtSecret = process.env.JWT_SECRET || 'test-secret';
+    
     this.client = axios.create({
       baseURL: `${this.baseUrl}/api/v1`,
       timeout: 10000,
@@ -55,9 +59,13 @@ export class BackendApiService {
       },
     });
 
-    // Add request interceptor for logging
+    // Add request interceptor for authentication and logging
     this.client.interceptors.request.use(
       (config) => {
+        // Generate JWT token for service-to-service authentication
+        const token = this.generateServiceToken();
+        config.headers.Authorization = `Bearer ${token}`;
+        
         logger.debug(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
         return config;
       },
@@ -81,6 +89,21 @@ export class BackendApiService {
         return Promise.reject(error);
       }
     );
+  }
+
+  /**
+   * Generate JWT token for service-to-service authentication
+   */
+  private generateServiceToken(): string {
+    const payload = {
+      userId: 'line-bot-service',
+      role: 'service',
+      service: 'line-bot',
+    };
+
+    return jwt.sign(payload, this.jwtSecret, {
+      expiresIn: '1h',
+    });
   }
 
   /**
