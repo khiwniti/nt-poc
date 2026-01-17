@@ -4,7 +4,7 @@
  */
 
 import { pool } from '../config/database.js';
-import { logger } from '../observability/logger';
+import { logger } from '../observability/logger.js';
 import axios from 'axios';
 
 const SIMULATOR_URL = process.env.SIMULATOR_URL || 'http://localhost:8001';
