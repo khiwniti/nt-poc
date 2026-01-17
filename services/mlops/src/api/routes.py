@@ -72,21 +72,6 @@ async def health_check():
                 "prediction_batch_size": settings.PREDICTION_BATCH_SIZE,
             },
         }
-    ).isoformat(),
-            "version": "1.0.0",
-            "python_version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
-            "platform": platform.platform(),
-            "inference_latency": {
-                "count": latency_stats.count,
-                "p50_ms": round(latency_stats.p50_ms, 3),
-                "p95_ms": round(latency_stats.p95_ms, 3),
-                "p99_ms": round(latency_stats.p99_ms, 3),
-                "target_p95_ms": latency_p95_target_ms,
-                "meets_target": latency_stats.p95_ms <= latency_p95_target_ms
-                if latency_stats.count
-                else None,
-            },
-        },
     )
 
 

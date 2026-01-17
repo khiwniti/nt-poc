@@ -5,11 +5,13 @@ import { dirname, join } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// In production dist/ structure: scripts/ and src/ are siblings under dist/
-// In development: scripts/ and src/ are siblings at repo root
+// This script can be executed via `tsx scripts/migrate.ts` from the workspace.
+// In Railway, we run it from source (tsx) but with NODE_ENV=production.
+// That means `__dirname` is typically `services/backend/scripts`, not `/dist/`.
+// We should still load the compiled config when NODE_ENV=production.
 const isProduction = process.env.NODE_ENV === 'production' || __dirname.includes('/dist/');
 const knexConfigPath = isProduction
-  ? join(__dirname, '../src/config/knex.js')
+  ? join(__dirname, '../dist/src/config/knex.js')
   : join(__dirname, '../src/config/knex.ts');
 
 async function runMigrations() {

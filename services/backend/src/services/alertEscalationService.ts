@@ -1,7 +1,7 @@
 /**
  * Alert Escalation Service
  * T131: US3 - Auto-escalates unacknowledged alerts based on configured rules
- * 
+ *
  * Features:
  * - Escalates high→critical after 30 minutes (default)
  * - Escalates medium→high after 1 hour (default)
@@ -98,10 +98,7 @@ export class AlertEscalationService {
   /**
    * Get escalation timeframe for a severity level
    */
-  private getEscalationMinutes(
-    severity: AlertSeverity,
-    rule: EscalationRule
-  ): number | null {
+  private getEscalationMinutes(severity: AlertSeverity, rule: EscalationRule): number | null {
     const timeframes: Record<AlertSeverity, number | null> = {
       [AlertSeverity.LOW]: rule.lowToMediumMinutes,
       [AlertSeverity.MEDIUM]: rule.mediumToHighMinutes,
@@ -117,12 +114,28 @@ export class AlertEscalationService {
   async findEscalationCandidates(): Promise<EscalationCandidate[]> {
     const client = await pool.connect();
     try {
+      // `alerts.zone_id` is a newer schema column. In production we may temporarily be behind on
+      // migrations (e.g. during Railway deployment issues). To avoid crashing the escalation job,
+      // probe for the column and fall back to selecting NULL.
+      const hasZoneIdColumn = await client
+        .query(
+          `SELECT 1
+           FROM information_schema.columns
+           WHERE table_schema = 'public'
+             AND table_name = 'alerts'
+             AND column_name = 'zone_id'
+           LIMIT 1`
+        )
+        .then((r) => r.rowCount > 0);
+
+      const alertsSelectZoneId = hasZoneIdColumn ? 'zone_id' : 'NULL::text';
+
       // Get all unacknowledged active alerts
       const alertsResult = await client.query<Alert>(
-        `SELECT 
+        `SELECT
           id,
           battery_system_id as "batterySystemId",
-          zone_id as "zoneId",
+          ${alertsSelectZoneId} as "zoneId",
           facility_id as "facilityId",
           type,
           severity,
@@ -135,7 +148,7 @@ export class AlertEscalationService {
           acknowledged_by as "acknowledgedBy",
           resolution_notes as "resolutionNotes"
         FROM alerts
-        WHERE status = 'active' 
+        WHERE status = 'active'
           AND acknowledged_at IS NULL
           AND severity != 'critical'
         ORDER BY created_at ASC`

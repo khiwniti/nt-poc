@@ -6,19 +6,26 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const environment = process.env.NODE_ENV || 'development';
-// Only enable SSL if explicitly set to 'true' via environment variable
-// Don't auto-enable in production as Railway internal services don't use SSL
+
+// Only enable SSL if explicitly set to 'true' via environment variable.
+// Don't auto-enable in production as Railway internal services can be non-SSL.
 const dbSslEnabled = (process.env.DB_SSL || '').toLowerCase() === 'true';
+
+// `__dirname` points to:
+// - dev:   services/backend/src/config
+// - prod:  services/backend/dist/src/config
 const isProduction = environment === 'production' || __dirname.includes('/dist/');
 
-// In production (dist/src/config/): migrations are at ../../migrations (repo root)
-// In development (src/config/): migrations are at ../../migrations (repo root)
+// Migrations live under services/backend/migrations
+// - dev (src/config => ../../migrations)
+// - prod (dist/src/config => ../../../migrations)
 const migrationsDir = isProduction
   ? path.join(__dirname, '../../../migrations')
   : path.join(__dirname, '../../migrations');
 
-// In production (dist/src/config/): seeds are at ../../../seeds (repo root)
-// In development (src/config/): seeds are at ../../seeds (repo root)
+// Seeds live under services/backend/seeds
+// - dev (src/config => ../../seeds)
+// - prod (dist/src/config => ../../../seeds)
 const seedsDir = isProduction
   ? path.join(__dirname, '../../../seeds')
   : path.join(__dirname, '../../seeds');

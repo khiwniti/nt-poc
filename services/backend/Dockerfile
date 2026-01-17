@@ -38,7 +38,7 @@ COPY services/backend/package*.json ./
 # Install production dependencies only
 RUN npm install --omit=dev --ignore-scripts && npm cache clean --force
 
-# Copy built files from builder stage
+# Copy built files from builder stage (TypeScript compiles with rootDir="." so dist mirrors source structure)
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/knexfile.js ./knexfile.js
 

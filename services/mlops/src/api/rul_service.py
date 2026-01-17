@@ -119,30 +119,28 @@ class RULPredictionService:
             "features_used": self.feature_names,
         }
 
-    def predict_batch(self, sequences: np.ndarray) -> np.ndarray:
     def predict_batch(
         self,
         sequences: np.ndarray,
-        batch_size: Optional[int] = None
+        batch_size: Optional[int] = None,
     ) -> np.ndarray:
-        """
-        Make batch predictions with optimized internal batching.
-        
+        """Make batch predictions with optimized internal batching.
+
         Args:
             sequences: Input sequences (batch_size, sequence_length, n_features)
             batch_size: Internal TensorFlow batch size for predictions (default: from config)
-            
+
         Returns:
             Array of RUL predictions
         """
         self._refresh_model_if_updated()
         if self.model is None:
-            raise RuntimeError("Model not loaded")
-        
+            raise RuntimeError('Model not loaded')
+
         # Use config batch size if not provided
         if batch_size is None:
             batch_size = settings.PREDICTION_BATCH_SIZE
-        
+
         # Make predictions with internal batching for better performance
         predictions = self.model.predict(sequences, batch_size=batch_size, verbose=0)
         return predictions.flatten()
