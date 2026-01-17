@@ -27,6 +27,7 @@ name = "backend"
 [services.build]
 builder = "DOCKERFILE"
 dockerfilePath = "services/backend/Dockerfile"
+dockerfileContext = "."
 watchPatterns = ["services/backend/**"]
 
 [services.deploy]
