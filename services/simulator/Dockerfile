@@ -15,7 +15,7 @@ COPY services/simulator/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code from services/simulator
-COPY services/simulator/app ./app
+COPY services/simulator/app/ ./app/
 
 # Expose port
 EXPOSE 8001
