@@ -15,8 +15,8 @@ from typing import Any, Dict, Optional
 import numpy as np
 from cachetools import LRUCache
 
-from app.interfaces.sensor_interface import SensorInterface
-from app.models.sensor_data import BatteryMetrics, BatteryState, SensorReading
+from interfaces.sensor_interface import SensorInterface
+from models.sensor_data import BatteryMetrics, BatteryState, SensorReading
 
 logger = logging.getLogger(__name__)
 
