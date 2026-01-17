@@ -25,7 +25,6 @@
 name = "backend"
 
 [services.build]
-builder = "NIXPACKS"
 nixpacksConfigPath = "services/backend/nixpacks.toml"
 watchPatterns = ["services/backend/**"]
 
