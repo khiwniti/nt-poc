@@ -217,10 +217,4 @@ async def get_sensor_status(request: Request):
             if settings.is_hardware()
             else None,
         },
-            } if settings.is_simulator() else None,
-            "hardware_config": {
-                "connection_configured": bool(settings.HARDWARE_CONNECTION_STRING),
-                "timeout_ms": settings.HARDWARE_TIMEOUT_MS
-            } if settings.is_hardware() else None
-        }
     }
