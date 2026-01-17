@@ -6,9 +6,17 @@ The health check is used by the deployment platform to monitor service status.
 
 from datetime import datetime
 from fastapi import APIRouter, Request
-from app.models.responses import HealthResponse
+from pydantic import BaseModel
 
 router = APIRouter()
+
+
+class HealthResponse(BaseModel):
+    """Health check response model."""
+    status: str
+    service: str
+    sensor_backend: dict
+    timestamp: str
 
 
 @router.get("/api/health", response_model=HealthResponse, tags=["Health"])
