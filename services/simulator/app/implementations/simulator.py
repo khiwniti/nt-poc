@@ -40,6 +40,7 @@ class SimulatorSensor(SensorInterface):
         drift_enabled: bool = True,
         update_interval_ms: int = 1000,
         soc_decay_rate: float = 0.1,
+        soh_decay_rate: float = 0.001,
         cache_size: int = 500,
     ):
         """Initialize simulator.
