@@ -25,7 +25,8 @@
 name = "backend"
 
 [services.build]
-nixpacksConfigPath = "services/backend/nixpacks.toml"
+builder = "DOCKERFILE"
+dockerfilePath = "services/backend/Dockerfile"
 watchPatterns = ["services/backend/**"]
 
 [services.deploy]
