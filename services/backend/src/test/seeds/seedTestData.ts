@@ -1,8 +1,8 @@
 import { pool } from '../../config/database.js';
-import { createCompleteSystemFixture } from '../fixtures/completeSystemFixture';
-import { createDegradedBatteryFixture } from '../fixtures/degradedBatteryFixture';
-import { createAlertScenarioFixture } from '../fixtures/alertScenarioFixture';
-import { createTimeSeriesFixture } from '../fixtures/timeSeriesFixture';
+import { createCompleteSystemFixture } from '../fixtures/completeSystemFixture.js';
+import { createDegradedBatteryFixture } from '../fixtures/degradedBatteryFixture.js';
+import { createAlertScenarioFixture } from '../fixtures/alertScenarioFixture.js';
+import { createTimeSeriesFixture } from '../fixtures/timeSeriesFixture.js';
 
 export async function seedTestDatabase(): Promise<void> {
   console.log('Seeding test database...');

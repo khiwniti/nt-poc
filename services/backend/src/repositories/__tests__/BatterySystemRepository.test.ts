@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { BatterySystemRepository } from '../BatterySystemRepository';
+import { BatterySystemRepository } from '../BatterySystemRepository.js';
 
 describe('BatterySystemRepository', () => {
   let mockPool: any;

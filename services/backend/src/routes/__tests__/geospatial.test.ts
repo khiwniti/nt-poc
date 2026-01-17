@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
-import { app } from '../../../app';
-import * as geospatialService from '../../../services/geospatialService';
-import * as mapCache from '../../../services/mapCache';
+import { app } from '../../../app.js';
+import * as geospatialService from '../../../services/geospatialService.js';
+import * as mapCache from '../../../services/mapCache.js';
 
 vi.mock('../../../services/geospatialService');
 vi.mock('../../../services/mapCache');

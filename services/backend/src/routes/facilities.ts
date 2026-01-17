@@ -1,9 +1,9 @@
 import express, { Response } from 'express';
 import { pool } from '../config/database.js';
-import { authenticate, AuthRequest } from '../middleware/auth';
-import { facilityHealthService } from '../services/facilityHealthService';
-import alertRealtimeService from '../services/alertRealtimeService';
-import { geocodingService } from '../services/geocodingService';
+import { authenticate, AuthRequest } from '../middleware/auth.js';
+import { facilityHealthService } from '../services/facilityHealthService.js';
+import alertRealtimeService from '../services/alertRealtimeService.js';
+import { geocodingService } from '../services/geocodingService.js';
 
 const router = express.Router();
 

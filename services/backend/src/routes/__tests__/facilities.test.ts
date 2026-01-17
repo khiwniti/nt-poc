@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import request from 'supertest';
-import { app } from '../../app';
+import { app } from '../../app.js';
 import { pool } from '../../config/database.js';
 import jwt from 'jsonwebtoken';
-import { geocodingService } from '../../services/geocodingService';
+import { geocodingService } from '../../services/geocodingService.js';
 
 vi.mock('../../services/geocodingService', () => ({
   geocodingService: {

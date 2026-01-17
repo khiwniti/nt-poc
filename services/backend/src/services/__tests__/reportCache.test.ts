@@ -55,8 +55,8 @@ import {
   getReportCacheKey,
   buildReportIdHash,
   getReportCacheStats,
-} from '../reportCache';
-import { getRedisClient } from '../config/redis';
+} from '../reportCache.js';
+import { getRedisClient } from '../config/redis.js';
 
 describe('reportCache', () => {
   beforeEach(() => {

@@ -1,11 +1,11 @@
 import express, { Response } from 'express';
-import { authenticate, AuthRequest } from '../middleware/auth';
+import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { pool } from '../config/database.js';
 import {
   getCurrentWeather,
   getWeatherForecast,
   getHistoricalWeather,
-} from '../services/weatherService';
+} from '../services/weatherService.js';
 
 const router = express.Router();
 

@@ -9,8 +9,8 @@
  */
 
 import express, { Response } from 'express';
-import { authenticate, AuthRequest } from '../middleware/auth';
-import { getModel, initializeModel } from '../ml/predictiveMaintenanceModel';
+import { authenticate, AuthRequest } from '../middleware/auth.js';
+import { getModel, initializeModel } from '../ml/predictiveMaintenanceModel.js';
 import {
   createBatchPredictionJob,
   DEFAULT_ASYNC_THRESHOLD,
@@ -20,12 +20,12 @@ import {
   normalizeBatterySystemIds,
   runBatchPrediction,
   startBatchPredictionJob,
-} from '../services/batchPredictionService';
+} from '../services/batchPredictionService.js';
 import type {
   PredictMaintenanceRequest,
   PredictMaintenanceResponse,
   TrainingData,
-} from '../types/predictiveMaintenance';
+} from '../types/predictiveMaintenance.js';
 
 const router = express.Router();
 

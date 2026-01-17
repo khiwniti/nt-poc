@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { ModelPerformanceService } from '../../services/modelPerformance';
+import { ModelPerformanceService } from '../../services/modelPerformance.js';
 
 describe('ModelPerformanceService', () => {
   describe('calculateMAE', () => {

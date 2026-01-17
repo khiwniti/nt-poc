@@ -1,12 +1,12 @@
 import express, { Response } from 'express';
 import { pool } from '../config/database.js';
-import { authenticate, AuthRequest } from '../middleware/auth';
+import { authenticate, AuthRequest } from '../middleware/auth.js';
 import type {
   RULPrediction,
   RULPredictionRow,
   CreateRULPredictionRequest,
   RULPredictionResponse
-} from '../types/rulPrediction';
+} from '../types/rulPrediction.js';
 
 const router = express.Router();
 

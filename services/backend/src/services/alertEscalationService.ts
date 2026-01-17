@@ -12,16 +12,16 @@
  */
 
 import { pool } from '../config/database.js';
-import emailNotificationService from './emailNotificationService';
-import { logger } from '../observability/logger';
+import emailNotificationService from './emailNotificationService.js';
+import { logger } from '../observability/logger.js';
 import {
   AlertSeverity,
   type Alert,
   type EscalationEvent,
   type EscalationRule,
   type EscalationCandidate,
-} from '../types/alertEscalation';
-import type { AlertEmailData } from '../types/emailNotification';
+} from '../types/alertEscalation.js';
+import type { AlertEmailData } from '../types/emailNotification.js';
 
 export class AlertEscalationService {
   private static instance: AlertEscalationService;

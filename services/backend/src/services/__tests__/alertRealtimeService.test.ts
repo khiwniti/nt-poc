@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { EventEmitter } from 'events';
-import alertRealtimeService from '../alertRealtimeService';
+import alertRealtimeService from '../alertRealtimeService.js';
 
 function createFakeReq() {
   const req = new EventEmitter() as any;

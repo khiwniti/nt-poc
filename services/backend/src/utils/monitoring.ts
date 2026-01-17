@@ -3,8 +3,8 @@
  * Helper functions for tracking application metrics and performance
  */
 
-import Sentry from '../config/sentry';
-import logger from '../config/logger';
+import Sentry from '../config/sentry.js';
+import logger from '../config/logger.js';
 import {
   predictionDuration,
   predictionTotal,

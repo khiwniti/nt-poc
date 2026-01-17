@@ -8,8 +8,8 @@ import {
   PredictiveMaintenanceModel,
   getModel,
   initializeModel,
-} from '../predictiveMaintenanceModel';
-import type { TrainingData, MaintenanceFeatures } from '../../types/predictiveMaintenance';
+} from '../predictiveMaintenanceModel.js';
+import type { TrainingData, MaintenanceFeatures } from '../../types/predictiveMaintenance.js';
 
 describe('PredictiveMaintenanceModel', () => {
   let model: PredictiveMaintenanceModel;

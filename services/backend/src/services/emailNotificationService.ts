@@ -4,8 +4,8 @@ import {
   AlertEmailData,
   EmailDeliveryStatus,
   EmailRateLimiter,
-} from '../types/emailNotification';
-import { logger } from '../observability/logger';
+} from '../types/emailNotification.js';
+import { logger } from '../observability/logger.js';
 
 /**
  * Email Notification Service for Critical Alerts

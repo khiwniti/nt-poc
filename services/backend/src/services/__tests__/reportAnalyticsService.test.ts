@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import reportAnalyticsService from '../reportAnalyticsService';
-import knex from '../../config/knex';
+import reportAnalyticsService from '../reportAnalyticsService.js';
+import knex from '../../config/knex.js';
 
 describe('ReportAnalyticsService', () => {
   let testReportId: string;

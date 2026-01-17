@@ -1,6 +1,6 @@
 import type { ErrorRequestHandler } from 'express';
-import { logger } from './logger';
-import { sentryCaptureException } from './sentry';
+import { logger } from './logger.js';
+import { sentryCaptureException } from './sentry.js';
 
 export const errorHandler = (): ErrorRequestHandler => {
   return (err, req, res, _next) => {

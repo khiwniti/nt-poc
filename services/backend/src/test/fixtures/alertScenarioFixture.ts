@@ -1,4 +1,4 @@
-import { createFacility, createBatterySystem, createAlert } from '../factories';
+import { createFacility, createBatterySystem, createAlert } from '../factories.js';
 
 export interface AlertScenarioFixture {
   facility: any;

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { EmailNotificationService } from '../emailNotificationService';
-import { EmailNotificationConfig, AlertEmailData } from '../../types/emailNotification';
+import { EmailNotificationService } from '../emailNotificationService.js';
+import { EmailNotificationConfig, AlertEmailData } from '../../types/emailNotification.js';
 
 describe('EmailNotificationService', () => {
   let service: EmailNotificationService;

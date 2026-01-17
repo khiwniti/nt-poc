@@ -4,7 +4,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import logger from '../config/logger';
+import logger from '../config/logger.js';
 
 export function loggingMiddleware(req: Request, res: Response, next: NextFunction) {
   const startTime = Date.now();

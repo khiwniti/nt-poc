@@ -1,6 +1,6 @@
 import { beforeEach, afterEach, afterAll } from 'vitest';
 import { pool } from '../../config/database.js';
-import { cleanupTestData } from './cleanup';
+import { cleanupTestData } from './cleanup.js';
 
 export async function setupTestEnvironment(): Promise<void> {
   await cleanupTestData();

@@ -15,7 +15,7 @@ import type {
   RiskLevel,
   TrainingData,
   ModelMetrics,
-} from '../types/predictiveMaintenance';
+} from '../types/predictiveMaintenance.js';
 
 const MODEL_VERSION = 'v1.0.0';
 const NUM_TREES = 100;

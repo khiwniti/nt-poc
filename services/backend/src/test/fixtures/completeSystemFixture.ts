@@ -1,4 +1,4 @@
-import { createFacility, createBatterySystem, createSensorReading, createRulPrediction } from '../factories';
+import { createFacility, createBatterySystem, createSensorReading, createRulPrediction } from '../factories.js';
 
 export interface CompleteSystemFixture {
   facility: any;

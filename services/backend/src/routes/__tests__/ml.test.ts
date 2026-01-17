@@ -6,8 +6,8 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
-import { app } from '../../app';
-import { initializeModel } from '../../ml/predictiveMaintenanceModel';
+import { app } from '../../app.js';
+import { initializeModel } from '../../ml/predictiveMaintenanceModel.js';
 
 const generateToken = () => {
   return jwt.sign(

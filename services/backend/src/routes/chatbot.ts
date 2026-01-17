@@ -1,7 +1,7 @@
 import express, { Response } from 'express';
-import { authenticate, AuthRequest } from '../middleware/auth';
+import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { pool } from '../config/database.js';
-import { logger } from '../observability/logger';
+import { logger } from '../observability/logger.js';
 
 const router = express.Router();
 

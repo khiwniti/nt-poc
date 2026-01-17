@@ -5,8 +5,8 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
-import { app } from '../../app';
-import * as scheduledJob from '../../services/scheduledPredictionJob';
+import { app } from '../../app.js';
+import * as scheduledJob from '../../services/scheduledPredictionJob.js';
 
 // Mock the scheduled job
 vi.mock('../../services/scheduledPredictionJob.js', () => ({

@@ -5,8 +5,8 @@ import {
   setCachedData,
   invalidateMapCache,
   getMapCacheStats,
-} from '../mapCache';
-import * as redis from '../../config/redis';
+} from '../mapCache.js';
+import * as redis from '../../config/redis.js';
 
 vi.mock('../../config/redis');
 

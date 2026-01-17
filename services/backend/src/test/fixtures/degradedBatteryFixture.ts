@@ -1,4 +1,4 @@
-import { createFacility, createBatterySystem, createSensorReading, createAlert, createRulPrediction } from '../factories';
+import { createFacility, createBatterySystem, createSensorReading, createAlert, createRulPrediction } from '../factories.js';
 
 export interface DegradedBatteryFixture {
   facility: any;

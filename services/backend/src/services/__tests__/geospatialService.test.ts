@@ -6,8 +6,8 @@ import {
   getWeatherData,
   calculateDistance,
   getMapTileUrl,
-} from '../geospatialService';
-import * as mapCache from '../mapCache';
+} from '../geospatialService.js';
+import * as mapCache from '../mapCache.js';
 
 vi.mock('axios');
 vi.mock('../mapCache');

@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { getRedisClient } from '../config/redis';
+import { getRedisClient } from '../config/redis.js';
 import {
   mapCacheHitsTotal,
   mapCacheMissesTotal,

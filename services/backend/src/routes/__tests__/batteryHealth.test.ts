@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import request from 'supertest';
-import { app } from '../../app';
+import { app } from '../../app.js';
 import { pool } from '../../config/database.js';
 import jwt from 'jsonwebtoken';
 

@@ -1,13 +1,13 @@
 import express, { Response } from 'express';
-import { authenticate, AuthRequest } from '../middleware/auth';
+import { authenticate, AuthRequest } from '../middleware/auth.js';
 import {
   geocodeAddress,
   reverseGeocode,
   getWeatherData,
   calculateDistance,
   getMapTileUrl,
-} from '../services/geospatialService';
-import { getMapCacheStats } from '../services/mapCache';
+} from '../services/geospatialService.js';
+import { getMapCacheStats } from '../services/mapCache.js';
 
 const router = express.Router();
 

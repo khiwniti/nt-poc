@@ -13,7 +13,7 @@
 import * as cron from 'node-cron';
 import { pool } from '../config/database.js';
 import { getModel, initializeModel } from '../ml/predictiveMaintenanceModel.js';
-import type { MaintenanceFeatures } from '../types/predictiveMaintenance';
+import type { MaintenanceFeatures } from '../types/predictiveMaintenance.js';
 import { logger } from '../observability/logger.js';
 
 interface JobMetrics {

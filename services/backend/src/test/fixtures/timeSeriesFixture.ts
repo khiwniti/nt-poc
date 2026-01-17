@@ -1,4 +1,4 @@
-import { createFacility, createBatterySystem, createSensorReading } from '../factories';
+import { createFacility, createBatterySystem, createSensorReading } from '../factories.js';
 
 export interface TimeSeriesFixture {
   facility: any;

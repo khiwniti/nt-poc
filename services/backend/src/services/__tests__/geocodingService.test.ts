@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import axios from 'axios';
-import { GeocodingService } from '../geocodingService';
+import { GeocodingService } from '../geocodingService.js';
 
 vi.mock('axios');
 const mockedAxios = vi.mocked(axios);

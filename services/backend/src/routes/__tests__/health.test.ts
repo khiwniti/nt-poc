@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import request from 'supertest';
-import { app } from '../../app';
+import { app } from '../../app.js';
 
 describe('Health API Integration Tests', () => {
   describe('GET /api/health', () => {

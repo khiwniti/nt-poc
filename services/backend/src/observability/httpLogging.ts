@@ -1,5 +1,5 @@
 import type { RequestHandler } from 'express';
-import { logger } from './logger';
+import { logger } from './logger.js';
 
 const redactPath = (path: string): string => {
   if (path.startsWith('/api/v1/auth')) return '/api/v1/auth/*';
