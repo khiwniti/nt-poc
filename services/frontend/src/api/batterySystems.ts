@@ -48,6 +48,17 @@ export interface BatterySystemWithMetrics extends BatterySystem {
   rul_prediction_time?: string;
 }
 
+export interface SensorReading {
+  time: string;
+  battery_system_id: string;
+  voltage: number;
+  current: number;
+  temperature: number;
+  soc?: number;
+  soh?: number;
+  power?: number;
+}
+
 export interface BatteryListResponse {
   data: BatterySystemWithMetrics[];
   total: number;
@@ -199,5 +210,37 @@ export const batterySystemsApi = {
 
     const data = await response.json();
     return data.data;
+  },
+
+  /**
+   * Get sensor reading history for a battery
+   * @param batteryId - Battery system ID
+   * @param hours - Number of hours of history to fetch (default: 24)
+   * @param limit - Maximum number of readings (default: 50)
+   */
+  async getSensorHistory(
+    batteryId: string,
+    hours: number = 24,
+    limit: number = 50
+  ): Promise<SensorReading[]> {
+    const queryParams = new URLSearchParams();
+    queryParams.append('hours', hours.toString());
+    queryParams.append('limit', limit.toString());
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/sensor-readings/battery/${batteryId}/history?${queryParams.toString()}`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch sensor history: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.data || [];
   },
 };
