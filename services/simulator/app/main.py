@@ -15,11 +15,11 @@ from typing import Optional
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api import health, sensors
-from config import SensorBackend, settings
-from implementations.hardware import HardwareSensor
-from implementations.simulator import SimulatorSensor
-from interfaces.sensor_interface import SensorInterface
+from app.api import health, sensors
+from app.config import SensorBackend, settings
+from app.implementations.hardware import HardwareSensor
+from app.implementations.simulator import SimulatorSensor
+from app.interfaces.sensor_interface import SensorInterface
 
 # Configure logging
 logging.basicConfig(

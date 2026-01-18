@@ -9,16 +9,16 @@ import logging
 from typing import List
 
 from fastapi import APIRouter, HTTPException, Request, status
-from config import settings
+from app.config import settings
 
 from pydantic import BaseModel, Field
-from models.responses import (
+from app.models.responses import (
     ReadingResponse,
     MultiReadingResponse,
     MetricsResponse,
     ErrorResponse,
 )
-from models.sensor_data import SensorReading
+from app.models.sensor_data import SensorReading
 
 logger = logging.getLogger(__name__)
 
@@ -168,7 +168,7 @@ async def get_battery_metrics(battery_system_id: str, request: Request):
         metrics_dict = await sensor.get_metrics(battery_system_id)
 
         # Parse the dict into BatteryMetrics (already validated by sensor backend)
-        from models.sensor_data import BatteryMetrics
+        from app.models.sensor_data import BatteryMetrics
 
         metrics = BatteryMetrics(**metrics_dict)
 
@@ -193,7 +193,7 @@ async def get_sensor_status(request: Request):
     Returns:
         Dict with sensor backend information
     """
-    from config import settings
+    from app.config import settings
 
     sensor = request.app.state.sensor
     health = await sensor.health_check()
