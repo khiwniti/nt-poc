@@ -1,4 +1,3 @@
-
 import { Branch } from '../../types';
 
 export const getMarkerHtml = (branch: Branch, isSelected: boolean) => {
@@ -8,18 +7,18 @@ export const getMarkerHtml = (branch: Branch, isSelected: boolean) => {
   let pulseRing = '';
 
   if (branch.status === 'critical') {
-      mainColor = '#ef4444'; // Red
-      glowColor = 'rgba(239, 68, 68, 0.5)';
-      pulseRing = `
+    mainColor = '#ef4444'; // Red
+    glowColor = 'rgba(239, 68, 68, 0.5)';
+    pulseRing = `
         <div class="absolute inset-0 rounded-full border-2 border-red-500 opacity-0 animate-ping-slow"></div>
         <div class="absolute inset-[-4px] rounded-full border border-red-500 opacity-0 animate-ping-slower delay-300"></div>
       `;
   } else if (branch.status === 'warning') {
-      mainColor = '#f59e0b'; // Amber
-      glowColor = 'rgba(245, 158, 11, 0.5)';
+    mainColor = '#f59e0b'; // Amber
+    glowColor = 'rgba(245, 158, 11, 0.5)';
   } else {
-      mainColor = '#10b981'; // Emerald (Operational)
-      glowColor = 'rgba(16, 185, 129, 0.4)';
+    mainColor = '#10b981'; // Emerald (Operational)
+    glowColor = 'rgba(16, 185, 129, 0.4)';
   }
 
   return `
@@ -35,10 +34,10 @@ export const getMarkerHtml = (branch: Branch, isSelected: boolean) => {
                 <!-- Pin Head -->
                 <div class="relative w-10 h-10">
                      <!-- Outer Glow / Glass -->
-                     <div class="absolute inset-0 bg-white rounded-full shadow-[0_4px_10px_${glowColor}] border-2 border-white overflow-hidden">
+                     <div class="absolute inset-0 bg-white rounded-full border-2 border-white overflow-hidden" style="box-shadow: 0 4px 10px ${glowColor}">
                         <div class="absolute inset-0 opacity-20 bg-gradient-to-br from-white to-black"></div>
                         <!-- Status Fill -->
-                        <div class="absolute inset-1 rounded-full bg-gradient-to-br from-[${mainColor}] to-slate-900 shadow-inner flex items-center justify-center">
+                        <div class="absolute inset-1 rounded-full shadow-inner flex items-center justify-center" style="background: linear-gradient(to bottom right, ${mainColor}, #0f172a)">
                             <!-- Inner Icon -->
                             <svg viewBox="0 0 24 24" class="w-5 h-5 text-white drop-shadow-md">
                                 <path fill="currentColor" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
@@ -56,7 +55,7 @@ export const getMarkerHtml = (branch: Branch, isSelected: boolean) => {
         <!-- Floating Label -->
         <div class="absolute top-full mt-2 transition-all duration-300 ${isSelected ? 'opacity-100 translate-y-0 scale-100' : 'opacity-90 translate-y-1 scale-95 group-hover:opacity-100 group-hover:translate-y-0 group-hover:scale-100'}">
             <div class="px-3 py-1.5 bg-slate-900/95 backdrop-blur text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-xl border border-white/20 flex items-center gap-2 whitespace-nowrap">
-               <div class="w-2 h-2 rounded-full shadow-[0_0_5px_${mainColor}]" style="background-color: ${mainColor}"></div>
+               <div class="w-2 h-2 rounded-full" style="background-color: ${mainColor}; box-shadow: 0 0 5px ${mainColor}"></div>
                ${branch.name}
             </div>
         </div>
