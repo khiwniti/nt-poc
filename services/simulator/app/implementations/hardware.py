@@ -11,7 +11,7 @@ import logging
 from datetime import datetime
 from typing import Dict, Any, Optional
 
-from interfaces.sensor_interface import SensorInterface
+from app.interfaces.sensor_interface import SensorInterface
 
 logger = logging.getLogger(__name__)
 
