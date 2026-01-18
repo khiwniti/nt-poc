@@ -22,6 +22,9 @@ COPY services/backend/seeds ./seeds
 # Build TypeScript
 RUN npm run build
 
+# Debug: List built files
+RUN echo "=== Listing dist directory ===" && ls -la dist/ || echo "dist/ not found"
+
 # ============================================================================
 # Production image
 # ============================================================================
