@@ -7,6 +7,12 @@
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
+# Pass environment variables as build arguments
+buildArgs = [
+  "VITE_API_BASE_URL=$VITE_API_BASE_URL",
+  "VITE_API_URL=$VITE_API_URL",
+  "VITE_GEMINI_API_KEY=$VITE_GEMINI_API_KEY"
+]
 
 [deploy]
 healthcheckPath = "/"
