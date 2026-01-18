@@ -2,7 +2,7 @@
 
 from typing import List, Optional, Any
 from pydantic import BaseModel, Field
-from models.sensor_data import SensorReading, BatteryMetrics
+from app.models.sensor_data import SensorReading, BatteryMetrics
 
 
 class HealthResponse(BaseModel):
