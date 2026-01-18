@@ -1,0 +1,40 @@
+#!/usr/bin/env node
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+// This script can be executed via `tsx scripts/migrate.ts` from the workspace.
+// In Railway, we run it from source (tsx) but with NODE_ENV=production.
+// That means `__dirname` is typically `services/backend/scripts`, not `/dist/`.
+// We should still load the compiled config when NODE_ENV=production.
+const isProduction = process.env.NODE_ENV === 'production' || __dirname.includes('/dist/');
+const knexConfigPath = isProduction
+    ? join(__dirname, '../dist/src/config/knex.js')
+    : join(__dirname, '../src/config/knex.ts');
+async function runMigrations() {
+    try {
+        console.log('🔄 Running database migrations...');
+        console.log(`📦 Environment: ${isProduction ? 'production' : 'development'}`);
+        console.log(`📦 Current directory: ${__dirname}`);
+        console.log(`📦 Using config from: ${knexConfigPath}`);
+        const { default: knex } = await import(knexConfigPath);
+        const [batchNo, migrations] = await knex.migrate.latest();
+        if (migrations.length === 0) {
+            console.log('✅ Database is already up to date');
+        }
+        else {
+            console.log(`✅ Batch ${batchNo} migrations completed:`);
+            migrations.forEach((migration) => {
+                console.log(`   - ${migration}`);
+            });
+        }
+        await knex.destroy();
+        process.exit(0);
+    }
+    catch (error) {
+        console.error('❌ Migration failed:', error);
+        console.error('Stack trace:', error);
+        process.exit(1);
+    }
+}
+runMigrations();

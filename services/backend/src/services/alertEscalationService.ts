@@ -126,7 +126,7 @@ export class AlertEscalationService {
              AND column_name = 'zone_id'
            LIMIT 1`
         )
-        .then((r) => r.rowCount > 0);
+        .then((r) => (r.rowCount ?? 0) > 0);
 
       const alertsSelectZoneId = hasZoneIdColumn ? 'zone_id' : 'NULL::text';
 

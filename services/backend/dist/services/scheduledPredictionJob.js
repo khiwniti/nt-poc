@@ -10,9 +10,9 @@
  * - Job execution logging and metrics
  */
 import * as cron from 'node-cron';
-import { pool } from '../config/database';
-import { getModel, initializeModel } from '../ml/predictiveMaintenanceModel';
-import { logger } from '../observability/logger';
+import { pool } from '../config/database.js';
+import { getModel, initializeModel } from '../ml/predictiveMaintenanceModel.js';
+import { logger } from '../observability/logger.js';
 export class ScheduledPredictionJob {
     task = null;
     isRunning = false;
@@ -23,9 +23,10 @@ export class ScheduledPredictionJob {
     retryDelayMs;
     constructor(intervalMinutes = 60, retryAttempts = 3, retryDelayMs = 5000) {
         // Convert minutes to cron expression (runs at minute 0 of every Nth hour)
-        this.cronExpression = intervalMinutes >= 60
-            ? `0 */${Math.floor(intervalMinutes / 60)} * * *`
-            : `*/${intervalMinutes} * * * *`;
+        this.cronExpression =
+            intervalMinutes >= 60
+                ? `0 */${Math.floor(intervalMinutes / 60)} * * *`
+                : `*/${intervalMinutes} * * * *`;
         this.retryAttempts = retryAttempts;
         this.retryDelayMs = retryDelayMs;
     }
@@ -85,7 +86,9 @@ export class ScheduledPredictionJob {
             errors: 0,
         };
         try {
-            logger.info('scheduled_prediction_job_run_started', { startTime: metrics.startTime.toISOString() });
+            logger.info('scheduled_prediction_job_run_started', {
+                startTime: metrics.startTime.toISOString(),
+            });
             // Fetch all active batteries
             const batteries = await this.fetchActiveBatteries();
             logger.info('scheduled_prediction_job_batteries_fetched', { count: batteries.length });
@@ -208,7 +211,7 @@ export class ScheduledPredictionJob {
             '7d': 7,
             '14d': 14,
             '30d': 30,
-            'safe': 365, // 1 year for safe batteries
+            safe: 365, // 1 year for safe batteries
         };
         const predictedRUL = rulMap[prediction.riskLevel] || 365;
         // Calculate confidence from probabilities
@@ -268,7 +271,7 @@ export class ScheduledPredictionJob {
      * Delay utility for retry logic
      */
     delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
+        return new Promise((resolve) => setTimeout(resolve, ms));
     }
     /**
      * Get job status and metrics

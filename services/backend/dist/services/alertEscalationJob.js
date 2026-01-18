@@ -10,8 +10,8 @@
  * - Tracks job execution metrics
  */
 import * as cron from 'node-cron';
-import alertEscalationService from './alertEscalationService';
-import { logger } from '../observability/logger';
+import alertEscalationService from './alertEscalationService.js';
+import { logger } from '../observability/logger.js';
 export class AlertEscalationJob {
     task = null;
     isRunning = false;
@@ -63,7 +63,9 @@ export class AlertEscalationJob {
             errors: 0,
         };
         try {
-            logger.info('alert_escalation_job_run_started', { startTime: metrics.startTime.toISOString() });
+            logger.info('alert_escalation_job_run_started', {
+                startTime: metrics.startTime.toISOString(),
+            });
             const result = await alertEscalationService.processEscalations();
             metrics.alertsChecked = result.checked;
             metrics.alertsEscalated = result.escalated;
@@ -81,8 +83,7 @@ export class AlertEscalationJob {
         }
         catch (error) {
             metrics.errors = 1;
-            metrics.lastError =
-                error instanceof Error ? error.message : 'Unknown error';
+            metrics.lastError = error instanceof Error ? error.message : 'Unknown error';
             logger.error('alert_escalation_job_failed', { error });
         }
         finally {

@@ -1,7 +1,7 @@
 import express from 'express';
-import { pool } from '../config/database';
-import { authenticate } from '../middleware/auth';
-import { ModelPerformanceService } from '../services/modelPerformance';
+import { pool } from '../config/database.js';
+import { authenticate } from '../middleware/auth.js';
+import { ModelPerformanceService } from '../services/modelPerformance.js';
 const router = express.Router();
 router.use(authenticate);
 /**

@@ -10,10 +10,10 @@
  * - Sends notifications on escalation
  * - Logs all escalation events
  */
-import { pool } from '../config/database';
-import emailNotificationService from './emailNotificationService';
-import { logger } from '../observability/logger';
-import { AlertSeverity, } from '../types/alertEscalation';
+import { pool } from '../config/database.js';
+import emailNotificationService from './emailNotificationService.js';
+import { logger } from '../observability/logger.js';
+import { AlertSeverity, } from '../types/alertEscalation.js';
 export class AlertEscalationService {
     static instance;
     constructor() { }
@@ -93,11 +93,23 @@ export class AlertEscalationService {
     async findEscalationCandidates() {
         const client = await pool.connect();
         try {
+            // `alerts.zone_id` is a newer schema column. In production we may temporarily be behind on
+            // migrations (e.g. during Railway deployment issues). To avoid crashing the escalation job,
+            // probe for the column and fall back to selecting NULL.
+            const hasZoneIdColumn = await client
+                .query(`SELECT 1
+           FROM information_schema.columns
+           WHERE table_schema = 'public'
+             AND table_name = 'alerts'
+             AND column_name = 'zone_id'
+           LIMIT 1`)
+                .then((r) => r.rowCount > 0);
+            const alertsSelectZoneId = hasZoneIdColumn ? 'zone_id' : 'NULL::text';
             // Get all unacknowledged active alerts
-            const alertsResult = await client.query(`SELECT 
+            const alertsResult = await client.query(`SELECT
           id,
           battery_system_id as "batterySystemId",
-          zone_id as "zoneId",
+          ${alertsSelectZoneId} as "zoneId",
           facility_id as "facilityId",
           type,
           severity,
@@ -110,7 +122,7 @@ export class AlertEscalationService {
           acknowledged_by as "acknowledgedBy",
           resolution_notes as "resolutionNotes"
         FROM alerts
-        WHERE status = 'active' 
+        WHERE status = 'active'
           AND acknowledged_at IS NULL
           AND severity != 'critical'
         ORDER BY created_at ASC`);

@@ -3,6 +3,7 @@
  * Test actual API responses to see what counts are returned
  */
 
+// @ts-expect-error - node-fetch types not needed for script
 import fetch from 'node-fetch';
 
 const BASE_URL = 'http://localhost:3000/api/v1';

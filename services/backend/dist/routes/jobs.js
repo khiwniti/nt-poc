@@ -3,8 +3,8 @@
  * T143: API endpoints to manage scheduled ML prediction job
  */
 import express from 'express';
-import { authenticate } from '../middleware/auth';
-import { getScheduledJob } from '../services/scheduledPredictionJob';
+import { authenticate } from '../middleware/auth.js';
+import { getScheduledJob } from '../services/scheduledPredictionJob.js';
 const router = express.Router();
 router.use(authenticate);
 /**
