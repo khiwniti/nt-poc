@@ -26,6 +26,11 @@ interface BatterySystem {
   status: string;
   bankType?: string;
   historyLog?: MaintenanceLog[];
+  rackId?: string;
+  stringId?: string;
+  unitId?: string;
+  impedance?: number;
+  rul?: number;
 }
 
 interface MaintenanceLog {
@@ -145,6 +150,7 @@ const Chart: React.FC<{
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
+            style={{ transition: 'all 1.5s ease-in-out' }}
           />
           <circle
             cx={width - padding}
@@ -241,6 +247,10 @@ export const BatteryDetailModal: React.FC<BatteryDetailModalProps> = ({ data, on
     setTimeout(() => setIsExporting(false), 2000);
   };
 
+  // State for animated chart data
+  const [animatedVoltageHistory, setAnimatedVoltageHistory] = useState<number[]>([]);
+  const [animatedTempHistory, setAnimatedTempHistory] = useState<number[]>([]);
+
   // Use real sensor history data if available, otherwise fallback to mock data
   const voltageHistory =
     sensorHistory.length > 0
@@ -261,6 +271,38 @@ export const BatteryDetailModal: React.FC<BatteryDetailModalProps> = ({ data, on
           .fill(0)
           .map((_, i) => data.temperature + Math.cos(i) * 0.5 + (Math.random() * 0.1 - 0.05));
 
+  // Animate charts - update every 2 seconds with slight variations for smooth movement
+  useEffect(() => {
+    // Initialize with current data
+    setAnimatedVoltageHistory(voltageHistory);
+    setAnimatedTempHistory(tempHistory);
+
+    // Create smooth animation by adding new data points
+    const animationInterval = setInterval(() => {
+      setAnimatedVoltageHistory((prev) => {
+        const newData = [...prev];
+        // Remove oldest point and add new one with slight variation
+        newData.shift();
+        const lastValue = newData[newData.length - 1] || data.voltage;
+        const variation = (Math.random() - 0.5) * 0.01 * (is2V ? 1 : 5);
+        newData.push(lastValue + variation);
+        return newData;
+      });
+
+      setAnimatedTempHistory((prev) => {
+        const newData = [...prev];
+        // Remove oldest point and add new one with slight variation
+        newData.shift();
+        const lastValue = newData[newData.length - 1] || data.temperature;
+        const variation = (Math.random() - 0.5) * 0.05;
+        newData.push(lastValue + variation);
+        return newData;
+      });
+    }, 2000); // Update every 2 seconds for smooth animation
+
+    return () => clearInterval(animationInterval);
+  }, [voltageHistory, tempHistory, data.voltage, data.temperature, is2V]);
+
   const ModalHeader = (
     <div className="flex items-center gap-4 text-slate-800">
       <div
@@ -280,7 +322,8 @@ export const BatteryDetailModal: React.FC<BatteryDetailModalProps> = ({ data, on
           </span>
         </h2>
         <p className="text-gray-500 text-xs uppercase tracking-widest mt-0.5">
-          ตู้ (Rack) {data.rackId} • สตริง (String) {data.stringId} • เซลล์ (Cell) {data.unitId}
+          ตู้ (Rack) {data.rackId || 'N/A'} • สตริง (String) {data.stringId || 'N/A'} • เซลล์ (Cell){' '}
+          {data.unitId || 'N/A'}
         </p>
       </div>
     </div>
@@ -359,7 +402,8 @@ export const BatteryDetailModal: React.FC<BatteryDetailModalProps> = ({ data, on
                   <span className="text-xs text-gray-400">mΩ</span>
                 </div>
                 <div className="text-3xl font-mono font-bold text-slate-800">
-                  {data.impedance.toFixed(2)} <span className="text-lg text-gray-400">mΩ</span>
+                  {(data.impedance || 0).toFixed(2)}{' '}
+                  <span className="text-lg text-gray-400">mΩ</span>
                 </div>
               </div>
               <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden">
@@ -371,13 +415,13 @@ export const BatteryDetailModal: React.FC<BatteryDetailModalProps> = ({ data, on
                     <span className="text-xs text-gray-400">AI Estimate</span>
                   </div>
                   <div className="text-3xl font-mono font-bold text-slate-800">
-                    {data.rul} <span className="text-lg text-gray-400">วัน</span>
+                    {data.rul || 0} <span className="text-lg text-gray-400">วัน</span>
                   </div>
                 </div>
                 <div className="absolute bottom-0 left-0 w-full h-1 bg-gray-100">
                   <div
                     className="h-full bg-emerald-500"
-                    style={{ width: `${Math.min(100, (data.rul / 1000) * 100)}%` }}
+                    style={{ width: `${Math.min(100, ((data.rul || 0) / 1000) * 100)}%` }}
                   ></div>
                 </div>
               </div>
@@ -404,7 +448,9 @@ export const BatteryDetailModal: React.FC<BatteryDetailModalProps> = ({ data, on
                     )}
                   </div>
                   <Chart
-                    data={voltageHistory}
+                    data={
+                      animatedVoltageHistory.length > 0 ? animatedVoltageHistory : voltageHistory
+                    }
                     color="#3b82f6"
                     label="ประวัติแรงดันไฟฟ้า"
                     unit="V"
@@ -412,7 +458,7 @@ export const BatteryDetailModal: React.FC<BatteryDetailModalProps> = ({ data, on
                     max={voltageMax}
                   />
                   <Chart
-                    data={tempHistory}
+                    data={animatedTempHistory.length > 0 ? animatedTempHistory : tempHistory}
                     color="#ef4444"
                     label="ประวัติอุณหภูมิ"
                     unit="°C"
