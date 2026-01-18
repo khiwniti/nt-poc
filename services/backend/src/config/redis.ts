@@ -1,7 +1,10 @@
-import Redis from 'ioredis';
+import IORedis, { type Redis as RedisInstance } from 'ioredis';
 import logger from './logger.js';
 
-export type RedisClient = Redis;
+// Handle both CJS and ESM exports
+const Redis = (IORedis as any).default || IORedis;
+
+export type RedisClient = RedisInstance;
 
 let redisClient: RedisClient | null = null;
 
@@ -22,10 +25,11 @@ export const getRedisClient = (): RedisClient | null => {
     lazyConnect: true,
   });
 
-  redisClient.on('connect', () => logger.info('redis_connected'));
-  redisClient.on('error', (error) => logger.error('redis_error', { error }));
-  redisClient.on('close', () => logger.warn('redis_connection_closed'));
+  if (redisClient) {
+    redisClient.on('connect', () => logger.info('redis_connected'));
+    redisClient.on('error', (error: Error) => logger.error('redis_error', { error }));
+    redisClient.on('close', () => logger.warn('redis_connection_closed'));
+  }
 
   return redisClient;
 };
-
