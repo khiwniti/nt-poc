@@ -11,7 +11,7 @@ const __dirname = dirname(__filename);
 // We should still load the compiled config when NODE_ENV=production.
 const isProduction = process.env.NODE_ENV === 'production' || __dirname.includes('/dist/');
 const knexConfigPath = isProduction
-  ? join(__dirname, '../dist/src/config/knex.js')
+  ? join(__dirname, '../src/config/knex.js')
   : join(__dirname, '../src/config/knex.ts');
 
 async function runMigrations() {
