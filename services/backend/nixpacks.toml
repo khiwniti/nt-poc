@@ -1,9 +1,14 @@
-# Force Railway to use Dockerfile instead of auto-detection
 [phases.setup]
 nixPkgs = []
 
+[phases.install]
+dependsOn = []
+
 [phases.build]
-cmds = []
+dependsOn = []
 
 [start]
-cmd = "echo 'This should not run - use Dockerfile instead'"
+cmd = "echo 'Use Dockerfile instead'"
+
+[build]
+builderImage = "heroku/builder:22"
