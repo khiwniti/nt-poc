@@ -14,8 +14,8 @@ COPY services/simulator/requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code from services/simulator
-COPY services/simulator/app ./
+# Copy application code from services/simulator - preserve app package structure
+COPY services/simulator/app ./app
 
 # Expose port
 EXPOSE 8001
@@ -24,5 +24,5 @@ EXPOSE 8001
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8001/health').read()"
 
-# Start command
+# Start command - reference app.main since we preserved the package structure
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "2"]
