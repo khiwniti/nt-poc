@@ -47,7 +47,9 @@ COPY --from=builder /app/knexfile.js ./knexfile.js
 
 # Copy runtime files
 COPY services/backend/migrations/ ./migrations/
-COPY services/backend/scripts/start-production.sh ./scripts/start-production.sh
+
+# Copy startup script from builder stage (where we already have it)
+COPY --from=builder /app/scripts/start-production.sh ./scripts/start-production.sh
 
 # Make start script executable
 RUN chmod +x scripts/start-production.sh
