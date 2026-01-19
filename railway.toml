@@ -34,7 +34,7 @@ watchPatterns = ["services/backend/**"]
 startCommand = "bash scripts/start-production.sh"
 healthcheckPath = "/api/v1/health"
 healthcheckTimeout = 100
-restartPolicy = "on_failure"
+restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 10
 
 # Environment Variables (set via Railway Dashboard):
@@ -96,7 +96,7 @@ watchPatterns = ["services/frontend/**"]
 startCommand = "cd services/frontend && npm start"
 healthcheckPath = "/"
 healthcheckTimeout = 100
-restartPolicy = "on_failure"
+restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 10
 
 # Environment Variables (build-time injection):
@@ -141,7 +141,7 @@ watchPatterns = ["services/mlops/**"]
 [services.deploy]
 healthcheckPath = "/health"
 healthcheckTimeout = 100
-restartPolicy = "on_failure"
+restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 10
 
 # Environment Variables:
@@ -187,7 +187,7 @@ watchPatterns = ["services/simulator/**"]
 [services.deploy]
 healthcheckPath = "/health"
 healthcheckTimeout = 100
-restartPolicy = "on_failure"
+restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 10
 
 # Environment Variables:
@@ -213,7 +213,7 @@ watchPatterns = ["services/line-bot/**"]
 [services.deploy]
 healthcheckPath = "/health"
 healthcheckTimeout = 100
-restartPolicy = "on_failure"
+restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 10
 
 # Environment Variables:
