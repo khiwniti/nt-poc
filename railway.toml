@@ -31,6 +31,7 @@ dockerfileContext = "."
 watchPatterns = ["services/backend/**"]
 
 [services.deploy]
+startCommand = "bash scripts/start-production.sh"
 healthcheckPath = "/api/v1/health"
 healthcheckTimeout = 100
 restartPolicy = "on_failure"
