@@ -33,7 +33,7 @@ watchPatterns = ["services/backend/**"]
 [services.deploy]
 healthcheckPath = "/api/v1/health"
 healthcheckTimeout = 100
-restartPolicyType = "on-failure"
+restartPolicy = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
 # Environment Variables (set via Railway Dashboard):
@@ -87,14 +87,15 @@ restartPolicyMaxRetries = 10
 name = "frontend"
 
 [services.build]
-builder = "DOCKERFILE"
-dockerfilePath = "services/frontend/Dockerfile"
+builder = "NIXPACKS"
+buildCommand = "cd services/frontend && npm install && npm run build"
 watchPatterns = ["services/frontend/**"]
 
 [services.deploy]
+startCommand = "cd services/frontend && npm start"
 healthcheckPath = "/"
 healthcheckTimeout = 100
-restartPolicyType = "on-failure"
+restartPolicy = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
 # Environment Variables (build-time injection):
@@ -139,7 +140,7 @@ watchPatterns = ["services/mlops/**"]
 [services.deploy]
 healthcheckPath = "/health"
 healthcheckTimeout = 100
-restartPolicyType = "on-failure"
+restartPolicy = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
 # Environment Variables:
@@ -185,7 +186,7 @@ watchPatterns = ["services/simulator/**"]
 [services.deploy]
 healthcheckPath = "/health"
 healthcheckTimeout = 100
-restartPolicyType = "on-failure"
+restartPolicy = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
 # Environment Variables:
@@ -211,7 +212,7 @@ watchPatterns = ["services/line-bot/**"]
 [services.deploy]
 healthcheckPath = "/health"
 healthcheckTimeout = 100
-restartPolicyType = "on-failure"
+restartPolicy = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
 # Environment Variables:
