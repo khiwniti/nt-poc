@@ -3,7 +3,7 @@ builder = "dockerfile"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-restartPolicyType = "on-failure"
+restartPolicy = "on_failure"
 restartPolicyMaxRetries = 3
 
 [[healthcheck]]

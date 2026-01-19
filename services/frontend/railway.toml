@@ -5,19 +5,13 @@
 # ============================================================================
 
 [build]
-builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
-# Pass environment variables as build arguments
-buildArgs = [
-  "VITE_API_BASE_URL=$VITE_API_BASE_URL",
-  "VITE_API_URL=$VITE_API_URL",
-  "VITE_GEMINI_API_KEY=$VITE_GEMINI_API_KEY"
-]
+builder = "NIXPACKS"
 
 [deploy]
+startCommand = "npx serve -s dist -p $PORT"
 healthcheckPath = "/"
 healthcheckTimeout = 100
-restartPolicyType = "ON_FAILURE"
+restartPolicy = "on_failure"
 restartPolicyMaxRetries = 10
 
 # Environment Variables (build-time injection):
