@@ -48,11 +48,11 @@ COPY --from=builder /app/knexfile.js ./knexfile.js
 # Copy runtime files
 COPY services/backend/migrations/ ./migrations/
 
-# Copy startup script from builder stage (where we already have it)
-COPY --from=builder /app/scripts/start-production.sh ./scripts/start-production.sh
+# Copy all scripts from builder stage (needed for migrations and startup)
+COPY --from=builder /app/scripts ./scripts
 
-# Make start script executable
-RUN chmod +x scripts/start-production.sh
+# Make scripts executable
+RUN chmod +x scripts/*.sh scripts/*.ts
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
