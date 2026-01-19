@@ -15,6 +15,7 @@
     "test:seed:minimal": "tsx -e \"import('./src/test/seeds/seedTestData.ts').then(m => m.seedMinimalTestData())\"",
     "test:cleanup": "tsx src/test/utils/cleanup.ts",
     "test:reset": "tsx src/test/utils/cleanup.ts reset",
+    "migrate": "echo 'Migrations are handled by start-production.sh'",
     "migrate:manual": "tsx scripts/migrate.ts",
     "migrate:rollback": "tsx scripts/migrate-rollback.ts",
     "migrate:status": "tsx scripts/migrate-status.ts",
