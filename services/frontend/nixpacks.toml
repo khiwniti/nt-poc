@@ -1,11 +1,17 @@
 [phases.setup]
-nixPkgs = ["nodejs_22", "npm-9_x"]
+nixPkgs = ["nodejs-18_x"]
+nixpkgsArchive = "f69ae4816bc1b501460ad2c0c63ed0cc4a9b876e"
+
+[variables]
+NPM_CONFIG_PRODUCTION = "false"
 
 [phases.install]
-cmds = ["npm ci --cache=/tmp/.npm --prefer-offline=false"]
+cmds = ["npm install --prefer-offline --no-audit"]
 
 [phases.build]
-cmds = ["npm run build"]
+cmds = [
+  'echo "=== Building Frontend with Environment Variables ===" && echo "VITE_API_BASE_URL: ${VITE_API_BASE_URL}" && echo "VITE_API_URL: ${VITE_API_URL}" && echo "VITE_MLOPS_SERVICE_URL: ${VITE_MLOPS_SERVICE_URL}" && npm run build && echo "=== Build Complete ==="'
+]
 
 [start]
 cmd = "npx serve -s dist -p $PORT"
