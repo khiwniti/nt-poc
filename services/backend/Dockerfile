@@ -22,12 +22,8 @@ COPY services/backend/seeds ./seeds
 # Debug: Check file structure before build
 RUN echo "=== File structure before build ===" && \
     ls -la && \
-    echo "=== tsconfig.json ===" && \
-    cat tsconfig.json && \
-    echo "=== src/models ===" && \
-    ls -la src/models/ && \
-    echo "=== src/repositories ===" && \
-    ls -la src/repositories/
+    echo "=== src directory ===" && \
+    ls -laR src/ | head -100
 
 # Build TypeScript
 RUN npm run build
