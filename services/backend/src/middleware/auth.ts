@@ -10,6 +10,16 @@ export interface AuthRequest extends Request {
 }
 
 export const authenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
+  // Development bypass: skip authentication if DISABLE_AUTH is set
+  if (process.env.DISABLE_AUTH === 'true') {
+    req.user = {
+      userId: 'dev-user',
+      role: 'admin',
+      email: 'dev@example.com',
+    };
+    return next();
+  }
+
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {
@@ -25,7 +35,7 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
     };
     req.user = decoded;
     next();
-  } catch (error) {
+  } catch {
     return res.status(403).json({ error: 'Invalid token' });
   }
 };
