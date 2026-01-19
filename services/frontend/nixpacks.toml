@@ -10,7 +10,7 @@ cmds = ["npm install --prefer-offline --no-audit"]
 
 [phases.build]
 cmds = [
-  'echo "=== Building Frontend with Environment Variables ===" && echo "VITE_API_BASE_URL: ${VITE_API_BASE_URL}" && echo "VITE_API_URL: ${VITE_API_URL}" && echo "VITE_MLOPS_SERVICE_URL: ${VITE_MLOPS_SERVICE_URL}" && npm run build && echo "=== Build Complete ==="'
+  'echo "=== Building Frontend with Environment Variables ===" && echo "VITE_API_BASE_URL: ${VITE_API_BASE_URL}" && echo "VITE_API_URL: ${VITE_API_URL}" && echo "VITE_MLOPS_SERVICE_URL: ${VITE_MLOPS_SERVICE_URL}" && npm run build && echo "=== Build Complete ===" && ls -la && echo "=== Checking dist folder ===" && ls -la dist/ && echo "=== Dist contents verified ==="'
 ]
 
 [start]
