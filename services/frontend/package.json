@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "start": "npx serve -s dist -p ${PORT:-3000}",
     "preview": "vite preview",
     "test": "vitest",
     "test:coverage": "vitest --coverage",
@@ -48,6 +49,8 @@
     "@types/mapbox-gl": "^3.4.1",
     "@types/three": "^0.182.0",
     "dexie": "^4.2.1",
+    "echarts": "^6.0.0",
+    "echarts-for-react": "^3.0.5",
     "html2canvas": "^1.4.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.562.0",
@@ -57,6 +60,7 @@
     "react-leaflet": "^4.2.1",
     "react-router-dom": "^6.20.0",
     "recharts": "^3.6.0",
+    "serve": "^14.2.4",
     "three": "^0.182.0",
     "zustand": "^4.4.7"
   },
