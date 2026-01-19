@@ -5,7 +5,7 @@
 
 import { Router, Response } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
-import pool from '../config/database.js';
+import { pool } from '../config/database.js';
 import logger from '../config/logger.js';
 
 const router = Router();
