@@ -62,9 +62,17 @@ ENV/
 *.pb
 *.pth
 *.onnx
-# Exclude only ML model directories at specific paths
-services/ml/models/
-services/mlops/models/
+# Exclude ONLY Python ML model directories (not backend TypeScript models)
+services/ml/models/*.h5
+services/ml/models/*.pkl
+services/ml/models/*.joblib
+services/ml/models/*.model
+services/ml/models/*.weights
+services/mlops/models/*.h5
+services/mlops/models/*.pkl
+services/mlops/models/*.joblib
+services/mlops/models/*.model
+services/mlops/models/*.weights
 
 # Documentation
 *.md
