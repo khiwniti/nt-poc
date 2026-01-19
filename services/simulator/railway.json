@@ -8,7 +8,7 @@
     "startCommand": "uvicorn app.main:app --host 0.0.0.0 --port $PORT",
     "healthcheckPath": "/api/health",
     "healthcheckTimeout": 100,
-    "restartPolicyType": "ON_FAILURE",
+    "restartPolicy": "on_failure",
     "restartPolicyMaxRetries": 10
   }
 }

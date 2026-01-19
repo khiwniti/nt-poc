@@ -6,7 +6,7 @@
   },
   "deploy": {
     "startCommand": "node dist/index.js",
-    "restartPolicyType": "ON_FAILURE",
+    "restartPolicy": "on_failure",
     "restartPolicyMaxRetries": 10
   }
 }

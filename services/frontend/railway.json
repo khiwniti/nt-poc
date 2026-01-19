@@ -6,7 +6,7 @@
   },
   "deploy": {
     "startCommand": "sh -c 'cd services/frontend && serve -s dist -l $PORT'",
-    "restartPolicyType": "ON_FAILURE",
+    "restartPolicy": "on_failure",
     "restartPolicyMaxRetries": 10
   }
 }
