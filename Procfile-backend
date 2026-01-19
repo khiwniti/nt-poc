@@ -1,0 +1,1 @@
+web: bash services/backend/scripts/start-production.sh
