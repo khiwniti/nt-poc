@@ -60,9 +60,9 @@ if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
   exit 1
 fi
 
-# Run database migrations from compiled dist directory
+# Run database migrations using knex directly (no need for compiled scripts)
 echo "🔄 Running database migrations..."
-if node dist/scripts/migrate.js; then
+if npx knex migrate:latest --knexfile ./knexfile.js; then
   echo "✅ Database migrations completed successfully"
 else
   echo "❌ Database migrations failed"
@@ -72,7 +72,7 @@ fi
 
 # Check migration status
 echo "📊 Checking migration status..."
-node dist/scripts/migrate-status.js || true
+npx knex migrate:status --knexfile ./knexfile.js || true
 
 # Start the application
 echo "🚀 Starting application server..."
