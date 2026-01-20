@@ -13,7 +13,7 @@
  */
 
 import { AxiosInstance } from 'axios';
-import { apiClient, makeRequest } from '../utils/apiClient.js';
+import { apiClient } from '../utils/apiClient.js';
 import {
   Branch,
   Alert,

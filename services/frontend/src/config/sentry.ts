@@ -100,7 +100,7 @@ export function clearSentryUser() {
 /**
  * Add breadcrumb for debugging
  */
-export function addBreadcrumb(message: string, data?: Record<string, any>) {
+export function addBreadcrumb(message: string, data?: Record<string, unknown>) {
   Sentry.addBreadcrumb({
     message,
     data,
