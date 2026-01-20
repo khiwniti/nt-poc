@@ -23,10 +23,7 @@ export function initializeSentry() {
     // Integration configuration
     integrations: [
       // Browser tracing for performance monitoring
-      Sentry.browserTracingIntegration({
-        // Trace navigation and interactions
-        tracePropagationTargets: ['localhost', /^https:\/\/[^/]*\.railway\.app/],
-      }),
+      Sentry.browserTracingIntegration(),
 
       // Replay for session recording (only in production)
       ...(ENVIRONMENT === 'production'
@@ -37,6 +34,13 @@ export function initializeSentry() {
             }),
           ]
         : []),
+    ],
+
+    // Trace navigation and interactions
+    tracePropagationTargets: [
+      'localhost',
+      /^https:\/\/[^/]*\.railway\.app/,
+      /^https:\/\/[^/]*\.vercel\.app/,
     ],
 
     // Performance monitoring

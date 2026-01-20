@@ -7,7 +7,7 @@
 import OpenAI from 'openai';
 import { Pinecone } from '@pinecone-database/pinecone';
 import { logger } from '../config/logger.js';
-import { db } from '../config/database.js';
+import db from '../config/knex.js';
 
 // Document chunk interface
 export interface DocumentChunk {

@@ -1,6 +1,6 @@
-import { db } from '../config/database.js';
-import { redisClient, isRedisAvailable } from '../config/redis.js';
-import { mlopsClient } from './mlopsClient.js';
+import db from '../config/knex.js';
+import { getRedisClient } from '../config/redis.js';
+import { getMLOpsClient } from './mlopsClient.js';
 import { logger } from '../config/logger.js';
 import axios from 'axios';
 
@@ -120,7 +120,8 @@ async function checkRedis(): Promise<CheckStatus> {
   const start = Date.now();
 
   try {
-    if (!isRedisAvailable()) {
+    const redisClient = getRedisClient();
+    if (!redisClient) {
       return {
         status: 'degraded',
         message: 'Redis not configured (running in degraded mode)',
@@ -128,7 +129,7 @@ async function checkRedis(): Promise<CheckStatus> {
     }
 
     // Ping Redis
-    const pong = await redisClient!.ping();
+    const pong = await redisClient.ping();
     const responseTime = Date.now() - start;
 
     if (pong !== 'PONG') {
@@ -157,17 +158,22 @@ async function checkMLOps(): Promise<CheckStatus> {
   const start = Date.now();
 
   try {
-    const health = await mlopsClient.checkHealth();
+    const mlopsClient = getMLOpsClient();
+    const isHealthy = await mlopsClient.healthCheck();
     const responseTime = Date.now() - start;
 
+    if (!isHealthy) {
+      return {
+        status: 'down',
+        responseTime,
+        message: 'MLOps service is unavailable',
+      };
+    }
+
     return {
-      status: health.status === 'healthy' ? 'up' : 'degraded',
+      status: responseTime < 500 ? 'up' : 'degraded',
       responseTime,
-      message: `MLOps service is ${health.status}`,
-      details: {
-        model_loaded: health.model_loaded,
-        predictions_count: health.predictions_count,
-      },
+      message: 'MLOps service is available',
     };
   } catch (error) {
     logger.error('MLOps health check failed', { error });

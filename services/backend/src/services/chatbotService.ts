@@ -9,7 +9,7 @@
 
 import OpenAI from 'openai';
 import { logger } from '../config/logger.js';
-import { db } from '../config/database.js';
+import db from '../config/knex.js';
 import { ragService } from './ragService.js';
 import type { Response } from 'express';
 

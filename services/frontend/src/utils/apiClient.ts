@@ -64,11 +64,11 @@ class CircuitBreaker {
 
 // Request deduplication cache
 class RequestDeduplicator {
-  private pending = new Map<string, Promise<any>>();
+  private pending = new Map<string, Promise<unknown>>();
 
   public deduplicate<T>(key: string, fn: () => Promise<T>): Promise<T> {
     if (this.pending.has(key)) {
-      return this.pending.get(key)!;
+      return this.pending.get(key)! as Promise<T>;
     }
 
     const promise = fn().finally(() => {
@@ -186,8 +186,12 @@ export function createApiClient(): AxiosInstance {
 
         // Create user-friendly error
         const enhancedError = new Error(message);
-        (enhancedError as any).isRateLimitError = true;
-        (enhancedError as any).retryAfter = retryAfter;
+        (
+          enhancedError as unknown as { isRateLimitError: boolean; retryAfter?: string }
+        ).isRateLimitError = true;
+        (
+          enhancedError as unknown as { isRateLimitError: boolean; retryAfter?: string }
+        ).retryAfter = retryAfter;
         return Promise.reject(enhancedError);
       }
 
@@ -204,12 +208,19 @@ export function createApiClient(): AxiosInstance {
       }
 
       // Create user-friendly error message
-      const errorMessage = error.response?.data?.message || error.message || 'An unexpected error occurred';
+      const responseData = error.response?.data as { message?: string } | undefined;
+      const errorMessage = responseData?.message || error.message || 'An unexpected error occurred';
 
       const enhancedError = new Error(errorMessage);
-      (enhancedError as any).originalError = error;
-      (enhancedError as any).status = error.response?.status;
-      (enhancedError as any).data = error.response?.data;
+      (
+        enhancedError as unknown as { originalError: unknown; status?: number; data?: unknown }
+      ).originalError = error;
+      (
+        enhancedError as unknown as { originalError: unknown; status?: number; data?: unknown }
+      ).status = error.response?.status;
+      (
+        enhancedError as unknown as { originalError: unknown; status?: number; data?: unknown }
+      ).data = error.response?.data;
 
       return Promise.reject(enhancedError);
     }

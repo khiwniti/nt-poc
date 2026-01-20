@@ -17,13 +17,13 @@ export const validate = (schema: ZodSchema) => {
         logger.warn('Validation error', {
           path: req.path,
           method: req.method,
-          errors: error.errors,
+          errors: error.issues,
         });
 
         res.status(400).json({
           error: 'Validation failed',
           message: 'The request contains invalid data',
-          details: error.errors.map((err) => ({
+          details: error.issues.map((err) => ({
             field: err.path.join('.'),
             message: err.message,
             code: err.code,
