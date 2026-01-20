@@ -6,6 +6,7 @@
 import { Router, type Request, type Response } from 'express';
 import { register } from '../config/metrics.js';
 import db from '../config/knex.js';
+import { performHealthCheck, checkLiveness, checkReadiness } from '../services/healthCheckService.js';
 
 const router = Router();
 
@@ -20,26 +21,45 @@ const requireBearerToken = (req: Request, res: Response, token: string | undefin
   return false;
 };
 
+// Comprehensive health check with all dependencies
 router.get('/health', async (_req: Request, res: Response) => {
   try {
-    if (process.env.NODE_ENV !== 'test') {
-      await db.raw('SELECT 1');
-    }
+    const health = await performHealthCheck();
 
-    res.json({
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      uptimeSeconds: Math.round(process.uptime()),
+    const statusCode = health.status === 'healthy' ? 200 : health.status === 'degraded' ? 200 : 503;
+
+    res.status(statusCode).json({
+      ...health,
       environment: process.env.NODE_ENV || process.env.RAILWAY_ENVIRONMENT || 'development',
       version: process.env.SENTRY_RELEASE || process.env.RAILWAY_GIT_COMMIT_SHA || null,
       service: 'battery-management-backend',
     });
-  } catch (_error) {
+  } catch (error) {
     res.status(503).json({
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
-      error: 'Database connection failed',
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
+  }
+});
+
+// Kubernetes liveness probe (simple - just checks if process is running)
+router.get('/health/live', async (_req: Request, res: Response) => {
+  const isAlive = await checkLiveness();
+  if (isAlive) {
+    res.status(200).json({ status: 'alive', timestamp: new Date().toISOString() });
+  } else {
+    res.status(503).json({ status: 'dead', timestamp: new Date().toISOString() });
+  }
+});
+
+// Kubernetes readiness probe (checks if ready to serve traffic)
+router.get('/health/ready', async (_req: Request, res: Response) => {
+  const isReady = await checkReadiness();
+  if (isReady) {
+    res.status(200).json({ status: 'ready', timestamp: new Date().toISOString() });
+  } else {
+    res.status(503).json({ status: 'not_ready', timestamp: new Date().toISOString() });
   }
 });
 

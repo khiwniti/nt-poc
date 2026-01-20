@@ -3,9 +3,17 @@
  *
  * This service replaces the localStorage-based database with real backend API calls.
  * It provides a clean abstraction layer for all facility management operations.
+ *
+ * Now with production-ready features:
+ * - Automatic retry with exponential backoff
+ * - Circuit breaker pattern
+ * - Request deduplication
+ * - Token refresh
+ * - Error tracking with Sentry
  */
 
-import axios, { AxiosInstance } from 'axios';
+import { AxiosInstance } from 'axios';
+import { apiClient, makeRequest } from '../utils/apiClient.js';
 import {
   Branch,
   Alert,
@@ -19,37 +27,12 @@ import {
   PurchaseOrder,
 } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
-
 class FacilityAPIClient {
   private client: AxiosInstance;
 
   constructor() {
-    this.client = axios.create({
-      baseURL: API_BASE_URL,
-      timeout: 10000,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    // Add auth token interceptor
-    this.client.interceptors.request.use((config) => {
-      const token = localStorage.getItem('auth_token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-      return config;
-    });
-
-    // Add error handling interceptor
-    this.client.interceptors.response.use(
-      (response) => response,
-      (error) => {
-        console.error('API Error:', error.response?.data || error.message);
-        throw error;
-      }
-    );
+    // Use production-ready API client with retry, circuit breaker, etc.
+    this.client = apiClient;
   }
 
   // ============================================================================

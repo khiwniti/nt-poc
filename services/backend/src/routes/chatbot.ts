@@ -2,6 +2,9 @@ import express, { Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { pool } from '../config/database.js';
 import { logger } from '../observability/logger.js';
+import { chatbotService } from '../services/chatbotService.js';
+import { ragService } from '../services/ragService.js';
+import { validate, schemas } from '../middleware/validation.js';
 
 const router = express.Router();
 
@@ -314,6 +317,135 @@ router.get('/summary', async (req: AuthRequest, res: Response) => {
   } catch (error) {
     logger.error('chatbot_summary_failed', { error });
     res.status(500).json({ error: 'Failed to fetch summary' });
+  }
+});
+
+/**
+ * POST /api/v1/chatbot/chat
+ * RAG-enhanced chat endpoint (non-streaming)
+ */
+router.post('/chat', validate(schemas.chatbotQuery), async (req: AuthRequest, res: Response) => {
+  try {
+    const { query, conversation_id } = req.body;
+    const userId = req.user?.userId;
+
+    logger.info('chat_request_received', { conversationId: conversation_id, userId });
+
+    const response = await chatbotService.chat(query, conversation_id, userId);
+
+    res.json({
+      data: {
+        response,
+        conversationId: conversation_id,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    logger.error('chat_failed', { error });
+    res.status(500).json({ error: 'Chat request failed' });
+  }
+});
+
+/**
+ * POST /api/v1/chatbot/chat/stream
+ * RAG-enhanced chat endpoint with streaming responses (SSE)
+ */
+router.post('/chat/stream', validate(schemas.chatbotQuery), async (req: AuthRequest, res: Response) => {
+  try {
+    const { query, conversation_id } = req.body;
+    const userId = req.user?.userId;
+
+    logger.info('chat_stream_request_received', { conversationId: conversation_id, userId });
+
+    await chatbotService.chatStream(query, res, conversation_id, userId);
+  } catch (error) {
+    logger.error('chat_stream_failed', { error });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Chat stream failed' });
+    }
+  }
+});
+
+/**
+ * GET /api/v1/chatbot/conversation/:conversationId
+ * Get conversation history
+ */
+router.get('/conversation/:conversationId', async (req: AuthRequest, res: Response) => {
+  try {
+    const { conversationId } = req.params;
+
+    const history = chatbotService.getConversationHistory(conversationId);
+
+    res.json({
+      data: {
+        conversationId,
+        messages: history,
+      },
+    });
+  } catch (error) {
+    logger.error('conversation_history_failed', { error });
+    res.status(500).json({ error: 'Failed to fetch conversation history' });
+  }
+});
+
+/**
+ * DELETE /api/v1/chatbot/conversation/:conversationId
+ * Clear conversation
+ */
+router.delete('/conversation/:conversationId', async (req: AuthRequest, res: Response) => {
+  try {
+    const { conversationId } = req.params;
+
+    chatbotService.clearConversation(conversationId);
+
+    res.json({
+      data: {
+        message: 'Conversation cleared successfully',
+        conversationId,
+      },
+    });
+  } catch (error) {
+    logger.error('conversation_clear_failed', { error });
+    res.status(500).json({ error: 'Failed to clear conversation' });
+  }
+});
+
+/**
+ * POST /api/v1/chatbot/index-alert
+ * Index an alert into RAG system (called when new alerts are created)
+ */
+router.post('/index-alert', async (req: AuthRequest, res: Response) => {
+  try {
+    const alert = req.body;
+
+    await ragService.indexAlert(alert);
+
+    logger.info('alert_indexed_to_rag', { alertId: alert.id });
+
+    res.json({
+      data: {
+        message: 'Alert indexed successfully',
+        alertId: alert.id,
+      },
+    });
+  } catch (error) {
+    logger.error('alert_index_failed', { error });
+    res.status(500).json({ error: 'Failed to index alert' });
+  }
+});
+
+/**
+ * GET /api/v1/chatbot/status
+ * Get RAG and chatbot service status
+ */
+router.get('/status', async (req: AuthRequest, res: Response) => {
+  try {
+    const status = chatbotService.getStatus();
+
+    res.json({ data: status });
+  } catch (error) {
+    logger.error('chatbot_status_failed', { error });
+    res.status(500).json({ error: 'Failed to get chatbot status' });
   }
 });
 
