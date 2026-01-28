@@ -1,0 +1,27 @@
+{
+    "name": "pumpfun-agi",
+    "version": "1.0.0",
+    "description": "Autonomous General Intelligence for Pump.fun Token Trading",
+    "main": "dist/index.js",
+    "scripts": {
+        "build": "tsc",
+        "start": "ts-node src/index.ts",
+        "dev": "ts-node-dev --respawn src/index.ts"
+    },
+    "dependencies": {
+        "@solana/web3.js": "^1.95.0",
+        "@solana/spl-token": "^0.4.6",
+        "bs58": "^5.0.0",
+        "dotenv": "^16.4.5",
+        "pino": "^9.1.0",
+        "uuid": "^9.0.1",
+        "ws": "^8.17.0"
+    },
+    "devDependencies": {
+        "@types/node": "^20.14.0",
+        "@types/ws": "^8.5.10",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.4.5"
+    },
+    "license": "MIT"
+}
