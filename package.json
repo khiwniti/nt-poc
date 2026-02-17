@@ -1,6 +1,6 @@
 {
     "name": "pumpfun-agi",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "Autonomous General Intelligence for Pump.fun Token Trading",
     "main": "dist/index.js",
     "scripts": {
