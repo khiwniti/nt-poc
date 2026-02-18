@@ -1,0 +1,31 @@
+{
+  "name": "pump-agent",
+  "version": "1.0.0",
+  "description": "Autonomous Solana agent for pump.fun token launches",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "ts-node src/index.ts",
+    "dev": "ts-node-dev --respawn src/index.ts",
+    "lint": "eslint src/",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.95.0",
+    "@solana/spl-token": "^0.4.6",
+    "@jup-ag/api": "^6.0.27",
+    "bs58": "^5.0.0",
+    "dotenv": "^16.4.5",
+    "node-telegram-bot-api": "^0.66.0",
+    "pino": "^9.1.0",
+    "ws": "^8.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/ws": "^8.5.10",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.4.5"
+  },
+  "license": "MIT"
+}
