@@ -11,3 +11,4 @@ export const logger = pino({
         },
     },
 });
+export const VERSION = "1.1.0";
